@@ -1,0 +1,24 @@
+[Unit]
+Description=MarcBot Telegram polling service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=marc
+Group=marc
+WorkingDirectory=/srv/marcbot/app
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/srv/marcbot/app/.venv/bin/python -m marcbot telegram
+Restart=on-failure
+RestartSec=10
+
+# Basic hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/marcbot
+
+[Install]
+WantedBy=multi-user.target
