@@ -10,6 +10,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from marcbot import __version__
 from marcbot.config import MarcBotConfig
 from marcbot.errors import MarcBotError
+from marcbot.health import format_health_report, run_health_checks
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,6 +75,22 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text(status_text)
 
 
+async def health_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /health."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /health from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    health_text = format_health_report(run_health_checks())
+
+    if update.message is not None:
+        await update.message.reply_text(health_text)
+
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /help."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -88,6 +105,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "🤖 MarcBot commands:\n"
         "/ping - check whether MarcBot is responding\n"
         "/status - show basic MarcBot service status\n"
+        "/health - run local MarcBot health checks\n"
         "/help - show this help message"
     )
 
@@ -115,6 +133,7 @@ def build_application(config: MarcBotConfig) -> Application:
 
     application.add_handler(CommandHandler("ping", ping_command))
     application.add_handler(CommandHandler("status", status_command))
+    application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("help", help_command))
 
     return application
