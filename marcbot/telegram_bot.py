@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import platform
 import sys
+from datetime import UTC, datetime
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -14,6 +15,7 @@ from marcbot.config import MarcBotConfig
 from marcbot.errors import MarcBotError
 from marcbot.health import format_health_report, run_health_checks
 from marcbot.log_reader import format_logs_message, read_last_log_lines
+from marcbot.uptime import format_uptime_report
 
 LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +81,24 @@ async def version_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     if update.message is not None:
         await update.message.reply_text(version_text)
+
+
+async def uptime_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /uptime."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    process_started_at = context.application.bot_data["process_started_at"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /uptime from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /uptime for chat_id=%s", chat_id)
+    uptime_text = format_uptime_report(process_started_at=process_started_at)
+
+    if update.message is not None:
+        await update.message.reply_text(uptime_text)
 
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -155,6 +175,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "🤖 MarcBot commands:\n"
         "/ping - check whether MarcBot is responding\n"
         "/version - show MarcBot and Python version\n"
+        "/uptime - show host and MarcBot process uptime\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/logs - show recent MarcBot application logs\n"
@@ -182,9 +203,11 @@ def build_application(config: MarcBotConfig) -> Application:
     application = Application.builder().token(config.telegram.bot_token).build()
     application.bot_data["allowed_chat_ids"] = config.telegram.allowed_chat_ids
     application.bot_data["app_environment"] = config.app.environment
+    application.bot_data["process_started_at"] = datetime.now(UTC)
 
     application.add_handler(CommandHandler("ping", ping_command))
     application.add_handler(CommandHandler("version", version_command))
+    application.add_handler(CommandHandler("uptime", uptime_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))
