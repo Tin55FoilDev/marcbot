@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 
 from marcbot import __version__
 from marcbot.config import DEFAULT_CONFIG_PATH, load_config
 from marcbot.errors import MarcBotError
+from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
 from marcbot.telegram_bot import run_foreground_bot
+
+LOGGER = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -57,6 +61,7 @@ def run_doctor() -> int:
     print("OK: logs directory writable")
     print("OK: Python package import works")
     print("OK: MarcBot foundation checks passed")
+    LOGGER.info("Doctor check passed")
     return 0
 
 
@@ -70,13 +75,19 @@ def run_config_check() -> int:
     print(f"OK: app.name = {config.app.name}")
     print(f"OK: app.environment = {config.app.environment}")
     print(f"OK: telegram.enabled = {str(config.telegram.enabled).lower()}")
+    LOGGER.info("Config check passed: %s", DEFAULT_CONFIG_PATH)
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     """Run the MarcBot CLI."""
+    configure_logging()
+
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    command_name = "version" if args.version else args.command or "help"
+    LOGGER.info("MarcBot CLI command started: %s", command_name)
 
     try:
         if args.version:
@@ -91,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "telegram":
             config = load_config(DEFAULT_CONFIG_PATH)
+            LOGGER.info("Starting Telegram foreground bot")
             run_foreground_bot(config)
             return 0
 
@@ -98,8 +110,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     except MarcBotError as exc:
+        LOGGER.warning("MarcBot command failed: %s", exc)
         print(str(exc), file=sys.stderr)
         return 1
+    except KeyboardInterrupt:
+        LOGGER.info("MarcBot command interrupted by operator")
+        print("Interrupted.", file=sys.stderr)
+        return 130
 
 
 if __name__ == "__main__":
