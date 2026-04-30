@@ -1,2 +1,4 @@
 # Runtime dependencies for MarcBot.
 # Keep this intentionally small.
+
+python-telegram-bot==22.5
