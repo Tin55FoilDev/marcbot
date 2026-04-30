@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import platform
+import sys
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -54,6 +56,29 @@ async def ping_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     if update.message is not None:
         await update.message.reply_text("🤖 MarcBot pong")
+
+
+async def version_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /version."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /version from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /version for chat_id=%s", chat_id)
+
+    version_text = (
+        "🤖 MarcBot version\n"
+        f"MarcBot: {__version__}\n"
+        f"Python: {platform.python_version()}\n"
+        f"Executable: {sys.executable}"
+    )
+
+    if update.message is not None:
+        await update.message.reply_text(version_text)
 
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -129,6 +154,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     help_text = (
         "🤖 MarcBot commands:\n"
         "/ping - check whether MarcBot is responding\n"
+        "/version - show MarcBot and Python version\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/logs - show recent MarcBot application logs\n"
@@ -158,6 +184,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.bot_data["app_environment"] = config.app.environment
 
     application.add_handler(CommandHandler("ping", ping_command))
+    application.add_handler(CommandHandler("version", version_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))
