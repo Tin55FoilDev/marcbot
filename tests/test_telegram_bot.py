@@ -64,3 +64,4 @@ def test_build_application_accepts_valid_config() -> None:
     application = build_application(make_config())
 
     assert application.bot_data["allowed_chat_ids"] == (12345,)
+    assert application.bot_data["app_environment"] == "test"

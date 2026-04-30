@@ -7,6 +7,7 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+from marcbot import __version__
 from marcbot.config import MarcBotConfig
 from marcbot.errors import MarcBotError
 
@@ -51,6 +52,28 @@ async def ping_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("🤖 MarcBot pong")
 
 
+async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /status."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    app_environment = context.application.bot_data["app_environment"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /status from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    status_text = (
+        "🤖 MarcBot status\n"
+        "Service: running\n"
+        f"Version: {__version__}\n"
+        f"Environment: {app_environment}"
+    )
+
+    if update.message is not None:
+        await update.message.reply_text(status_text)
+
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /help."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -62,8 +85,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     help_text = (
-        "🤖 MarcBot commands:\\n"
-        "/ping - check whether MarcBot is responding\\n"
+        "🤖 MarcBot commands:\n"
+        "/ping - check whether MarcBot is responding\n"
+        "/status - show basic MarcBot service status\n"
         "/help - show this help message"
     )
 
@@ -87,8 +111,10 @@ def build_application(config: MarcBotConfig) -> Application:
 
     application = Application.builder().token(config.telegram.bot_token).build()
     application.bot_data["allowed_chat_ids"] = config.telegram.allowed_chat_ids
+    application.bot_data["app_environment"] = config.app.environment
 
     application.add_handler(CommandHandler("ping", ping_command))
+    application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("help", help_command))
 
     return application
