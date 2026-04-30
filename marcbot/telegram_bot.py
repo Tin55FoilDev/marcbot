@@ -11,6 +11,7 @@ from marcbot import __version__
 from marcbot.config import MarcBotConfig
 from marcbot.errors import MarcBotError
 from marcbot.health import format_health_report, run_health_checks
+from marcbot.log_reader import format_logs_message, read_last_log_lines
 
 LOGGER = logging.getLogger(__name__)
 
@@ -49,6 +50,8 @@ async def ping_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await _reject_unauthorized(update)
         return
 
+    LOGGER.info("Handled /ping for chat_id=%s", chat_id)
+
     if update.message is not None:
         await update.message.reply_text("🤖 MarcBot pong")
 
@@ -63,6 +66,8 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         LOGGER.warning("Rejected unauthorized /status from chat_id=%s", chat_id)
         await _reject_unauthorized(update)
         return
+
+    LOGGER.info("Handled /status for chat_id=%s", chat_id)
 
     status_text = (
         "🤖 MarcBot status\n"
@@ -85,10 +90,28 @@ async def health_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await _reject_unauthorized(update)
         return
 
+    LOGGER.info("Handled /health for chat_id=%s", chat_id)
     health_text = format_health_report(run_health_checks())
 
     if update.message is not None:
         await update.message.reply_text(health_text)
+
+
+async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /logs."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /logs from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /logs for chat_id=%s", chat_id)
+    logs_text = format_logs_message(read_last_log_lines())
+
+    if update.message is not None:
+        await update.message.reply_text(logs_text)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -101,11 +124,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await _reject_unauthorized(update)
         return
 
+    LOGGER.info("Handled /help for chat_id=%s", chat_id)
+
     help_text = (
         "🤖 MarcBot commands:\n"
         "/ping - check whether MarcBot is responding\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
+        "/logs - show recent MarcBot application logs\n"
         "/help - show this help message"
     )
 
@@ -134,6 +160,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("ping", ping_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
+    application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("help", help_command))
 
     return application
