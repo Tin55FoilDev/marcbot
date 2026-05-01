@@ -14,6 +14,7 @@ from marcbot.source_monitor import (
     fetch_source_metadata,
     load_source_monitor_state,
     source_monitor_state_path,
+    summarize_fetch_results,
     write_source_monitor_report,
 )
 
@@ -142,6 +143,61 @@ def test_apply_change_detection_annotates_each_result() -> None:
     assert annotated[1].change_state == "changed"
 
 
+def test_summarize_fetch_results_counts_states_and_errors() -> None:
+    results = (
+        SourceFetchResult(
+            source=make_source(name="new-source"),
+            fetched=True,
+            status=200,
+            bytes_read=100,
+            title="New",
+            change_state="new",
+        ),
+        SourceFetchResult(
+            source=make_source(name="changed-source"),
+            fetched=True,
+            status=200,
+            bytes_read=100,
+            title="Changed",
+            change_state="changed",
+        ),
+        SourceFetchResult(
+            source=make_source(name="unchanged-source"),
+            fetched=True,
+            status=200,
+            bytes_read=100,
+            title="Unchanged",
+            change_state="unchanged",
+        ),
+        SourceFetchResult(
+            source=make_source(name="errored-source"),
+            fetched=True,
+            status=None,
+            bytes_read=0,
+            error="timeout",
+            change_state="changed",
+        ),
+        SourceFetchResult(
+            source=make_source(name="disabled-source", enabled=False),
+            fetched=False,
+            status=None,
+            bytes_read=0,
+            error="disabled",
+            change_state="unchanged",
+        ),
+    )
+
+    summary = summarize_fetch_results(results)
+
+    assert summary == {
+        "total": 5,
+        "new": 1,
+        "changed": 2,
+        "unchanged": 2,
+        "errored": 1,
+    }
+
+
 def test_build_source_monitor_state_contains_metadata_only() -> None:
     now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
     result = SourceFetchResult(
@@ -263,6 +319,12 @@ def test_build_source_monitor_report_lists_configured_sources_and_fetch_results(
     )
 
     assert "State path: /tmp/state.json" in report
+    assert "## Summary" in report
+    assert "Total sources checked: 2" in report
+    assert "New: 1" in report
+    assert "Changed: 0" in report
+    assert "Unchanged: 1" in report
+    assert "Errored: 0" in report
     assert "Config exists: true" in report
     assert "Configured sources: 2" in report
     assert "- openai-news" in report

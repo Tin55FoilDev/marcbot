@@ -196,3 +196,15 @@ Change detection compares deterministic metadata from the current run against th
     clean error text
 
 The state file does not store fetched page bodies or article content.
+
+## Summary counts
+
+Each report includes a compact summary section near the top.
+
+    Total sources checked
+    New
+    Changed
+    Unchanged
+    Errored
+
+Errored counts include fetch failures such as timeouts, URL errors, HTTP errors, or OS errors. Disabled sources are reported in the per-source details but are not counted as errored.

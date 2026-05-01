@@ -269,6 +269,38 @@ def write_source_monitor_state(path: Path, state: dict[str, Any]) -> None:
     tmp_path.replace(path)
 
 
+def summarize_fetch_results(fetch_results: tuple[SourceFetchResult, ...]) -> dict[str, int]:
+    """Summarize source monitor result counts for report display."""
+    return {
+        "total": len(fetch_results),
+        "new": sum(1 for result in fetch_results if result.change_state == "new"),
+        "changed": sum(1 for result in fetch_results if result.change_state == "changed"),
+        "unchanged": sum(
+            1 for result in fetch_results if result.change_state == "unchanged"
+        ),
+        "errored": sum(
+            1
+            for result in fetch_results
+            if result.error is not None and result.error != "disabled"
+        ),
+    }
+
+
+def _format_summary(fetch_results: tuple[SourceFetchResult, ...]) -> list[str]:
+    """Format compact source monitor summary counts."""
+    summary = summarize_fetch_results(fetch_results)
+    return [
+        "## Summary",
+        "",
+        f"Total sources checked: {summary['total']}",
+        f"New: {summary['new']}",
+        f"Changed: {summary['changed']}",
+        f"Unchanged: {summary['unchanged']}",
+        f"Errored: {summary['errored']}",
+        "",
+    ]
+
+
 def _format_configured_sources(config: SourceConfig) -> list[str]:
     """Format configured source information for the report."""
     lines = [
@@ -383,6 +415,7 @@ def build_source_monitor_report(
 
     lines.append("")
 
+    lines.extend(_format_summary(fetch_results))
     lines.extend(_format_configured_sources(config))
     lines.extend(_format_fetch_results(fetch_results))
 
@@ -390,8 +423,8 @@ def build_source_monitor_report(
         [
             "## Next steps",
             "",
-            "- Add a compact report summary section with counts by change state.",
-            "- Keep output local and bounded before adding Telegram delivery.",
+            "- Add Telegram command access to the latest local source monitor report.",
+            "- Keep output local and bounded before adding scheduled delivery.",
             "- Add higher-level summaries only after deterministic fetching is reliable.",
             "",
         ]
