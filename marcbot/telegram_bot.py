@@ -11,6 +11,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from marcbot import __version__
+from marcbot.about import format_about_message
 from marcbot.backup_status import format_backup_status_message
 from marcbot.config import MarcBotConfig
 from marcbot.disk import format_disk_report
@@ -66,6 +67,22 @@ async def ping_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     if update.message is not None:
         await update.message.reply_text("🤖 MarcBot pong")
+
+
+async def about_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /about."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /about from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /about for chat_id=%s", chat_id)
+
+    if update.message is not None:
+        await update.message.reply_text(format_about_message())
 
 
 async def version_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -387,6 +404,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     help_text = (
         "🤖 MarcBot commands:\n"
         "/ping - check whether MarcBot is responding\n"
+        "/about - show MarcBot baseline information\n"
         "/version - show MarcBot and Python version\n"
         "/uptime - show host and MarcBot process uptime\n"
         "/disk - show disk usage for root and /srv/marcbot\n"
@@ -453,6 +471,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.bot_data["process_started_at"] = datetime.now(UTC)
 
     application.add_handler(CommandHandler("ping", ping_command))
+    application.add_handler(CommandHandler("about", about_command))
     application.add_handler(CommandHandler("version", version_command))
     application.add_handler(CommandHandler("uptime", uptime_command))
     application.add_handler(CommandHandler("disk", disk_command))
