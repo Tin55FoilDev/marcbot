@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass
 class MarcBotError(Exception):
     """Base exception for expected MarcBot errors.
 
