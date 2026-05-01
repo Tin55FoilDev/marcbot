@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -21,6 +23,7 @@ from marcbot.source_config import (
 FETCH_TIMEOUT_SECONDS = 10
 MAX_FETCH_BYTES = 256 * 1024
 USER_AGENT = f"MarcBot/{__version__} source-monitor"
+SOURCE_MONITOR_STATE_FILENAME = "source-monitor-state.json"
 
 
 class _TitleParser(HTMLParser):
@@ -63,6 +66,7 @@ class SourceFetchResult:
     bytes_read: int
     error: str | None = None
     title: str | None = None
+    change_state: str | None = None
 
 
 @dataclass(frozen=True)
@@ -71,6 +75,11 @@ class SourceMonitorResult:
 
     path: Path
     message: str
+
+
+def source_monitor_state_path(project_name: str = DEFAULT_SOURCE_PROJECT_NAME) -> Path:
+    """Return the deterministic state path for a source monitor project."""
+    return source_reports_dir(project_name).parent / "state" / SOURCE_MONITOR_STATE_FILENAME
 
 
 def extract_html_title(data: bytes) -> str | None:
@@ -155,6 +164,111 @@ def fetch_configured_sources(config: SourceConfig) -> tuple[SourceFetchResult, .
     return tuple(fetch_source_metadata(source) for source in config.sources)
 
 
+def load_source_monitor_state(path: Path) -> dict[str, Any]:
+    """Load prior source monitor state, returning empty state if missing or invalid."""
+    if not path.exists():
+        return {}
+
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+    if not isinstance(raw, dict):
+        return {}
+
+    return raw
+
+
+def _previous_sources(state: dict[str, Any]) -> dict[str, Any]:
+    sources = state.get("sources", {})
+    if not isinstance(sources, dict):
+        return {}
+    return sources
+
+
+def _comparison_fields(result: SourceFetchResult) -> dict[str, Any]:
+    return {
+        "status": result.status,
+        "title": result.title,
+        "error": result.error,
+    }
+
+
+def classify_source_change(
+    result: SourceFetchResult,
+    previous: dict[str, Any] | None,
+) -> str:
+    """Classify current result against prior deterministic metadata."""
+    if previous is None:
+        return "new"
+
+    current = _comparison_fields(result)
+    for key, value in current.items():
+        if previous.get(key) != value:
+            return "changed"
+
+    return "unchanged"
+
+
+def apply_change_detection(
+    fetch_results: tuple[SourceFetchResult, ...],
+    previous_state: dict[str, Any],
+) -> tuple[SourceFetchResult, ...]:
+    """Annotate fetch results with new, changed, or unchanged."""
+    previous = _previous_sources(previous_state)
+
+    annotated: list[SourceFetchResult] = []
+    for result in fetch_results:
+        previous_entry = previous.get(result.source.name)
+        if not isinstance(previous_entry, dict):
+            previous_entry = None
+
+        annotated.append(
+            replace(
+                result,
+                change_state=classify_source_change(result, previous_entry),
+            )
+        )
+
+    return tuple(annotated)
+
+
+def build_source_monitor_state(
+    project_name: str,
+    fetch_results: tuple[SourceFetchResult, ...],
+    now: datetime,
+) -> dict[str, Any]:
+    """Build the persisted metadata state for a source monitor project."""
+    return {
+        "version": 1,
+        "project": project_name,
+        "updated": now.astimezone(UTC).isoformat(timespec="seconds"),
+        "sources": {
+            result.source.name: {
+                "kind": result.source.kind,
+                "url": result.source.url,
+                "fetched": result.fetched,
+                "status": result.status,
+                "title": result.title,
+                "error": result.error,
+            }
+            for result in fetch_results
+        },
+    }
+
+
+def write_source_monitor_state(path: Path, state: dict[str, Any]) -> None:
+    """Atomically write source monitor metadata state."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(
+        json.dumps(state, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    tmp_path.replace(path)
+
+
 def _format_configured_sources(config: SourceConfig) -> list[str]:
     """Format configured source information for the report."""
     lines = [
@@ -218,6 +332,7 @@ def _format_fetch_results(fetch_results: tuple[SourceFetchResult, ...]) -> list[
                 f"  - status: {result.status if result.status is not None else 'n/a'}",
                 f"  - bytes_read: {result.bytes_read}",
                 f"  - title: {result.title or 'n/a'}",
+                f"  - change: {result.change_state or 'n/a'}",
                 f"  - error: {result.error or 'none'}",
             ]
         )
@@ -231,6 +346,7 @@ def build_source_monitor_report(
     config: SourceConfig | None = None,
     fetch_results: tuple[SourceFetchResult, ...] | None = None,
     project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
+    state_path: Path | None = None,
 ) -> str:
     """Build the Markdown body for the source monitor report."""
     if now is None:
@@ -255,12 +371,17 @@ def build_source_monitor_report(
         "",
         "## Status",
         "",
-        "Source monitor bounded fetch metadata and title extraction are installed.",
+        "Source monitor bounded fetch metadata, title extraction, "
+        "and change detection are installed.",
         "",
         f"Fetch timeout seconds: {FETCH_TIMEOUT_SECONDS}",
         f"Max fetch bytes per source: {MAX_FETCH_BYTES}",
-        "",
     ]
+
+    if state_path is not None:
+        lines.append(f"State path: {state_path}")
+
+    lines.append("")
 
     lines.extend(_format_configured_sources(config))
     lines.extend(_format_fetch_results(fetch_results))
@@ -269,7 +390,7 @@ def build_source_monitor_report(
         [
             "## Next steps",
             "",
-            "- Add deterministic change tracking between source monitor runs.",
+            "- Add a compact report summary section with counts by change state.",
             "- Keep output local and bounded before adding Telegram delivery.",
             "- Add higher-level summaries only after deterministic fetching is reliable.",
             "",
@@ -282,14 +403,21 @@ def build_source_monitor_report(
 def write_source_monitor_report(
     project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
     reports_dir: Path | None = None,
+    state_path: Path | None = None,
     now: datetime | None = None,
 ) -> SourceMonitorResult:
-    """Write the source monitor report to the project reports directory."""
+    """Write the source monitor report and update project metadata state."""
     if now is None:
         now = datetime.now(UTC)
 
     config = load_source_config(project_name=project_name)
-    fetch_results = fetch_configured_sources(config)
+    raw_fetch_results = fetch_configured_sources(config)
+
+    target_state_path = (
+        state_path if state_path is not None else source_monitor_state_path(config.project_name)
+    )
+    previous_state = load_source_monitor_state(target_state_path)
+    fetch_results = apply_change_detection(raw_fetch_results, previous_state)
 
     target_reports_dir = (
         reports_dir if reports_dir is not None else source_reports_dir(config.project_name)
@@ -303,8 +431,12 @@ def write_source_monitor_report(
         config=config,
         fetch_results=fetch_results,
         project_name=config.project_name,
+        state_path=target_state_path,
     )
     path.write_text(body, encoding="utf-8")
+
+    state = build_source_monitor_state(config.project_name, fetch_results, now)
+    write_source_monitor_state(target_state_path, state)
 
     return SourceMonitorResult(
         path=path,

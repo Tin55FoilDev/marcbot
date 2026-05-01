@@ -172,3 +172,27 @@ The source monitor report currently includes bounded fetch metadata for each con
     clean error text when applicable
 
 The report does not yet parse articles, summarize content, classify importance, or send Telegram notifications.
+
+## Deterministic state and change detection
+
+Each source monitor project stores a small metadata state file under its project workspace.
+
+    /srv/marcbot/workspace/source-projects/<project>/state/source-monitor-state.json
+
+For the AI project:
+
+    /srv/marcbot/workspace/source-projects/ai/state/source-monitor-state.json
+
+This state file is used to classify each source result as:
+
+    new
+    changed
+    unchanged
+
+Change detection compares deterministic metadata from the current run against the previous run:
+
+    HTTP status
+    basic HTML page title
+    clean error text
+
+The state file does not store fetched page bodies or article content.
