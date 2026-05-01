@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-05-01 — `/ls` expanded to support workspace-relative directories
+
+Expanded the safe workspace listing command.
+
+Updated command:
+
+- `/ls [workspace-relative-directory]`
+
+Examples:
+
+- `/ls`
+- `/ls reports`
+- `/ls reports/health`
+
+Safety properties:
+
+- read-only
+- workspace-relative directories only
+- absolute paths rejected
+- parent traversal rejected
+- resolved paths must stay under `/srv/marcbot/workspace`
+- hidden dotfiles omitted
+- bounded Telegram output
+- no shell execution
+
 ## 2026-05-01 — Read-only `/ls` workspace listing added
 
 Added initial safe workspace discovery.

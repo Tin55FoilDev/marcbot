@@ -229,7 +229,7 @@ Read-only workspace listing helper.
 
 Current scope:
 
-- lists only `/srv/marcbot/workspace`
+- lists `/srv/marcbot/workspace` or a validated workspace-relative directory
 - omits hidden dotfiles
 - sorts directories before files
 - reports file sizes
@@ -239,8 +239,10 @@ Safety properties:
 
 - read-only
 - no shell execution
-- fixed workspace root
-- no arbitrary paths in first implementation
+- workspace-relative directories only
+- absolute paths rejected
+- parent traversal rejected
+- resolved paths must stay under `/srv/marcbot/workspace`
 
 ### `marcbot.workspace_sender`
 

@@ -238,8 +238,9 @@ async def ls_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await _reject_unauthorized(update)
         return
 
-    LOGGER.info("Handled /ls for chat_id=%s", chat_id)
-    listing_text = format_workspace_ls_message()
+    requested_path = " ".join(context.args).strip()
+    LOGGER.info("Handled /ls for chat_id=%s path=%r", chat_id, requested_path)
+    listing_text = format_workspace_ls_message(requested_path=requested_path)
 
     if update.message is not None:
         await update.message.reply_text(listing_text)

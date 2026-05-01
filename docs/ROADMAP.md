@@ -210,21 +210,20 @@ Purpose:
 
 ### Workspace discovery
 
-Status: initial implementation.
+Status: expanded implementation.
 
 Current command:
 
-    /ls
+    /ls [workspace-relative-directory]
 
 Purpose:
 
-- list top-level workspace entries
+- list workspace entries
 - make `/send <workspace-relative-path>` easier to use
 - keep workspace browsing read-only and bounded
 
 Future expansion:
 
-- `/ls <workspace-relative-directory>`
 - `/tree <workspace-relative-directory>`
 
 ## Longer-term roadmap

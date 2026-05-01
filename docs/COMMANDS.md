@@ -118,9 +118,15 @@ Safety properties:
 - File size limit enforced
 - Request is logged
 
-### `/ls`
+### `/ls [workspace-relative-directory]`
 
-Lists visible top-level entries under the MarcBot workspace.
+Lists visible entries under the MarcBot workspace.
+
+Examples:
+
+    /ls
+    /ls reports
+    /ls reports/health
 
 Workspace root:
 
@@ -135,11 +141,13 @@ Reports:
 Safety properties:
 
 - Read-only
-- Fixed workspace root
-- No shell execution
-- No arbitrary absolute paths
+- Workspace-relative directories only
+- Absolute paths are rejected
+- Parent traversal is rejected
+- Resolved paths must stay under the workspace
 - Hidden dotfiles are omitted
 - Output is bounded for Telegram
+- No shell execution
 
 Use `/send <workspace-relative-path>` to send one of the listed files.
 
