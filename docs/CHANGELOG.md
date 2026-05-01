@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.1 — Scheduled reporting baseline
+
+MarcBot 0.2.1 is the scheduled reporting baseline.
+
+This release includes:
+
+- `/backup_list`
+- `/send_latest_report`
+- `python -m marcbot report send-latest`
+- scheduled Telegram delivery of the latest daily status report
+- expanded `/timer_status` coverage for the report-delivery timer
+- documentation updates for the reporting and delivery flow
+
+The reporting chain is now:
+
+    23:30 America/New_York — app-level backup
+    23:45 America/New_York — daily status report generation
+    23:50 America/New_York — latest report Telegram delivery
+
 ## 2026-05-01 — Scheduled report delivery timer added
 
 Added dedicated systemd units for scheduled Telegram delivery of the latest daily status report.

@@ -14,7 +14,7 @@ Initial goals:
 
 ## Current baseline
 
-MarcBot 0.2.0 is the first stable personal-operations baseline.
+MarcBot 0.2.1 is the first stable personal-operations baseline.
 
 Core capabilities:
 
@@ -27,4 +27,17 @@ Core capabilities:
 - GitHub-backed source workflow
 
 MarcBot intentionally avoids arbitrary shell execution from Telegram.
+## Current operational baseline
+
+MarcBot 0.2.1 is the scheduled reporting baseline.
+
+It includes:
+
+- app-level backup visibility
+- recent backup listing
+- daily local status report generation
+- manual latest-report sending from Telegram
+- CLI latest-report Telegram sending
+- scheduled daily report Telegram delivery
+- timer visibility for backup, report generation, and report delivery
 
