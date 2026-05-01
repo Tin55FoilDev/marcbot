@@ -11,6 +11,7 @@ from marcbot.config import DEFAULT_CONFIG_PATH, load_config
 from marcbot.errors import MarcBotError
 from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
+from marcbot.reports import write_daily_status_report
 from marcbot.telegram_bot import run_foreground_bot
 
 LOGGER = logging.getLogger(__name__)
@@ -33,6 +34,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("doctor", help="check MarcBot runtime environment")
     subparsers.add_parser("config-check", help="validate MarcBot local configuration")
     subparsers.add_parser("telegram", help="run Telegram bot in foreground polling mode")
+
+    report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
+    report_subparsers = report_parser.add_subparsers(dest="report_name")
+    report_subparsers.add_parser("daily-status", help="write daily status Markdown report")
+
 
     return parser
 
@@ -105,6 +111,16 @@ def main(argv: list[str] | None = None) -> int:
             LOGGER.info("Starting Telegram foreground bot")
             run_foreground_bot(config)
             return 0
+
+        if args.command == "report":
+            if args.report_name == "daily-status":
+                result = write_daily_status_report()
+                print(result.message)
+                LOGGER.info("Report generated: %s", result.path)
+                return 0
+
+            parser.print_help()
+            return 1
 
         parser.print_help()
         return 0
