@@ -13,6 +13,7 @@ from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
 from marcbot.report_sender import send_latest_report
 from marcbot.reports import write_daily_status_report
+from marcbot.source_config import format_source_config_summary, load_source_config
 from marcbot.source_monitor import write_source_monitor_report
 from marcbot.telegram_bot import run_foreground_bot
 
@@ -52,6 +53,10 @@ def build_parser() -> argparse.ArgumentParser:
     source_monitor_subparsers.add_parser(
         "run",
         help="write source monitor Markdown report",
+    )
+    source_monitor_subparsers.add_parser(
+        "config-check",
+        help="validate source monitor configuration",
     )
 
     return parser
@@ -127,6 +132,12 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "source-monitor":
+            if args.source_monitor_command == "config-check":
+                config = load_source_config()
+                print(format_source_config_summary(config))
+                LOGGER.info("Source monitor config checked: %s", config.path)
+                return 0
+
             if args.source_monitor_command == "run":
                 result = write_source_monitor_report()
                 print(result.message)
