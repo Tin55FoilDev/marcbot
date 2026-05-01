@@ -13,6 +13,7 @@ from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
 from marcbot.report_sender import send_latest_report
 from marcbot.reports import write_daily_status_report
+from marcbot.source_monitor import write_source_monitor_report
 from marcbot.telegram_bot import run_foreground_bot
 
 LOGGER = logging.getLogger(__name__)
@@ -41,6 +42,17 @@ def build_parser() -> argparse.ArgumentParser:
     report_subparsers.add_parser("daily-status", help="write daily status Markdown report")
     report_subparsers.add_parser("send-latest", help="send newest daily status report")
 
+    source_monitor_parser = subparsers.add_parser(
+        "source-monitor",
+        help="run allowlisted source monitor tasks",
+    )
+    source_monitor_subparsers = source_monitor_parser.add_subparsers(
+        dest="source_monitor_command",
+    )
+    source_monitor_subparsers.add_parser(
+        "run",
+        help="write source monitor Markdown report",
+    )
 
     return parser
 
@@ -113,6 +125,16 @@ def main(argv: list[str] | None = None) -> int:
             LOGGER.info("Starting Telegram foreground bot")
             run_foreground_bot(config)
             return 0
+
+        if args.command == "source-monitor":
+            if args.source_monitor_command == "run":
+                result = write_source_monitor_report()
+                print(result.message)
+                LOGGER.info("Source monitor report generated: %s", result.path)
+                return 0
+
+            parser.print_help()
+            return 1
 
         if args.command == "report":
             if args.report_name == "daily-status":
