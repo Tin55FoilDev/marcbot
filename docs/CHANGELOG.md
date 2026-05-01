@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-05-01 — Daily status report timer added
+
+Added systemd scheduling for the local daily status report.
+
+New systemd units:
+
+- `marcbot-daily-status-report.service`
+- `marcbot-daily-status-report.timer`
+
+Schedule:
+
+- `11:45 PM America/New_York`
+
+Behavior:
+
+- runs `python -m marcbot report daily-status`
+- writes a Markdown report to `/srv/marcbot/workspace/reports`
+- does not call AI models
+- does not send Telegram messages
+
 ## 2026-05-01 — Restore drill documentation added
 
 Added restore readiness documentation.

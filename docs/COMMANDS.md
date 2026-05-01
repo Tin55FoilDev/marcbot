@@ -319,3 +319,24 @@ Possible future commands:
 - `/update-check` — check for safe/manual update candidates
 
 General `/send` should not accept arbitrary absolute paths.
+
+## Scheduled daily status report
+
+The report is local-only at this stage. It does not call an AI model or send Telegram messages.
+
+The daily status report is scheduled by systemd:
+
+    marcbot-daily-status-report.timer
+
+Schedule:
+
+    11:45 PM America/New_York
+
+Manual run:
+
+    sudo systemctl start marcbot-daily-status-report.service
+
+Timer check:
+
+    sudo systemctl status marcbot-daily-status-report.timer --no-pager
+    sudo systemctl list-timers --all | grep -E 'marcbot-daily-status-report|NEXT'

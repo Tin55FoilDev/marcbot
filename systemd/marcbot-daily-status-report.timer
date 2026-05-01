@@ -1,0 +1,11 @@
+[Unit]
+Description=Run MarcBot daily status report
+
+[Timer]
+OnCalendar=*-*-* 23:45:00 America/New_York
+Persistent=true
+RandomizedDelaySec=2m
+Unit=marcbot-daily-status-report.service
+
+[Install]
+WantedBy=timers.target

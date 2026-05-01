@@ -361,3 +361,18 @@ MarcBot should not yet:
 - expose config secrets
 - expose SSH keys or private credentials
 - provide multi-user behavior
+    
+## Daily status report timer
+
+Status: complete.
+
+The local daily status report is scheduled with:
+
+    marcbot-daily-status-report.timer
+
+Schedule:
+
+    11:45 PM America/New_York
+
+The timer runs after the daily app-level backup timer so the report can include recent backup status.
+
