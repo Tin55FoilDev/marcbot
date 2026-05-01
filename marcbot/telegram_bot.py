@@ -12,6 +12,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 from marcbot import __version__
 from marcbot.about import format_about_message
+from marcbot.backup_list import format_backup_list_message
 from marcbot.backup_status import format_backup_status_message
 from marcbot.config import MarcBotConfig
 from marcbot.disk import format_disk_report
@@ -322,6 +323,22 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text(status_text)
 
 
+async def backup_list_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /backup_list."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /backup_list from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /backup_list for chat_id=%s", chat_id)
+
+    if update.message is not None:
+        await update.message.reply_text(format_backup_list_message())
+
+
 async def backup_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /backup_status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -451,6 +468,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/send <workspace-relative-path> - send a file from /srv/marcbot/workspace\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
+        "/backup_list - list recent MarcBot app-level backups\n"
         "/backup_status - show latest MarcBot app-level backup status\n"
         "/timer_status - show MarcBot scheduled timer status\n"
         "/report_status - show latest daily status report status\n"
@@ -520,6 +538,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("send", send_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
+    application.add_handler(CommandHandler("backup_list", backup_list_command))
     application.add_handler(CommandHandler("backup_status", backup_status_command))
     application.add_handler(CommandHandler("timer_status", timer_status_command))
     application.add_handler(CommandHandler("report_status", report_status_command))

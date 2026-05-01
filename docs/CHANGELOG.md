@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-05-01 — `/backup_list` command added
+
+Added a read-only Telegram command for recent MarcBot app-level backups.
+
+New command:
+
+- `/backup_list`
+
+Behavior:
+
+- lists recent `marcbot-backup-*.tar.gz` archives
+- shows size, modified time, age, and checksum-file presence
+- reports healthy or warning state
+- does not create, delete, rotate, restore, or verify backups
+
 ## 2026-05-01 — `/timer_status` command added
 
 Added a read-only Telegram command for approved MarcBot systemd timers.

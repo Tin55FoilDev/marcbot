@@ -312,6 +312,23 @@ It reports enablement, active state, next run, last trigger, paired service resu
 It does not enable, disable, start, stop, or modify timers.
 
 
+## Backup list command
+
+Status: complete.
+
+MarcBot includes a read-only Telegram backup list command:
+
+    /backup_list
+
+The command summarizes recent retained app-level backup archives under:
+
+    /srv/marcbot/backups
+
+It reports filename, size, modified time, age, checksum-file presence, and overall health.
+
+It does not create, delete, rotate, restore, or verify backups.
+
+
 ## Longer-term roadmap
 
 ### Workspace file workflow

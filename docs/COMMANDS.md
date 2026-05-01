@@ -196,6 +196,21 @@ Shows basic MarcBot service status from the bot's perspective.
 
 This is a lightweight status command and is separate from `/service`.
 
+### `/backup_list`
+
+Lists recent MarcBot app-level backup archives.
+
+Reports:
+
+- newest retained backup archives
+- archive size
+- modified time
+- backup age
+- whether the matching `.sha256` file is present
+- overall health or warning state
+
+This command is read-only. It does not create, delete, rotate, restore, or verify backups.
+
 ### `/backup_status`
 
 Shows read-only status for the latest MarcBot app-level backup.
