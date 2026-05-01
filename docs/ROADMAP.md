@@ -254,6 +254,28 @@ Recommended next phase:
 - update-check visibility
 
 
+## Restore readiness
+
+Status: complete.
+
+MarcBot includes a restore drill document:
+
+    docs/RESTORE.md
+
+Telegram access:
+
+    /doc restore
+    /senddoc restore
+
+The document covers recovery from:
+
+- Proxmox VM backup
+- MarcBot app-level backup tarball
+- GitHub repository
+
+It also includes post-restore validation commands and success criteria.
+
+
 ## Longer-term roadmap
 
 ### Workspace file workflow

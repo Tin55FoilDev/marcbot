@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-05-01 — Restore drill documentation added
+
+Added restore readiness documentation.
+
+New document:
+
+- `docs/RESTORE.md`
+
+Telegram access:
+
+- `/doc restore`
+- `/senddoc restore`
+
+Coverage:
+
+- recovery decision guide
+- Proxmox VM restore
+- MarcBot app-level tarball restore
+- GitHub source restore
+- systemd unit restore notes
+- post-restore validation checklist
+- backup verification after restore
+- success criteria
+- restore safety warnings
+
 ## 0.2.0 — First stable operational baseline
 
 MarcBot now has a stable personal-operations baseline.

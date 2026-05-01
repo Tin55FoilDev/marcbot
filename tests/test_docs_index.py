@@ -18,6 +18,7 @@ def test_approved_docs_contains_expected_names() -> None:
     names = {entry.name for entry in APPROVED_DOCS}
 
     assert names == {
+        "restore",
         "deploy",
         "roadmap",
         "security",

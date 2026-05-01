@@ -66,6 +66,11 @@ Current checks:
 
 The command is fixed to `/srv/marcbot/app`. It does not accept arbitrary repository paths or arbitrary Git arguments.
 
+Restore drill access:
+
+    /doc restore
+    /senddoc restore
+
 ### `/docs`
 
 Lists approved MarcBot documentation names.

@@ -31,6 +31,7 @@ class SendDocResult:
 
 
 APPROVED_DOCS: tuple[DocEntry, ...] = (
+    DocEntry("restore", "Restore drill", DOCS_DIR / "RESTORE.md"),
     DocEntry("deploy", "Deployment runbook", DOCS_DIR / "DEPLOY.md"),
     DocEntry("roadmap", "Project roadmap", DOCS_DIR / "ROADMAP.md"),
     DocEntry("security", "Security notes", DOCS_DIR / "SECURITY.md"),
