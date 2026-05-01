@@ -20,6 +20,7 @@ from marcbot.docs_index import format_doc_message, format_docs_index, validate_s
 from marcbot.errors import MarcBotError
 from marcbot.git_status import format_git_report
 from marcbot.health import format_health_report, run_health_checks
+from marcbot.latest_report import validate_latest_daily_status_report
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.report_status import format_report_status_message
 from marcbot.service_status import format_service_report
@@ -266,6 +267,41 @@ async def ls_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text(listing_text)
 
 
+async def send_latest_report_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /send_latest_report."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /send_latest_report from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    result = validate_latest_daily_status_report()
+    LOGGER.info(
+        "Handled /send_latest_report for chat_id=%s ok=%s path=%s",
+        chat_id,
+        result.ok,
+        result.path if result.path is not None else "<none>",
+    )
+
+    if update.message is None:
+        return
+
+    if not result.ok or result.path is None:
+        await update.message.reply_text(result.message)
+        return
+
+    await update.message.reply_document(
+        document=result.path,
+        filename=result.path.name,
+        caption=f"🤖 MarcBot latest daily status report: {result.path.name}",
+    )
+
+
 async def send_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /send <workspace-relative-path>."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -465,6 +501,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/doc <name> - show an approved MarcBot doc preview\n"
         "/senddoc <name> - send an approved MarcBot doc as a file\n"
         "/ls - list workspace root entries\n"
+        "/send_latest_report - send the newest daily status report\n"
         "/send <workspace-relative-path> - send a file from /srv/marcbot/workspace\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
@@ -535,6 +572,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("doc", doc_command))
     application.add_handler(CommandHandler("senddoc", senddoc_command))
     application.add_handler(CommandHandler("ls", ls_command))
+    application.add_handler(CommandHandler("send_latest_report", send_latest_report_command))
     application.add_handler(CommandHandler("send", send_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))

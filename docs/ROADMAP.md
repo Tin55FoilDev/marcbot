@@ -329,6 +329,23 @@ It reports filename, size, modified time, age, checksum-file presence, and overa
 It does not create, delete, rotate, restore, or verify backups.
 
 
+## Send latest report command
+
+Status: complete.
+
+MarcBot includes a user-triggered Telegram command:
+
+    /send_latest_report
+
+The command sends the newest generated daily status report from:
+
+    /srv/marcbot/workspace/reports
+
+It does not generate reports, call AI models, install timers, or automatically send reports.
+
+This is a bridge step before optional automatic Telegram delivery.
+
+
 ## Longer-term roadmap
 
 ### Workspace file workflow

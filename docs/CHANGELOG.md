@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-05-01 — `/send_latest_report` command added
+
+Added a user-triggered Telegram command to send the newest daily status report.
+
+New command:
+
+- `/send_latest_report`
+
+Behavior:
+
+- finds the newest `daily-status-*.md` file under `/srv/marcbot/workspace/reports`
+- sends that report as a Telegram document
+- reports a clean error if no report exists
+- does not generate reports
+- does not call AI models
+- does not install timers
+- does not automatically send reports
+
 ## 2026-05-01 — `/backup_list` command added
 
 Added a read-only Telegram command for recent MarcBot app-level backups.
