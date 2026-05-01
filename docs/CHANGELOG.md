@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.2.0 — First stable operational baseline
+
+MarcBot now has a stable personal-operations baseline.
+
+Highlights:
+
+- Telegram command handling with allowlisted chat authorization
+- `/ping`, `/version`, `/help`, `/status`, and `/health`
+- read-only diagnostics:
+  - `/uptime`
+  - `/disk`
+  - `/service`
+  - `/git`
+  - `/logs`
+  - `/tail <app|service>`
+- documentation access:
+  - `/docs`
+  - `/doc <name>`
+  - `/senddoc <name>`
+- safe workspace discovery and retrieval:
+  - `/ls [workspace-relative-directory]`
+  - `/send <workspace-relative-path>`
+- app-level backup support:
+  - manual backup script
+  - daily systemd backup timer at 23:30 America/New_York
+  - `/backup_status`
+- GitHub-backed source workflow
+- deployment, security, architecture, command, roadmap, and changelog documentation
+
+Safety properties:
+
+- no arbitrary shell execution from Telegram
+- read-only operational commands by default
+- workspace paths are constrained under `/srv/marcbot/workspace`
+- documentation access is allowlisted
+- backup status is read-only
+- Telegram service runs as the non-sudo `marc` user
+- systemd hardening enabled for runtime services
+
+This release is the recommended restore/checkpoint baseline after the Proxmox backup.
+
 ## 2026-05-01 — `/ls` expanded to support workspace-relative directories
 
 Expanded the safe workspace listing command.

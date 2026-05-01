@@ -226,6 +226,34 @@ Future expansion:
 
 - `/tree <workspace-relative-directory>`
 
+## 0.2.0 baseline
+
+Status: complete.
+
+MarcBot 0.2.0 is the first stable operational baseline.
+
+Completed baseline capabilities:
+
+- Telegram command interface
+- allowlisted chat authorization
+- health and service diagnostics
+- Git status visibility
+- log and journal tails
+- allowlisted documentation access
+- safe workspace listing and file retrieval
+- manual app-level backups
+- daily systemd app-level backup timer
+- read-only backup status reporting
+- GitHub-backed source workflow
+
+Recommended next phase:
+
+- small read-only operator conveniences
+- restore drill documentation
+- scheduled report framework
+- update-check visibility
+
+
 ## Longer-term roadmap
 
 ### Workspace file workflow
