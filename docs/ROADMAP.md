@@ -1,329 +1,276 @@
 # MarcBot Roadmap
 
-This roadmap captures the planned direction for MarcBot.
+MarcBot is Marc's personal-only Telegram automation bot.
 
-MarcBot is intended to be a personal-only, stable, understandable replacement for the parts of OpenClaw that are most useful to Marc.
+The project goal is to build a stable, simple, secure replacement for OpenClaw-style personal operations. Development favors careful incremental progress over speed.
 
-The near-term priority is not feature volume. The priority is a reliable foundation that is easy to test, restore, update, and reason about.
+## Design priorities
 
-## Guiding principles
+MarcBot should be:
 
-- Personal-only; no multi-user design unless explicitly needed later.
-- Prefer simple, inspectable Python over complex frameworks.
-- Make small, reversible changes.
-- Add tests where practical.
-- Keep runtime secrets outside Git.
-- Avoid arbitrary shell execution from Telegram commands.
-- Avoid arbitrary file reads from Telegram commands.
-- Prefer fixed, narrow commands over open-ended powerful commands.
-- Use standard Linux/systemd behavior where possible.
-- Keep logs useful but avoid exposing secrets.
-- Keep documentation current as the system evolves.
+- Personal-only
+- Stable across server reboots
+- Easy to inspect from Telegram
+- Easy to back up and restore
+- Small in dependency footprint
+- Explicit in error handling
+- Safe by default
+- Well documented
+- Testable before each deployment step
 
-## Current completed baseline
+## Current baseline
 
-MarcBot currently has:
+MarcBot currently runs as a systemd service:
 
-- Python package structure under `/srv/marcbot/app`
-- GitHub remote
+    marcbot-telegram.service
+
+Application root:
+
+    /srv/marcbot/app
+
+Runtime root:
+
+    /srv/marcbot
+
+Git repository:
+
+    /srv/marcbot/app
+
+Current Telegram command set:
+
+- `/ping`
+- `/version`
+- `/uptime`
+- `/disk`
+- `/service`
+- `/git`
+- `/docs`
+- `/doc <name>`
+- `/status`
+- `/health`
+- `/logs`
+- `/help`
+
+## Completed phases
+
+### Phase 1 — Foundation
+
+Completed:
+
+- Project directory layout under `/srv/marcbot`
+- Python package structure
 - Virtual environment
-- Runtime directory structure under `/srv/marcbot`
-- Local TOML config outside Git
-- Config validation
 - CLI entry point
-- `doctor` command
+- Runtime path helpers
+- Configuration loader
+- Explicit MarcBot error type
+- Basic validation script
+- Initial unit tests
+- GitHub repository setup
+
+### Phase 2 — Telegram service
+
+Completed:
+
 - Telegram bot integration
+- Approved chat ID allowlist
+- Foreground polling mode
 - systemd service
-- Telegram authorization by allowed chat ID
-- Telegram commands:
-  - `/ping`
-  - `/version`
-  - `/status`
-  - `/health`
-  - `/logs`
-  - `/help`
-- Rotating file logging
-- Safe `/logs` redaction
-- pytest test suite
-- Ruff linting
-- Deployment runbook
+- systemd hardening
+- Service enable/start validation
 
-## Phase 1: Foundation hardening
+### Phase 3 — Operator visibility
 
-Goal: make the current baseline boring, dependable, and easy to recover.
+Completed:
 
-Planned work:
+- `/ping`
+- `/version`
+- `/status`
+- `/health`
+- `/logs`
+- rotating application log file
+- token redaction for log output
 
-1. Keep `DEPLOY.md` current.
-2. Add this roadmap.
-3. Add `ARCHITECTURE.md` describing the major modules and data flow.
-4. Add `SECURITY.md` describing token handling, Telegram authorization, and command safety rules.
-5. Add `CHANGELOG.md` for human-readable project milestones.
-6. Add a simple pre-deploy checklist script or command.
-7. Add a backup/restore note once the VM backup pattern is finalized.
+### Phase 4 — Read-only operations commands
 
-Definition of done:
-
-- A future restore can be validated using only the repo docs and local config.
-- The current command surface is documented.
-- The safety model is documented.
-- No secrets are committed.
-
-## Phase 2: Operator convenience commands
-
-Goal: add useful read-only Telegram commands that help Marc operate the bot.
-
-Candidate commands:
+Completed:
 
 - `/uptime`
-  - Show host uptime and MarcBot process uptime if available.
 - `/disk`
-  - Show disk usage for `/srv/marcbot` and root filesystem.
-- `/memory`
-  - Show basic memory usage.
 - `/service`
-  - Show whether `marcbot-telegram.service` is active and enabled.
 - `/git`
-  - Show current branch, short commit hash, and whether the repo is dirty.
-- `/docs`
-  - Show a list of available local documentation files.
 
-Safety rules:
+These commands provide quick remote visibility into runtime, disk, service, and repository state.
 
-- Read-only only.
-- No arbitrary shell input.
-- No arbitrary path input.
-- Fixed commands with fixed data sources.
-- Output should be short enough for Telegram.
+### Phase 5 — Documentation from Telegram
 
-Definition of done:
-
-- Each command has tests where practical.
-- Each command is included in `/help`.
-- Each command logs success/failure without leaking secrets.
-
-## Phase 3: Local document access
-
-Goal: allow MarcBot to safely expose selected project documentation through Telegram.
-
-Candidate features:
+Completed:
 
 - `/docs`
-  - List approved docs in `/srv/marcbot/app/docs`.
-- `/doc deploy`
-  - Return a summarized or chunked version of `DEPLOY.md`.
-- `/doc roadmap`
-  - Return a summarized or chunked version of `ROADMAP.md`.
-- `/doc security`
-  - Return a summarized or chunked version of `SECURITY.md`.
+- `/doc <name>`
+- `COMMANDS.md`
+- approved documentation allowlist
 
-Safety rules:
+Current approved documentation names:
 
-- Only read from an explicit allowlist.
-- Do not allow arbitrary filenames.
-- Do not allow path traversal.
-- Keep Telegram responses bounded.
-- Prefer summaries or first sections instead of entire long files.
+- `deploy`
+- `roadmap`
+- `security`
+- `architecture`
+- `changelog`
+- `commands`
 
-Definition of done:
+## Near-term roadmap
 
-- Safe doc allowlist exists.
-- Tests cover allowed and disallowed doc requests.
-- Telegram output remains readable.
+### 1. `/senddoc <name>`
 
-## Phase 4: Scheduled reports
+Send an approved documentation file as a Telegram attachment.
 
-Goal: rebuild selected OpenClaw-style scheduled reports in a simpler, explicit MarcBot way.
+Safety model:
 
-Candidate reports:
+- approved docs only
+- no arbitrary paths
+- no shell execution
+- bounded file size
+- log every send request
 
-- Daily health summary
-- AI news digest
-- Yankees/baseball report
-- Local model update watcher
-- System backup status report
-- Stock research project inputs
+### 2. `/send <workspace-relative-path>`
 
-Design direction:
+Send a file from `/srv/marcbot/workspace`.
 
-- Use systemd timers or cron for scheduling.
-- Keep report scripts explicit and testable.
-- Write reports to `/srv/marcbot/workspace` or a dedicated reports directory.
-- Send Telegram notifications only after report generation succeeds.
-- Keep failed report errors concise and logged.
-- Avoid hiding report failures.
+Safety model:
 
-Definition of done:
+- workspace-relative paths only
+- reject absolute paths
+- reject `..`
+- resolve real path and verify it remains under `/srv/marcbot/workspace`
+- reject non-regular files
+- reject oversized files
+- log every send request
 
-- At least one scheduled report runs reliably.
-- Report output is saved locally.
-- Telegram notification includes success/failure and location.
-- Logs provide enough detail to debug failures.
+### 3. `/tail <approved-log-name>`
 
-## Phase 5: Safe command execution helpers
+Show recent lines from approved logs.
 
-Goal: add narrow helper actions without opening the door to arbitrary shell control.
+Possible approved names:
 
-Possible helpers:
+- `app`
+- `service`
 
-- Run the MarcBot validation script.
-- Restart MarcBot service.
-- Show service status.
-- Trigger a known report job.
-- Trigger a known backup check.
+Safety model:
 
-Safety rules:
+- approved names only
+- fixed file or command mapping
+- bounded output
+- redaction where appropriate
 
-- Every action must be an explicit allowlisted function.
-- No raw command text from Telegram.
-- Destructive or risky actions should require confirmation.
-- Confirmation should expire quickly.
-- All actions should be logged.
-- Errors should be operator-friendly.
+### 4. Backup visibility
 
-Definition of done:
+Possible future command:
 
-- There is an action allowlist.
-- Tests cover action routing.
-- Restart/status helpers work reliably.
-- No arbitrary command execution exists.
+    /backup-status
 
-## Phase 6: Memory and continuity
+Goal:
 
-Goal: build a simple, local memory system that supports continuity without becoming fragile.
+- show latest backup marker or report
+- no backup execution at first
+- read-only status only
 
-Initial design:
+### 5. Safe update helpers
 
-- Plain Markdown daily notes.
-- Curated `MEMORY.md`.
-- Explicit update commands or scheduled maintenance.
-- Later optional search index.
-- Avoid complex vector dependencies until the foundation is stable.
-
-Possible files:
-
-- `/srv/marcbot/workspace/memory/daily/YYYY-MM-DD.md`
-- `/srv/marcbot/workspace/memory/MEMORY.md`
-- `/srv/marcbot/workspace/memory/INDEX.md`
-
-Candidate commands:
-
-- `/note <text>`
-  - Append a timestamped note to today's daily memory file.
-- `/memory`
-  - Show curated memory summary.
-- `/remember`
-  - Later, support explicit durable memory updates.
-
-Safety rules:
-
-- Do not store secrets.
-- Avoid storing sensitive personal data unless explicitly requested.
-- Keep memory files inspectable and editable.
-- Prefer Markdown over databases at first.
-
-Definition of done:
-
-- Daily notes can be appended safely.
-- Memory files are easy to back up.
-- Memory behavior is documented.
-
-## Phase 7: Model/backend integrations
-
-Goal: optionally connect MarcBot to local or remote model backends after the bot foundation is stable.
-
-Possible integrations:
-
-- OpenAI API or OAuth-style backend if appropriate.
-- LM Studio OpenAI-compatible API on the Mac mini.
-- vLLM or llama.cpp server if selected later.
-- Local summarization for reports or docs.
-
-Design direction:
-
-- Keep model calls behind a small provider abstraction.
-- Configure endpoints in local config, not Git.
-- Add timeouts.
-- Add clear error messages.
-- Log model failures without logging prompts that may contain sensitive content.
-- Keep non-model commands functional even when models are unavailable.
-
-Definition of done:
-
-- One simple model-backed command works.
-- Model failures do not crash the Telegram service.
-- Timeouts and fallback behavior are clear.
-
-## Phase 8: Update mechanism
-
-Goal: create a simple, controlled way to update MarcBot.
-
-Candidate workflow:
-
-1. Pull latest Git changes.
-2. Install/update dependencies.
-3. Run checks.
-4. Restart service.
-5. Run Telegram validation.
-6. Roll back if validation fails.
-
-Possible command:
+Possible future commands:
 
 - `/update-check`
-  - Show current branch/commit and whether local repo differs from origin.
-- Later:
-  - `/update`
-  - Pull and deploy only if explicitly confirmed.
+- `/version-check`
 
-Safety rules:
+Goal:
 
-- No automatic background updates by default.
-- No update without validation.
-- Keep rollback steps documented.
-- Avoid changing system packages from Telegram.
+- check for update candidates
+- report but do not auto-install
+- keep operator in control
 
-Definition of done:
+## Longer-term roadmap
 
-- Manual update process is documented.
-- Update check is read-only.
-- Any future update action has confirmation and rollback guidance.
+### Workspace file workflow
 
-## Preferred implementation sequence
+MarcBot should eventually help Marc move useful files off the Ubuntu server to his MacBook without broad SSH/SCP friction.
 
-Near-term sequence:
+Preferred path:
 
-1. `ROADMAP.md`
-2. `ARCHITECTURE.md`
-3. `SECURITY.md`
-4. `CHANGELOG.md`
-5. `/uptime`
-6. `/disk`
-7. `/service`
-8. `/git`
-9. `/docs`
-10. Safe document reading
-11. First scheduled report
+- generate or store files under `/srv/marcbot/workspace`
+- retrieve via safe Telegram file send
+- avoid arbitrary absolute path access
 
-## Stop conditions
+### Scheduled reports
 
-Pause feature work if any of these occur:
+Potential scheduled report categories:
 
-- Telegram service becomes unreliable.
-- Tests fail and the cause is unclear.
-- Logs expose secrets.
-- Commands become too broad or powerful.
-- Restore/deploy process becomes unclear.
-- The bot starts accumulating undocumented behavior.
+- system health summary
+- disk warning
+- backup summary
+- AI/news/source checks
+- project status report
 
-## Current operating rule
+Cron or systemd timers should be preferred over complex internal schedulers unless there is a strong reason otherwise.
+
+### Local memory and notes
+
+Possible future direction:
+
+- daily notes
+- project memory files
+- curated summaries
+- searchable local notes
+
+This should be added slowly and with clear file ownership and backup behavior.
+
+### Web access
+
+Web access should be added only when there is a clear use case.
+
+Possible future use cases:
+
+- update checks
+- release note summaries
+- source monitoring
+
+Web-enabled commands should clearly distinguish between local state and internet-derived state.
+
+## Development rules
 
 For each new feature:
 
-1. Add the smallest useful version.
-2. Add tests where practical.
-3. Run `./scripts/check.sh`.
-4. Restart the service.
-5. Test in Telegram.
-6. Inspect logs.
-7. Commit and push.
-8. Update docs if behavior changed.
+1. Add helper module when practical.
+2. Add tests for helper logic.
+3. Wire Telegram command separately.
+4. Update `/help` if user-visible.
+5. Update docs when behavior changes.
+6. Run `./scripts/check.sh`.
+7. Restart service.
+8. Test in Telegram.
+9. Check logs.
+10. Commit and push.
+11. Verify `/git` returns clean.
+
+## Current preferred next steps
+
+Recommended order:
+
+1. `/senddoc <name>`
+2. safe `/send <workspace-relative-path>`
+3. `/tail <approved-log-name>`
+4. backup visibility
+5. update-check visibility
+
+## Non-goals for now
+
+MarcBot should not yet:
+
+- run arbitrary shell commands from Telegram
+- send arbitrary absolute server paths
+- modify systemd state from Telegram
+- edit files from Telegram
+- auto-update itself
+- expose config secrets
+- expose SSH keys or private credentials
+- provide multi-user behavior

@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-04-30 — Roadmap and architecture refresh
+
+Updated documentation to match the current MarcBot command baseline.
+
+Changed docs:
+
+- `ROADMAP.md`
+- `ARCHITECTURE.md`
+
+Highlights:
+
+- documented current Telegram command set
+- documented completed phases
+- documented near-term roadmap
+- documented helper-module architecture
+- documented command safety pattern
+- documented future safe file-send model
+
 ## 2026-04-30 — Telegram operator command baseline
 
 Added and validated the current MarcBot Telegram operator command set:
