@@ -1,3 +1,71 @@
+# Changelog
+
+## 2026-04-30 — Telegram operator command baseline
+
+Added and validated the current MarcBot Telegram operator command set:
+
+- `/ping`
+- `/version`
+- `/uptime`
+- `/disk`
+- `/service`
+- `/git`
+- `/docs`
+- `/doc <name>`
+- `/status`
+- `/health`
+- `/logs`
+- `/help`
+
+Documentation updates:
+
+- Added `COMMANDS.md`
+- Added `commands` to the approved `/docs` and `/doc <name>` allowlist
+- Updated tests for the expanded documentation index
+
+Safety notes:
+
+- Commands remain personal-only through Telegram chat allowlisting
+- `/doc <name>` uses an approved documentation allowlist
+- `/git` is fixed to `/srv/marcbot/app`
+- `/service` uses fixed read-only `systemctl` queries
+- `/disk` uses Python standard-library disk usage helpers
+- `/logs` uses fixed log-path reading with token redaction
+
+
+## 2026-04-30 — Telegram operator command baseline
+
+Added and validated the current MarcBot Telegram operator command set:
+
+- `/ping`
+- `/version`
+- `/uptime`
+- `/disk`
+- `/service`
+- `/git`
+- `/docs`
+- `/doc <name>`
+- `/status`
+- `/health`
+- `/logs`
+- `/help`
+
+Documentation updates:
+
+- Added `COMMANDS.md`
+- Added `commands` to the approved `/docs` and `/doc <name>` allowlist
+- Updated tests for the expanded documentation index
+
+Safety notes:
+
+- Commands remain personal-only through Telegram chat allowlisting
+- `/doc <name>` uses an approved documentation allowlist
+- `/git` is fixed to `/srv/marcbot/app`
+- `/service` uses fixed read-only `systemctl` queries
+- `/disk` uses Python standard-library disk usage helpers
+- `/logs` uses fixed log-path reading with token redaction
+
+
 # MarcBot Changelog
 
 This changelog records human-readable MarcBot milestones.

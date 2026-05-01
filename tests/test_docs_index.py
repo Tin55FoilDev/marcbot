@@ -21,6 +21,7 @@ def test_approved_docs_contains_expected_names() -> None:
         "security",
         "architecture",
         "changelog",
+        "commands",
     }
 
 
@@ -44,6 +45,7 @@ def test_format_docs_index() -> None:
     assert "- security: Security notes" in message
     assert "- architecture: Architecture notes" in message
     assert "- changelog: Changelog" in message
+    assert "- commands: Telegram command reference" in message
     assert "Use: /doc <name>" in message
 
 

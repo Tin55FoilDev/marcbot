@@ -26,6 +26,7 @@ APPROVED_DOCS: tuple[DocEntry, ...] = (
     DocEntry("security", "Security notes", DOCS_DIR / "SECURITY.md"),
     DocEntry("architecture", "Architecture notes", DOCS_DIR / "ARCHITECTURE.md"),
     DocEntry("changelog", "Changelog", DOCS_DIR / "CHANGELOG.md"),
+    DocEntry("commands", "Telegram command reference", DOCS_DIR / "COMMANDS.md"),
 )
 
 
