@@ -1,56 +1,97 @@
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from marcbot.source_config import SourceConfig, SourceDefinition
-from marcbot.source_monitor import build_source_monitor_report, write_source_monitor_report
+from marcbot.source_monitor import (
+    SourceFetchResult,
+    build_source_monitor_report,
+    fetch_configured_sources,
+    fetch_source_metadata,
+    write_source_monitor_report,
+)
 
 
-def test_build_source_monitor_report_includes_scaffold_status() -> None:
+def make_source(
+    name: str = "openai-news",
+    kind: str = "web_page",
+    url: str = "https://openai.com/news/",
+    enabled: bool = True,
+) -> SourceDefinition:
+    return SourceDefinition(name=name, kind=kind, url=url, enabled=enabled)
+
+
+def test_build_source_monitor_report_includes_status() -> None:
     now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
-    config = SourceConfig(path=Path("/srv/marcbot/config/sources.toml"), exists=False, sources=())
+    config = SourceConfig(
+        path=Path("/srv/marcbot/config/sources.toml"),
+        exists=False,
+        sources=(),
+    )
 
-    report = build_source_monitor_report(now=now, config=config)
+    report = build_source_monitor_report(now=now, config=config, fetch_results=())
 
     assert "# MarcBot Source Monitor - 2026-05-01" in report
     assert "MarcBot version:" in report
-    assert "Source monitor config integration is installed." in report
-    assert "No sources were fetched in this version." in report
+    assert "Source monitor bounded fetch metadata is installed." in report
+    assert "Fetch timeout seconds:" in report
+    assert "Max fetch bytes per source:" in report
 
 
 def test_build_source_monitor_report_handles_empty_config() -> None:
     now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
-    config = SourceConfig(path=Path("/srv/marcbot/config/sources.toml"), exists=False, sources=())
+    config = SourceConfig(
+        path=Path("/srv/marcbot/config/sources.toml"),
+        exists=False,
+        sources=(),
+    )
 
-    report = build_source_monitor_report(now=now, config=config)
+    report = build_source_monitor_report(now=now, config=config, fetch_results=())
 
     assert "## Configured sources" in report
     assert "Config exists: false" in report
     assert "Configured sources: 0" in report
     assert "No sources are configured." in report
+    assert "## Fetch results" in report
+    assert "No sources were fetched." in report
 
 
-def test_build_source_monitor_report_lists_configured_sources() -> None:
+def test_build_source_monitor_report_lists_configured_sources_and_fetch_results() -> None:
     now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
+    source = make_source()
+    disabled = make_source(
+        name="example-disabled",
+        kind="github_releases",
+        url="https://github.com/example/project/releases",
+        enabled=False,
+    )
     config = SourceConfig(
         path=Path("/srv/marcbot/config/sources.toml"),
         exists=True,
-        sources=(
-            SourceDefinition(
-                name="openai-news",
-                kind="web_page",
-                url="https://openai.com/news/",
-                enabled=True,
-            ),
-            SourceDefinition(
-                name="example-disabled",
-                kind="github_releases",
-                url="https://github.com/example/project/releases",
-                enabled=False,
-            ),
+        sources=(source, disabled),
+    )
+    fetch_results = (
+        SourceFetchResult(
+            source=source,
+            fetched=True,
+            status=200,
+            bytes_read=1234,
+            error=None,
+        ),
+        SourceFetchResult(
+            source=disabled,
+            fetched=False,
+            status=None,
+            bytes_read=0,
+            error="disabled",
         ),
     )
 
-    report = build_source_monitor_report(now=now, config=config)
+    report = build_source_monitor_report(
+        now=now,
+        config=config,
+        fetch_results=fetch_results,
+    )
 
     assert "Config exists: true" in report
     assert "Configured sources: 2" in report
@@ -58,15 +99,104 @@ def test_build_source_monitor_report_lists_configured_sources() -> None:
     assert "  - kind: web_page" in report
     assert "  - state: enabled" in report
     assert "  - url: https://openai.com/news/" in report
+    assert "## Fetch results" in report
+    assert "  - fetched: true" in report
+    assert "  - status: 200" in report
+    assert "  - bytes_read: 1234" in report
+    assert "  - error: none" in report
     assert "- example-disabled" in report
-    assert "  - kind: github_releases" in report
     assert "  - state: disabled" in report
+    assert "  - fetched: false" in report
+    assert "  - status: n/a" in report
+    assert "  - error: disabled" in report
+
+
+def test_fetch_source_metadata_skips_disabled_source() -> None:
+    source = make_source(enabled=False)
+
+    result = fetch_source_metadata(source)
+
+    assert result.source == source
+    assert result.fetched is False
+    assert result.status is None
+    assert result.bytes_read == 0
+    assert result.error == "disabled"
+
+
+def test_fetch_source_metadata_captures_success_metadata() -> None:
+    source = make_source()
+    response = Mock()
+    response.status = 200
+    response.read.return_value = b"abc"
+    response.__enter__ = Mock(return_value=response)
+    response.__exit__ = Mock(return_value=None)
+
+    with patch("marcbot.source_monitor.urlopen", return_value=response) as mock_urlopen:
+        result = fetch_source_metadata(source)
+
+    assert result.source == source
+    assert result.fetched is True
+    assert result.status == 200
+    assert result.bytes_read == 3
+    assert result.error is None
+    mock_urlopen.assert_called_once()
+
+
+def test_fetch_source_metadata_caps_byte_count() -> None:
+    source = make_source()
+    response = Mock()
+    response.status = 200
+    response.read.return_value = b"x" * ((256 * 1024) + 1)
+    response.__enter__ = Mock(return_value=response)
+    response.__exit__ = Mock(return_value=None)
+
+    with patch("marcbot.source_monitor.urlopen", return_value=response):
+        result = fetch_source_metadata(source)
+
+    assert result.bytes_read == 256 * 1024
+
+
+def test_fetch_configured_sources_returns_one_result_per_source() -> None:
+    source = make_source()
+    disabled = make_source(name="disabled-source", enabled=False)
+    config = SourceConfig(
+        path=Path("/srv/marcbot/config/sources.toml"),
+        exists=True,
+        sources=(source, disabled),
+    )
+
+    with patch("marcbot.source_monitor.fetch_source_metadata") as mock_fetch:
+        mock_fetch.side_effect = [
+            SourceFetchResult(source=source, fetched=True, status=200, bytes_read=10),
+            SourceFetchResult(
+                source=disabled,
+                fetched=False,
+                status=None,
+                bytes_read=0,
+                error="disabled",
+            ),
+        ]
+        results = fetch_configured_sources(config)
+
+    assert len(results) == 2
+    assert results[0].source == source
+    assert results[1].source == disabled
 
 
 def test_write_source_monitor_report_creates_report(tmp_path: Path) -> None:
     now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
 
-    result = write_source_monitor_report(reports_dir=tmp_path, now=now)
+    with patch("marcbot.source_monitor.load_source_config") as mock_load_config:
+        with patch("marcbot.source_monitor.fetch_configured_sources") as mock_fetch:
+            config = SourceConfig(
+                path=Path("/srv/marcbot/config/sources.toml"),
+                exists=False,
+                sources=(),
+            )
+            mock_load_config.return_value = config
+            mock_fetch.return_value = ()
+
+            result = write_source_monitor_report(reports_dir=tmp_path, now=now)
 
     assert result.path == tmp_path / "source-monitor-2026-05-01-123000.md"
     assert result.path.exists()
