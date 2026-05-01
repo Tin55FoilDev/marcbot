@@ -24,11 +24,11 @@ The source monitor should help Marc understand important AI developments without
 
 Validate the local source config:
 
-    python -m marcbot source-monitor config-check
+    python -m marcbot source-monitor config-check ai
 
 Generate a source monitor report:
 
-    python -m marcbot source-monitor run
+    python -m marcbot source-monitor run ai
 
 The current implementation has a report scaffold and config validation. Live fetching should be added only after the config and documentation are stable.
 
@@ -36,14 +36,14 @@ The current implementation has a report scaffold and config validation. Live fet
 
 The real source monitor config lives outside Git:
 
-    /srv/marcbot/config/sources.toml
+    /srv/marcbot/config/source-projects/ai/sources.toml
 
 This file is local operational config.
 
 It should be owned by marc and protected:
 
-    sudo chown marc:marc /srv/marcbot/config/sources.toml
-    sudo chmod 600 /srv/marcbot/config/sources.toml
+    sudo chown marc:marc /srv/marcbot/config/source-projects/ai/sources.toml
+    sudo chmod 600 /srv/marcbot/config/source-projects/ai/sources.toml
 
 The real local config should not be committed to Git.
 
@@ -143,3 +143,18 @@ Each new source should be evaluated for:
 - stable URL behavior
 - fetchability without special browser automation
 - security/privacy implications
+
+## Project layout
+
+Source monitor projects are isolated by project name so future workflows do not overwrite each other.
+
+    /srv/marcbot/config/source-projects/<project>/sources.toml
+    /srv/marcbot/workspace/source-projects/<project>/reports/
+
+The current AI source monitor project is named `ai`.
+
+    /srv/marcbot/config/source-projects/ai/sources.toml
+    /srv/marcbot/workspace/source-projects/ai/reports/
+
+Project names must be safe lowercase slugs using only lowercase letters, numbers, underscores, and hyphens. The project name is not a filesystem path.
+

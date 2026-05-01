@@ -182,7 +182,7 @@ The source monitor must remain allowlist-based.
 
 Rules:
 
-- Real source config lives outside Git at /srv/marcbot/config/sources.toml.
+- Real source config lives outside Git under /srv/marcbot/config/source-projects/<project>/sources.toml.
 - Git may contain safe examples only.
 - URLs must be explicit and validated before use.
 - Only HTTPS sources are allowed.

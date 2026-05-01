@@ -1,7 +1,7 @@
 # Example MarcBot source monitor allowlist.
-# Copy to /srv/marcbot/config/sources.toml and edit locally.
+# Copy to /srv/marcbot/config/source-projects/ai/sources.toml and edit locally.
 #
-# The real /srv/marcbot/config/sources.toml file is local operational config
+# The real /srv/marcbot/config/source-projects/ai/sources.toml file is local operational config
 # and should not be committed to Git.
 
 [[sources]]

@@ -9,10 +9,13 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from marcbot import __version__
-from marcbot.paths import WORKSPACE_DIR
-from marcbot.source_config import SourceConfig, SourceDefinition, load_source_config
-
-REPORTS_DIR = WORKSPACE_DIR / "reports"
+from marcbot.source_config import (
+    DEFAULT_SOURCE_PROJECT_NAME,
+    SourceConfig,
+    SourceDefinition,
+    load_source_config,
+    source_reports_dir,
+)
 
 FETCH_TIMEOUT_SECONDS = 10
 MAX_FETCH_BYTES = 256 * 1024
@@ -112,6 +115,7 @@ def _format_configured_sources(config: SourceConfig) -> list[str]:
     lines = [
         "## Configured sources",
         "",
+        f"Project: {config.project_name}",
         f"Config path: {config.path}",
         f"Config exists: {str(config.exists).lower()}",
         f"Configured sources: {len(config.sources)}",
@@ -180,13 +184,14 @@ def build_source_monitor_report(
     now: datetime | None = None,
     config: SourceConfig | None = None,
     fetch_results: tuple[SourceFetchResult, ...] | None = None,
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
 ) -> str:
     """Build the Markdown body for the source monitor report."""
     if now is None:
         now = datetime.now(UTC)
 
     if config is None:
-        config = load_source_config()
+        config = load_source_config(project_name=project_name)
 
     if fetch_results is None:
         fetch_results = fetch_configured_sources(config)
@@ -196,10 +201,11 @@ def build_source_monitor_report(
     generated_text = local_now.isoformat(timespec="seconds")
 
     lines = [
-        f"# MarcBot Source Monitor - {report_date}",
+        f"# MarcBot Source Monitor - {config.project_name} - {report_date}",
         "",
         f"Generated: {generated_text}",
         f"MarcBot version: {__version__}",
+        f"Project: {config.project_name}",
         "",
         "## Status",
         "",
@@ -228,24 +234,29 @@ def build_source_monitor_report(
 
 
 def write_source_monitor_report(
-    reports_dir: Path = REPORTS_DIR,
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
+    reports_dir: Path | None = None,
     now: datetime | None = None,
 ) -> SourceMonitorResult:
-    """Write the source monitor report to the reports directory."""
+    """Write the source monitor report to the project reports directory."""
     if now is None:
         now = datetime.now(UTC)
 
-    config = load_source_config()
+    config = load_source_config(project_name=project_name)
     fetch_results = fetch_configured_sources(config)
 
+    target_reports_dir = (
+        reports_dir if reports_dir is not None else source_reports_dir(config.project_name)
+    )
     timestamp = now.astimezone().strftime("%Y-%m-%d-%H%M%S")
-    reports_dir.mkdir(parents=True, exist_ok=True)
-    path = reports_dir / f"source-monitor-{timestamp}.md"
+    target_reports_dir.mkdir(parents=True, exist_ok=True)
+    path = target_reports_dir / f"source-monitor-{timestamp}.md"
 
     body = build_source_monitor_report(
         now=now,
         config=config,
         fetch_results=fetch_results,
+        project_name=config.project_name,
     )
     path.write_text(body, encoding="utf-8")
 

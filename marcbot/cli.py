@@ -50,13 +50,25 @@ def build_parser() -> argparse.ArgumentParser:
     source_monitor_subparsers = source_monitor_parser.add_subparsers(
         dest="source_monitor_command",
     )
-    source_monitor_subparsers.add_parser(
+    source_monitor_run_parser = source_monitor_subparsers.add_parser(
         "run",
         help="write source monitor Markdown report",
     )
-    source_monitor_subparsers.add_parser(
+    source_monitor_run_parser.add_argument(
+        "project",
+        nargs="?",
+        default="ai",
+        help="source project name (default: ai)",
+    )
+    source_monitor_config_parser = source_monitor_subparsers.add_parser(
         "config-check",
         help="validate source monitor configuration",
+    )
+    source_monitor_config_parser.add_argument(
+        "project",
+        nargs="?",
+        default="ai",
+        help="source project name (default: ai)",
     )
 
     return parser
@@ -133,13 +145,17 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "source-monitor":
             if args.source_monitor_command == "config-check":
-                config = load_source_config()
+                config = load_source_config(project_name=args.project)
                 print(format_source_config_summary(config))
-                LOGGER.info("Source monitor config checked: %s", config.path)
+                LOGGER.info(
+                    "Source monitor config checked: project=%s path=%s",
+                    config.project_name,
+                    config.path,
+                )
                 return 0
 
             if args.source_monitor_command == "run":
-                result = write_source_monitor_report()
+                result = write_source_monitor_report(project_name=args.project)
                 print(result.message)
                 LOGGER.info("Source monitor report generated: %s", result.path)
                 return 0

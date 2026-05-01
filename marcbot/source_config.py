@@ -1,4 +1,4 @@
-"""Allowlisted source monitor configuration loading and validation."""
+"""Source monitor project configuration loading and validation."""
 
 from __future__ import annotations
 
@@ -6,20 +6,21 @@ import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import urlparse
+from typing import Any
 
 from marcbot.errors import MarcBotError
 
-DEFAULT_SOURCE_CONFIG_PATH = Path("/srv/marcbot/config/sources.toml")
-
-_ALLOWED_SOURCE_KINDS = frozenset(
-    {
-        "github_releases",
-        "web_page",
-    },
+CONFIG_DIR = Path("/srv/marcbot/config")
+SOURCE_PROJECTS_CONFIG_DIR = CONFIG_DIR / "source-projects"
+DEFAULT_SOURCE_PROJECT_NAME = "ai"
+DEFAULT_SOURCE_CONFIG_PATH = (
+    SOURCE_PROJECTS_CONFIG_DIR / DEFAULT_SOURCE_PROJECT_NAME / "sources.toml"
 )
 
+SUPPORTED_SOURCE_KINDS = frozenset({"github_releases", "web_page"})
+
 _SOURCE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+_PROJECT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 
 
 @dataclass(frozen=True)
@@ -34,156 +35,166 @@ class SourceDefinition:
 
 @dataclass(frozen=True)
 class SourceConfig:
-    """Loaded source monitor configuration."""
+    """Validated source monitor config for one source project."""
 
     path: Path
     exists: bool
     sources: tuple[SourceDefinition, ...]
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME
 
 
-def _require_string(value: object, field_name: str, source_index: int) -> str:
-    """Return a required non-empty string field."""
-    if not isinstance(value, str) or not value.strip():
-        raise MarcBotError(
-            "MBOT-SOURCE-002",
-            f"Source #{source_index} has invalid or missing {field_name}",
-        )
-    return value.strip()
-
-
-def _validate_source_name(name: str, source_index: int) -> None:
-    """Validate a source name slug."""
-    if not _SOURCE_NAME_RE.fullmatch(name):
-        raise MarcBotError(
-            "MBOT-SOURCE-003",
-            (
-                f"Source #{source_index} has invalid name: {name}. "
-                "Use lowercase letters, numbers, underscores, or hyphens only."
-            ),
-        )
-
-
-def _validate_source_kind(kind: str, source_index: int) -> None:
-    """Validate the allowlisted source kind."""
-    if kind not in _ALLOWED_SOURCE_KINDS:
-        allowed = ", ".join(sorted(_ALLOWED_SOURCE_KINDS))
-        raise MarcBotError(
-            "MBOT-SOURCE-004",
-            f"Source #{source_index} has invalid kind: {kind}. Allowed kinds: {allowed}",
-        )
-
-
-def _validate_source_url(url: str, source_index: int) -> None:
-    """Validate that a source URL is HTTPS."""
-    parsed = urlparse(url)
-    if parsed.scheme != "https" or not parsed.netloc:
-        raise MarcBotError(
-            "MBOT-SOURCE-005",
-            f"Source #{source_index} has invalid url: only https:// URLs are allowed",
-        )
-
-
-def _load_toml(path: Path) -> dict[str, object]:
-    """Load TOML from path."""
+def _source_error(code: str, message: str) -> MarcBotError:
     try:
-        with path.open("rb") as file:
-            data = tomllib.load(file)
+        return MarcBotError(message, code=code)
+    except TypeError:
+        try:
+            return MarcBotError(code, message)
+        except TypeError:
+            return MarcBotError(message)
+
+
+def validate_source_project_name(project_name: str) -> str:
+    """Validate and return a safe source project name."""
+    if not isinstance(project_name, str) or not _PROJECT_NAME_RE.fullmatch(project_name):
+        raise _source_error(
+            "MBOT-SOURCE-011",
+            "Invalid source project name. Use lowercase letters, numbers, underscores, or hyphens.",
+        )
+    return project_name
+
+
+def source_config_path(project_name: str = DEFAULT_SOURCE_PROJECT_NAME) -> Path:
+    """Return the config path for a validated source project name."""
+    safe_project = validate_source_project_name(project_name)
+    return SOURCE_PROJECTS_CONFIG_DIR / safe_project / "sources.toml"
+
+
+def source_reports_dir(project_name: str = DEFAULT_SOURCE_PROJECT_NAME) -> Path:
+    """Return the reports directory for a validated source project name."""
+    safe_project = validate_source_project_name(project_name)
+    return Path("/srv/marcbot/workspace/source-projects") / safe_project / "reports"
+
+
+def _validate_source_name(name: Any) -> str:
+    if not isinstance(name, str) or not _SOURCE_NAME_RE.fullmatch(name):
+        raise _source_error(
+            "MBOT-SOURCE-003",
+            "Invalid source name. Use lowercase letters, numbers, underscores, or hyphens.",
+        )
+    return name
+
+
+def _validate_source_kind(kind: Any) -> str:
+    if not isinstance(kind, str) or kind not in SUPPORTED_SOURCE_KINDS:
+        allowed = ", ".join(sorted(SUPPORTED_SOURCE_KINDS))
+        raise _source_error("MBOT-SOURCE-004", f"Invalid source kind. Allowed kinds: {allowed}")
+    return kind
+
+
+def _validate_source_url(url: Any) -> str:
+    if not isinstance(url, str) or not url.startswith("https://"):
+        raise _source_error(
+            "MBOT-SOURCE-005",
+            "Invalid source URL. Only https:// URLs are allowed.",
+        )
+    return url
+
+
+def _validate_enabled(enabled: Any) -> bool:
+    if enabled is None:
+        return True
+    if not isinstance(enabled, bool):
+        raise _source_error("MBOT-SOURCE-010", "Invalid source enabled value. Use true or false.")
+    return enabled
+
+
+def _parse_source(raw_source: Any, seen_names: set[str]) -> SourceDefinition:
+    if not isinstance(raw_source, dict):
+        raise _source_error("MBOT-SOURCE-009", "Each source entry must be a TOML table.")
+
+    missing = [field for field in ("name", "kind", "url") if field not in raw_source]
+    if missing:
+        raise _source_error(
+            "MBOT-SOURCE-002",
+            f"Missing required source field: {', '.join(missing)}",
+        )
+
+    name = _validate_source_name(raw_source["name"])
+    if name in seen_names:
+        raise _source_error("MBOT-SOURCE-011", f"Duplicate source name: {name}")
+    seen_names.add(name)
+
+    return SourceDefinition(
+        name=name,
+        kind=_validate_source_kind(raw_source["kind"]),
+        url=_validate_source_url(raw_source["url"]),
+        enabled=_validate_enabled(raw_source.get("enabled")),
+    )
+
+
+def load_source_config(
+    path: Path | None = None,
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
+) -> SourceConfig:
+    """Load and validate source monitor config for a source project."""
+    safe_project = validate_source_project_name(project_name)
+    config_path = path if path is not None else source_config_path(safe_project)
+
+    if not config_path.exists():
+        return SourceConfig(
+            path=config_path,
+            exists=False,
+            sources=(),
+            project_name=safe_project,
+        )
+
+    try:
+        raw = tomllib.loads(config_path.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
-        raise MarcBotError(
-            "MBOT-SOURCE-006",
-            f"Invalid source config TOML: {path}",
-        ) from exc
+        raise _source_error("MBOT-SOURCE-006", f"Invalid source config TOML: {exc}") from exc
     except OSError as exc:
-        raise MarcBotError(
-            "MBOT-SOURCE-007",
-            f"Unable to read source config: {path}",
-        ) from exc
+        raise _source_error("MBOT-SOURCE-007", f"Unable to read source config: {exc}") from exc
 
-    if not isinstance(data, dict):
-        raise MarcBotError("MBOT-SOURCE-008", "Source config root must be a TOML table")
+    if not isinstance(raw, dict):
+        raise _source_error("MBOT-SOURCE-008", "Source config root must be a TOML table.")
 
-    return data
-
-
-def load_source_config(path: Path = DEFAULT_SOURCE_CONFIG_PATH) -> SourceConfig:
-    """Load and validate source monitor config.
-
-    Missing config is treated as a clean empty source list so the source monitor
-    can be installed before sources are configured.
-    """
-    if not path.exists():
-        return SourceConfig(path=path, exists=False, sources=())
-
-    data = _load_toml(path)
-    raw_sources = data.get("sources", [])
-
+    raw_sources = raw.get("sources", [])
     if not isinstance(raw_sources, list):
-        raise MarcBotError(
-            "MBOT-SOURCE-001",
-            "Source config must contain zero or more [[sources]] tables",
-        )
+        raise _source_error("MBOT-SOURCE-001", "sources must be a TOML array of tables.")
 
-    sources: list[SourceDefinition] = []
     seen_names: set[str] = set()
+    sources = tuple(_parse_source(source, seen_names) for source in raw_sources)
 
-    for index, raw_source in enumerate(raw_sources, start=1):
-        if not isinstance(raw_source, dict):
-            raise MarcBotError(
-                "MBOT-SOURCE-009",
-                f"Source #{index} must be a TOML table",
-            )
-
-        name = _require_string(raw_source.get("name"), "name", index)
-        kind = _require_string(raw_source.get("kind"), "kind", index)
-        url = _require_string(raw_source.get("url"), "url", index)
-        enabled = raw_source.get("enabled", True)
-
-        if not isinstance(enabled, bool):
-            raise MarcBotError(
-                "MBOT-SOURCE-010",
-                f"Source #{index} has invalid enabled value: use true or false",
-            )
-
-        _validate_source_name(name, index)
-        _validate_source_kind(kind, index)
-        _validate_source_url(url, index)
-
-        if name in seen_names:
-            raise MarcBotError(
-                "MBOT-SOURCE-011",
-                f"Duplicate source name: {name}",
-            )
-        seen_names.add(name)
-
-        sources.append(
-            SourceDefinition(
-                name=name,
-                kind=kind,
-                url=url,
-                enabled=enabled,
-            ),
-        )
-
-    return SourceConfig(path=path, exists=True, sources=tuple(sources))
+    return SourceConfig(
+        path=config_path,
+        exists=True,
+        sources=sources,
+        project_name=safe_project,
+    )
 
 
 def format_source_config_summary(config: SourceConfig) -> str:
-    """Format a human-readable source config summary."""
+    """Format a compact source config summary for operators."""
     lines = [
         "MarcBot source monitor config",
+        f"Project: {config.project_name}",
         f"Path: {config.path}",
         f"Exists: {str(config.exists).lower()}",
         f"Sources: {len(config.sources)}",
+        "",
     ]
 
     if not config.sources:
         lines.append("No sources configured.")
         return "\n".join(lines)
 
-    lines.append("")
     for source in config.sources:
         state = "enabled" if source.enabled else "disabled"
-        lines.append(f"- {source.name} [{source.kind}, {state}]")
-        lines.append(f"  {source.url}")
+        lines.extend(
+            [
+                f"- {source.name} [{source.kind}, {state}]",
+                f"  {source.url}",
+            ]
+        )
 
     return "\n".join(lines)
