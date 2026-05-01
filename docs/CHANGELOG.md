@@ -11,7 +11,7 @@ New units:
 
 Schedule:
 
-- daily at 23:30
+- daily at 23:30 America/New_York America/New_York
 - persistent timer
 - randomized delay up to 5 minutes
 
