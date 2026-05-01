@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-05-01 — `/report_status` command added
+
+Added a read-only Telegram status command for local daily reports.
+
+New command:
+
+- `/report_status`
+
+Behavior:
+
+- shows latest local daily status report filename, path, size, modified time, and age
+- checks `marcbot-daily-status-report.timer` enablement
+- reports healthy or warning state
+- does not generate reports
+- does not send Telegram files
+- does not call AI models
+- does not modify systemd
+
 ## 2026-05-01 — Daily status report timer added
 
 Added systemd scheduling for the local daily status report.

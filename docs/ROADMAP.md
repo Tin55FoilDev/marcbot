@@ -276,6 +276,24 @@ The document covers recovery from:
 It also includes post-restore validation commands and success criteria.
 
 
+## Report status command
+
+Status: complete.
+
+MarcBot includes a read-only Telegram report status command:
+
+    /report_status
+
+The command summarizes:
+
+- latest local daily status report
+- report size and age
+- daily status report timer enablement
+- overall health or warning state
+
+It does not generate reports, send Telegram files, call AI models, or modify systemd.
+
+
 ## Longer-term roadmap
 
 ### Workspace file workflow

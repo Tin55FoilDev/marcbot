@@ -267,6 +267,22 @@ Safety properties:
 - Telegram token redaction
 - Fixed `journalctl` command for service logs
 
+### `/report_status`
+
+Shows the status of the latest local daily status report.
+
+Reports:
+
+- latest daily status report filename
+- report path
+- file size
+- modified time
+- report age
+- `marcbot-daily-status-report.timer` enablement state
+- overall health or warning state
+
+This command is read-only. It does not generate a report, send a report, call an AI model, or modify systemd.
+
 ### `/logs`
 
 Shows recent MarcBot application logs from:
