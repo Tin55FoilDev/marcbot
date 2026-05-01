@@ -16,6 +16,7 @@ from marcbot.disk import format_disk_report
 from marcbot.errors import MarcBotError
 from marcbot.health import format_health_report, run_health_checks
 from marcbot.log_reader import format_logs_message, read_last_log_lines
+from marcbot.service_status import format_service_report
 from marcbot.uptime import format_uptime_report
 
 LOGGER = logging.getLogger(__name__)
@@ -119,6 +120,23 @@ async def disk_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(disk_text)
 
 
+async def service_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /service."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /service from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /service for chat_id=%s", chat_id)
+    service_text = format_service_report()
+
+    if update.message is not None:
+        await update.message.reply_text(service_text)
+
+
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -195,6 +213,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/version - show MarcBot and Python version\n"
         "/uptime - show host and MarcBot process uptime\n"
         "/disk - show disk usage for root and /srv/marcbot\n"
+        "/service - show MarcBot systemd service state\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/logs - show recent MarcBot application logs\n"
@@ -228,6 +247,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("version", version_command))
     application.add_handler(CommandHandler("uptime", uptime_command))
     application.add_handler(CommandHandler("disk", disk_command))
+    application.add_handler(CommandHandler("service", service_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))
