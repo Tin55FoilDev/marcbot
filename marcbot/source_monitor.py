@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -22,6 +23,36 @@ MAX_FETCH_BYTES = 256 * 1024
 USER_AGENT = f"MarcBot/{__version__} source-monitor"
 
 
+class _TitleParser(HTMLParser):
+    """Tiny HTML title parser for bounded source monitor responses."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._in_title = False
+        self._title_parts: list[str] = []
+
+    def handle_starttag(
+        self,
+        tag: str,
+        _attrs: list[tuple[str, str | None]],
+    ) -> None:
+        if tag.lower() == "title":
+            self._in_title = True
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "title":
+            self._in_title = False
+
+    def handle_data(self, data: str) -> None:
+        if self._in_title:
+            self._title_parts.append(data)
+
+    @property
+    def title(self) -> str | None:
+        normalized = " ".join(" ".join(self._title_parts).split())
+        return normalized or None
+
+
 @dataclass(frozen=True)
 class SourceFetchResult:
     """Bounded fetch metadata for one configured source."""
@@ -31,6 +62,7 @@ class SourceFetchResult:
     status: int | None
     bytes_read: int
     error: str | None = None
+    title: str | None = None
 
 
 @dataclass(frozen=True)
@@ -39,6 +71,17 @@ class SourceMonitorResult:
 
     path: Path
     message: str
+
+
+def extract_html_title(data: bytes) -> str | None:
+    """Extract a basic HTML title from already-bounded response bytes."""
+    if not data:
+        return None
+
+    parser = _TitleParser()
+    parser.feed(data.decode("utf-8", errors="replace"))
+    parser.close()
+    return parser.title
 
 
 def fetch_source_metadata(source: SourceDefinition) -> SourceFetchResult:
@@ -64,12 +107,14 @@ def fetch_source_metadata(source: SourceDefinition) -> SourceFetchResult:
     try:
         with urlopen(request, timeout=FETCH_TIMEOUT_SECONDS) as response:
             data = response.read(MAX_FETCH_BYTES + 1)
+            bounded_data = data[:MAX_FETCH_BYTES]
             return SourceFetchResult(
                 source=source,
                 fetched=True,
                 status=response.status,
-                bytes_read=min(len(data), MAX_FETCH_BYTES),
+                bytes_read=len(bounded_data),
                 error=None,
+                title=extract_html_title(bounded_data),
             )
     except HTTPError as exc:
         return SourceFetchResult(
@@ -172,6 +217,7 @@ def _format_fetch_results(fetch_results: tuple[SourceFetchResult, ...]) -> list[
                 f"  - fetched: {str(result.fetched).lower()}",
                 f"  - status: {result.status if result.status is not None else 'n/a'}",
                 f"  - bytes_read: {result.bytes_read}",
+                f"  - title: {result.title or 'n/a'}",
                 f"  - error: {result.error or 'none'}",
             ]
         )
@@ -209,7 +255,7 @@ def build_source_monitor_report(
         "",
         "## Status",
         "",
-        "Source monitor bounded fetch metadata is installed.",
+        "Source monitor bounded fetch metadata and title extraction are installed.",
         "",
         f"Fetch timeout seconds: {FETCH_TIMEOUT_SECONDS}",
         f"Max fetch bytes per source: {MAX_FETCH_BYTES}",
@@ -223,7 +269,7 @@ def build_source_monitor_report(
         [
             "## Next steps",
             "",
-            "- Add basic page-title extraction from bounded fetched content.",
+            "- Add deterministic change tracking between source monitor runs.",
             "- Keep output local and bounded before adding Telegram delivery.",
             "- Add higher-level summaries only after deterministic fetching is reliable.",
             "",

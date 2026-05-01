@@ -6,6 +6,7 @@ from marcbot.source_config import SourceConfig, SourceDefinition
 from marcbot.source_monitor import (
     SourceFetchResult,
     build_source_monitor_report,
+    extract_html_title,
     fetch_configured_sources,
     fetch_source_metadata,
     write_source_monitor_report,
@@ -19,6 +20,28 @@ def make_source(
     enabled: bool = True,
 ) -> SourceDefinition:
     return SourceDefinition(name=name, kind=kind, url=url, enabled=enabled)
+
+
+def test_extract_html_title_returns_normalized_title() -> None:
+    title = extract_html_title(
+        b"""
+<html>
+<head>
+<title>
+  Example
+  News
+</title>
+</head>
+<body>Hello</body>
+</html>
+"""
+    )
+
+    assert title == "Example News"
+
+
+def test_extract_html_title_returns_none_when_missing() -> None:
+    assert extract_html_title(b"<html><body>No title</body></html>") is None
 
 
 def test_build_source_monitor_report_includes_project_status() -> None:
@@ -35,7 +58,7 @@ def test_build_source_monitor_report_includes_project_status() -> None:
     assert "# MarcBot Source Monitor - ai - 2026-05-01" in report
     assert "MarcBot version:" in report
     assert "Project: ai" in report
-    assert "Source monitor bounded fetch metadata is installed." in report
+    assert "Source monitor bounded fetch metadata and title extraction are installed." in report
 
 
 def test_build_source_monitor_report_handles_empty_config() -> None:
@@ -80,6 +103,7 @@ def test_build_source_monitor_report_lists_configured_sources_and_fetch_results(
             status=200,
             bytes_read=1234,
             error=None,
+            title="OpenAI News",
         ),
         SourceFetchResult(
             source=disabled,
@@ -87,6 +111,7 @@ def test_build_source_monitor_report_lists_configured_sources_and_fetch_results(
             status=None,
             bytes_read=0,
             error="disabled",
+            title=None,
         ),
     )
 
@@ -106,11 +131,13 @@ def test_build_source_monitor_report_lists_configured_sources_and_fetch_results(
     assert "  - fetched: true" in report
     assert "  - status: 200" in report
     assert "  - bytes_read: 1234" in report
+    assert "  - title: OpenAI News" in report
     assert "  - error: none" in report
     assert "- example-disabled" in report
     assert "  - state: disabled" in report
     assert "  - fetched: false" in report
     assert "  - status: n/a" in report
+    assert "  - title: n/a" in report
     assert "  - error: disabled" in report
 
 
@@ -124,13 +151,15 @@ def test_fetch_source_metadata_skips_disabled_source() -> None:
     assert result.status is None
     assert result.bytes_read == 0
     assert result.error == "disabled"
+    assert result.title is None
 
 
-def test_fetch_source_metadata_captures_success_metadata() -> None:
+def test_fetch_source_metadata_captures_success_metadata_and_title() -> None:
     source = make_source()
     response = Mock()
     response.status = 200
-    response.read.return_value = b"abc"
+    body = b"<html><head><title>Example Title</title></head></html>"
+    response.read.return_value = body
     response.__enter__ = Mock(return_value=response)
     response.__exit__ = Mock(return_value=None)
 
@@ -140,8 +169,9 @@ def test_fetch_source_metadata_captures_success_metadata() -> None:
     assert result.source == source
     assert result.fetched is True
     assert result.status == 200
-    assert result.bytes_read == 3
+    assert result.bytes_read == len(body)
     assert result.error is None
+    assert result.title == "Example Title"
     mock_urlopen.assert_called_once()
 
 

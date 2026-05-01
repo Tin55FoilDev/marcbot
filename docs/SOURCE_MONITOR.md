@@ -158,3 +158,17 @@ The current AI source monitor project is named `ai`.
 
 Project names must be safe lowercase slugs using only lowercase letters, numbers, underscores, and hyphens. The project name is not a filesystem path.
 
+## Current report contents
+
+The source monitor report currently includes bounded fetch metadata for each configured source:
+
+    source name
+    source kind
+    URL
+    fetched true/false
+    HTTP status or n/a
+    bounded bytes read
+    basic HTML page title when available
+    clean error text when applicable
+
+The report does not yet parse articles, summarize content, classify importance, or send Telegram notifications.
