@@ -13,6 +13,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from marcbot import __version__
 from marcbot.config import MarcBotConfig
 from marcbot.disk import format_disk_report
+from marcbot.docs_index import format_docs_index
 from marcbot.errors import MarcBotError
 from marcbot.git_status import format_git_report
 from marcbot.health import format_health_report, run_health_checks
@@ -155,6 +156,23 @@ async def git_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text(git_text)
 
 
+async def docs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /docs."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /docs from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /docs for chat_id=%s", chat_id)
+    docs_text = format_docs_index()
+
+    if update.message is not None:
+        await update.message.reply_text(docs_text)
+
+
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -233,6 +251,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/disk - show disk usage for root and /srv/marcbot\n"
         "/service - show MarcBot systemd service state\n"
         "/git - show MarcBot repository status\n"
+        "/docs - list approved MarcBot docs\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/logs - show recent MarcBot application logs\n"
@@ -268,6 +287,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("disk", disk_command))
     application.add_handler(CommandHandler("service", service_command))
     application.add_handler(CommandHandler("git", git_command))
+    application.add_handler(CommandHandler("docs", docs_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))
