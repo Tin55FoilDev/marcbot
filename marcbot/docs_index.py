@@ -9,6 +9,7 @@ from marcbot.paths import APP_DIR
 
 DOCS_DIR = APP_DIR / "docs"
 MAX_DOC_MESSAGE_CHARS = 3500
+MAX_SENDDOC_BYTES = 2_000_000
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,15 @@ class DocEntry:
     name: str
     title: str
     path: Path
+
+
+@dataclass(frozen=True)
+class SendDocResult:
+    """Result of validating an approved doc for Telegram file sending."""
+
+    ok: bool
+    entry: DocEntry | None
+    message: str
 
 
 APPROVED_DOCS: tuple[DocEntry, ...] = (
@@ -60,6 +70,7 @@ def format_docs_index() -> str:
         [
             "",
             "Use: /doc <name>",
+            "Send full file: /senddoc <name>",
         ],
     )
 
@@ -99,5 +110,64 @@ def format_doc_message(name: str) -> str:
         f"🤖 MarcBot doc: {entry.name}\n"
         f"{entry.title}\n\n"
         f"{truncated_body}\n\n"
-        "[truncated]"
+        "[truncated]\n"
+        f"Send full file with: /senddoc {entry.name}"
+    )
+
+
+def validate_send_doc(name: str) -> SendDocResult:
+    """Validate an approved doc for Telegram file sending."""
+    entry = find_doc_entry(name)
+    if entry is None:
+        return SendDocResult(
+            ok=False,
+            entry=None,
+            message=(
+                "🤖 MarcBot senddoc\n"
+                f"Unknown doc name: {name.strip() or '<empty>'}\n"
+                f"Available docs: {approved_doc_names()}\n"
+                "Use: /senddoc <name>"
+            ),
+        )
+
+    try:
+        resolved_docs_dir = DOCS_DIR.resolve(strict=True)
+        resolved_path = entry.path.resolve(strict=True)
+    except OSError as exc:
+        return SendDocResult(
+            ok=False,
+            entry=entry,
+            message=f"🤖 MarcBot senddoc\nUnable to access doc file: {exc}",
+        )
+
+    if resolved_docs_dir not in resolved_path.parents:
+        return SendDocResult(
+            ok=False,
+            entry=entry,
+            message="🤖 MarcBot senddoc\nRejected doc path outside approved docs directory.",
+        )
+
+    if not resolved_path.is_file():
+        return SendDocResult(
+            ok=False,
+            entry=entry,
+            message="🤖 MarcBot senddoc\nRejected non-file doc path.",
+        )
+
+    size_bytes = resolved_path.stat().st_size
+    if size_bytes > MAX_SENDDOC_BYTES:
+        return SendDocResult(
+            ok=False,
+            entry=entry,
+            message=(
+                "🤖 MarcBot senddoc\n"
+                f"Doc file is too large to send: {size_bytes} bytes "
+                f"limit={MAX_SENDDOC_BYTES} bytes"
+            ),
+        )
+
+    return SendDocResult(
+        ok=True,
+        entry=DocEntry(entry.name, entry.title, resolved_path),
+        message=f"Sending doc: {entry.name}",
     )

@@ -93,7 +93,33 @@ Safety properties:
 - Bounded Telegram output
 - Friendly error for unknown names
 
+### `/senddoc <name>`
+
+Sends one approved MarcBot Markdown document as a Telegram file attachment.
+
+Current approved names:
+
+- `deploy`
+- `roadmap`
+- `security`
+- `architecture`
+- `changelog`
+- `commands`
+
+This is the full-file counterpart to `/doc <name>`.
+
+Safety properties:
+
+- Approved document names only
+- No arbitrary paths
+- No shell execution
+- File must remain under the approved docs directory
+- File must be a regular file
+- File size limit enforced
+- Request is logged
+
 ### `/status`
+
 
 Shows basic MarcBot service status from the bot's perspective.
 
@@ -140,7 +166,7 @@ MarcBot command design favors:
 
 Possible future commands:
 
-- `/senddoc <name>` — send an approved doc as a Telegram file
+- `/senddoc <name>` — send an approved doc as a Telegram file attachment
 - `/send <workspace-relative-path>` — send a file from `/srv/marcbot/workspace`
 - `/tail <approved-log-name>` — read from an allowlisted log file
 - `/backup-status` — show last backup status

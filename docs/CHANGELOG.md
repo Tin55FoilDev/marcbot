@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-04-30 — `/senddoc <name>` command added
+
+Added Telegram file attachment support for approved MarcBot documentation.
+
+New command:
+
+- `/senddoc <name>`
+
+Purpose:
+
+- send the full approved Markdown doc as a Telegram file attachment
+- complement `/doc <name>`, which remains a bounded preview command
+
+Safety properties:
+
+- uses the existing approved documentation allowlist
+- rejects unknown names
+- rejects paths outside the docs directory
+- rejects non-file paths
+- enforces a file size limit
+- does not accept arbitrary file paths
+- logs send requests
+
 ## 2026-04-30 — Roadmap and architecture refresh
 
 Updated documentation to match the current MarcBot command baseline.

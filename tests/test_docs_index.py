@@ -4,11 +4,13 @@ from pathlib import Path
 
 from marcbot.docs_index import (
     APPROVED_DOCS,
+    DOCS_DIR,
     DocEntry,
     find_doc_entry,
     format_doc_message,
     format_docs_index,
     read_doc_text,
+    validate_send_doc,
 )
 
 
@@ -47,6 +49,7 @@ def test_format_docs_index() -> None:
     assert "- changelog: Changelog" in message
     assert "- commands: Telegram command reference" in message
     assert "Use: /doc <name>" in message
+    assert "Send full file: /senddoc <name>" in message
 
 
 def test_read_doc_text(tmp_path: Path) -> None:
@@ -63,3 +66,25 @@ def test_format_doc_message_unknown_doc() -> None:
     assert "Unknown doc name: unknown" in message
     assert "Available docs:" in message
     assert "Use: /doc <name>" in message
+
+
+def test_validate_send_doc_unknown_doc() -> None:
+    result = validate_send_doc("unknown")
+
+    assert not result.ok
+    assert result.entry is None
+    assert "Unknown doc name: unknown" in result.message
+    assert "Use: /senddoc <name>" in result.message
+
+
+def test_validate_send_doc_known_doc() -> None:
+    # This test uses the real docs directory because approved docs are fixed
+    # project files and should exist in every valid MarcBot checkout.
+    assert DOCS_DIR.is_dir()
+
+    result = validate_send_doc("commands")
+
+    assert result.ok
+    assert result.entry is not None
+    assert result.entry.name == "commands"
+    assert result.entry.path.is_file()

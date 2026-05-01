@@ -13,7 +13,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from marcbot import __version__
 from marcbot.config import MarcBotConfig
 from marcbot.disk import format_disk_report
-from marcbot.docs_index import format_doc_message, format_docs_index
+from marcbot.docs_index import format_doc_message, format_docs_index, validate_send_doc
 from marcbot.errors import MarcBotError
 from marcbot.git_status import format_git_report
 from marcbot.health import format_health_report, run_health_checks
@@ -191,6 +191,39 @@ async def doc_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text(doc_text)
 
 
+async def senddoc_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /senddoc <name>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /senddoc from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    doc_name = " ".join(context.args).strip()
+    result = validate_send_doc(doc_name)
+    LOGGER.info(
+        "Handled /senddoc for chat_id=%s doc_name=%s ok=%s",
+        chat_id,
+        doc_name or "<empty>",
+        result.ok,
+    )
+
+    if update.message is None:
+        return
+
+    if not result.ok or result.entry is None:
+        await update.message.reply_text(result.message)
+        return
+
+    await update.message.reply_document(
+        document=result.entry.path,
+        filename=result.entry.path.name,
+        caption=f"🤖 MarcBot doc: {result.entry.name} - {result.entry.title}",
+    )
+
+
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -270,7 +303,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/service - show MarcBot systemd service state\n"
         "/git - show MarcBot repository status\n"
         "/docs - list approved MarcBot docs\n"
-        "/doc <name> - show an approved MarcBot doc\n"
+        "/doc <name> - show an approved MarcBot doc preview\n"
+        "/senddoc <name> - send an approved MarcBot doc as a file\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/logs - show recent MarcBot application logs\n"
@@ -308,6 +342,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("git", git_command))
     application.add_handler(CommandHandler("docs", docs_command))
     application.add_handler(CommandHandler("doc", doc_command))
+    application.add_handler(CommandHandler("senddoc", senddoc_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))
