@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-05-01 — CLI latest-report Telegram sender added
+
+Added a manual CLI command to send the newest daily status report through Telegram.
+
+New command:
+
+    python -m marcbot report send-latest
+
+Behavior:
+
+- loads the local MarcBot config
+- finds the newest generated daily status report
+- sends it to configured Telegram allowed chat IDs
+- prints a compact success or error message
+- does not generate reports
+- does not call AI models
+- does not install timers
+
 ## 2026-05-01 — `/send_latest_report` command added
 
 Added a user-triggered Telegram command to send the newest daily status report.

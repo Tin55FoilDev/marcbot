@@ -346,6 +346,21 @@ It does not generate reports, call AI models, install timers, or automatically s
 This is a bridge step before optional automatic Telegram delivery.
 
 
+## CLI send latest report command
+
+Status: complete.
+
+MarcBot includes a manual CLI delivery command:
+
+    python -m marcbot report send-latest
+
+The command sends the newest generated daily status report through Telegram using configured `allowed_chat_ids`.
+
+It does not generate reports, call AI models, install timers, or change Telegram configuration.
+
+This prepares the project for a future scheduled report-delivery service.
+
+
 ## Longer-term roadmap
 
 ### Workspace file workflow

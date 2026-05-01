@@ -11,6 +11,7 @@ from marcbot.config import DEFAULT_CONFIG_PATH, load_config
 from marcbot.errors import MarcBotError
 from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
+from marcbot.report_sender import send_latest_report
 from marcbot.reports import write_daily_status_report
 from marcbot.telegram_bot import run_foreground_bot
 
@@ -38,6 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
     report_subparsers.add_parser("daily-status", help="write daily status Markdown report")
+    report_subparsers.add_parser("send-latest", help="send newest daily status report")
 
 
     return parser
@@ -117,6 +119,17 @@ def main(argv: list[str] | None = None) -> int:
                 result = write_daily_status_report()
                 print(result.message)
                 LOGGER.info("Report generated: %s", result.path)
+                return 0
+
+            if args.report_name == "send-latest":
+                config = load_config(DEFAULT_CONFIG_PATH)
+                result = send_latest_report(config)
+                print(result.message)
+                LOGGER.info(
+                    "Report sent: path=%s chat_ids=%s",
+                    result.path,
+                    result.chat_ids,
+                )
                 return 0
 
             parser.print_help()
