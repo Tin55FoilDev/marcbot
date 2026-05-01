@@ -158,6 +158,37 @@ Shows basic MarcBot service status from the bot's perspective.
 
 This is a lightweight status command and is separate from `/service`.
 
+### `/backup_status`
+
+Shows read-only status for the latest MarcBot app-level backup.
+
+Reads:
+
+    /srv/marcbot/backups/latest-backup.txt
+
+Reports:
+
+- latest backup name
+- created time
+- backup size
+- retention setting
+- archive path
+- checksum path
+- archive presence
+- checksum presence
+- backup age
+- overall health
+
+This command does not create, delete, or modify backups.
+
+Safety properties:
+
+- Read-only
+- Fixed marker file
+- No arbitrary paths from Telegram
+- No backup creation from Telegram
+- No backup deletion from Telegram
+
 ### `/health`
 
 Runs local MarcBot health checks.
@@ -244,7 +275,7 @@ Possible future commands:
 - `/senddoc <name>` — send an approved doc as a Telegram file attachment
 - `/send <workspace-relative-path>` — send a file from `/srv/marcbot/workspace`
 - `/tail <approved-log-name>` — read from an allowlisted log file
-- `/backup-status` — show last backup status
+- `/backup_status` — show last backup status
 - `/update-check` — check for safe/manual update candidates
 
 General `/send` should not accept arbitrary absolute paths.

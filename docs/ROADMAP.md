@@ -172,7 +172,7 @@ Safety model:
 
 Possible future command:
 
-    /backup-status
+    /backup_status
 
 Goal:
 
@@ -192,6 +192,21 @@ Goal:
 - check for update candidates
 - report but do not auto-install
 - keep operator in control
+
+### Backup visibility
+
+Status: implemented.
+
+Current command:
+
+    /backup_status
+
+Purpose:
+
+- report latest app-level backup metadata
+- verify archive and checksum presence
+- warn if backup is stale
+- keep Telegram read-only for backup operations
 
 ## Longer-term roadmap
 
@@ -260,7 +275,7 @@ For each new feature:
 
 Recommended order:
 
-1. backup visibility
+1. systemd timer for app-level backups
 2. update-check visibility
 3. scheduled reports
 4. backup visibility

@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-04-30 — Read-only `/backup_status` command added
+
+Added backup visibility for MarcBot app-level backups.
+
+New command:
+
+- `/backup_status`
+
+Reads:
+
+- `/srv/marcbot/backups/latest-backup.txt`
+
+Reports:
+
+- latest backup name
+- created time
+- backup size
+- retention setting
+- archive path
+- checksum path
+- archive presence
+- checksum presence
+- backup age
+- overall health
+
+Safety properties:
+
+- read-only
+- fixed marker file
+- no arbitrary paths from Telegram
+- no backup creation from Telegram
+- no backup deletion from Telegram
+
 ## 2026-04-30 — Approved `/tail` diagnostic command added
 
 Added bounded diagnostic tail output for approved log sources.

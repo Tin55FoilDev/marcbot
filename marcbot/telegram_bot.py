@@ -11,6 +11,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from marcbot import __version__
+from marcbot.backup_status import format_backup_status_message
 from marcbot.config import MarcBotConfig
 from marcbot.disk import format_disk_report
 from marcbot.docs_index import format_doc_message, format_docs_index, validate_send_doc
@@ -283,6 +284,23 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text(status_text)
 
 
+async def backup_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /backup_status."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /backup_status from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /backup_status for chat_id=%s", chat_id)
+    backup_text = format_backup_status_message()
+
+    if update.message is not None:
+        await update.message.reply_text(backup_text)
+
+
 async def health_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /health."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -361,6 +379,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/send <workspace-relative-path> - send a file from /srv/marcbot/workspace\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
+        "/backup_status - show latest MarcBot app-level backup status\n"
         "/logs - show recent MarcBot application logs\n"
         "/tail <app|service> - show approved diagnostic log tails\n"
         "/help - show this help message"
@@ -425,6 +444,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("send", send_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
+    application.add_handler(CommandHandler("backup_status", backup_status_command))
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("tail", tail_command))
     application.add_handler(CommandHandler("help", help_command))

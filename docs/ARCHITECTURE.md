@@ -112,6 +112,31 @@ Current policy:
 - rotate at 1 MB
 - keep 5 backups
 
+### `marcbot.backup_status`
+
+Read-only app-level backup status helper.
+
+Reads:
+
+    /srv/marcbot/backups/latest-backup.txt
+
+Validates:
+
+- marker file exists
+- required fields are present
+- archive exists
+- archive is non-empty
+- checksum file exists
+- backup age is within threshold
+
+Safety properties:
+
+- read-only
+- fixed marker file
+- no arbitrary paths from Telegram
+- no backup creation from Telegram
+- no deletion or rotation from Telegram
+
 ### `marcbot.health`
 
 Local health checks.
@@ -279,6 +304,7 @@ Current commands:
 - `/doc <name>`
 - `/status`
 - `/health`
+- `/backup_status`
 - `/logs`
 - `/tail <app|service>`
 - `/help`
