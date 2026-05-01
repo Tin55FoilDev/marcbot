@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-05-01 — Scheduled report delivery timer added
+
+Added dedicated systemd units for scheduled Telegram delivery of the latest daily status report.
+
+New units:
+
+- `marcbot-daily-status-report-send.service`
+- `marcbot-daily-status-report-send.timer`
+
+Schedule:
+
+- `23:50 America/New_York`
+- `Persistent=true`
+- `RandomizedDelaySec=2m`
+
+Behavior:
+
+- sends the newest generated daily status report through Telegram
+- does not generate a report
+- does not call AI models
+- keeps delivery separate from backup and report generation
+
 ## 2026-05-01 — CLI latest-report Telegram sender added
 
 Added a manual CLI command to send the newest daily status report through Telegram.

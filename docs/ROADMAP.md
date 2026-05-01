@@ -361,6 +361,30 @@ It does not generate reports, call AI models, install timers, or change Telegram
 This prepares the project for a future scheduled report-delivery service.
 
 
+## Scheduled daily report Telegram delivery
+
+Status: complete.
+
+MarcBot includes a dedicated systemd timer to send the newest generated daily status report through Telegram.
+
+Units:
+
+    marcbot-daily-status-report-send.service
+    marcbot-daily-status-report-send.timer
+
+Schedule:
+
+    23:50 America/New_York
+
+The delivery step is intentionally separate from report generation:
+
+- backup runs first
+- report generation runs second
+- report delivery runs third
+
+This keeps each operation isolated, observable, and independently testable.
+
+
 ## Longer-term roadmap
 
 ### Workspace file workflow

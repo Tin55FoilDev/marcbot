@@ -1,0 +1,18 @@
+[Unit]
+Description=MarcBot send latest daily status report
+Documentation=file:/srv/marcbot/app/docs/COMMANDS.md
+After=network-online.target marcbot-daily-status-report.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=marc
+Group=marc
+WorkingDirectory=/srv/marcbot/app
+ExecStart=/srv/marcbot/app/.venv/bin/python -m marcbot report send-latest
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/marcbot
