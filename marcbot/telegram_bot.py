@@ -13,7 +13,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from marcbot import __version__
 from marcbot.config import MarcBotConfig
 from marcbot.disk import format_disk_report
-from marcbot.docs_index import format_docs_index
+from marcbot.docs_index import format_doc_message, format_docs_index
 from marcbot.errors import MarcBotError
 from marcbot.git_status import format_git_report
 from marcbot.health import format_health_report, run_health_checks
@@ -173,6 +173,24 @@ async def docs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(docs_text)
 
 
+async def doc_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /doc <name>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /doc from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    doc_name = " ".join(context.args).strip()
+    LOGGER.info("Handled /doc for chat_id=%s doc_name=%s", chat_id, doc_name or "<empty>")
+    doc_text = format_doc_message(doc_name)
+
+    if update.message is not None:
+        await update.message.reply_text(doc_text)
+
+
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -252,6 +270,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/service - show MarcBot systemd service state\n"
         "/git - show MarcBot repository status\n"
         "/docs - list approved MarcBot docs\n"
+        "/doc <name> - show an approved MarcBot doc\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/logs - show recent MarcBot application logs\n"
@@ -288,6 +307,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("service", service_command))
     application.add_handler(CommandHandler("git", git_command))
     application.add_handler(CommandHandler("docs", docs_command))
+    application.add_handler(CommandHandler("doc", doc_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))
