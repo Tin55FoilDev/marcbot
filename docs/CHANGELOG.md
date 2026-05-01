@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-05-01 — `/timer_status` command added
+
+Added a read-only Telegram command for approved MarcBot systemd timers.
+
+New command:
+
+- `/timer_status`
+
+Approved timers:
+
+- `marcbot-backup.timer`
+- `marcbot-daily-status-report.timer`
+
+Behavior:
+
+- shows timer enablement and active state
+- shows next scheduled run and last timer trigger
+- shows paired service result and exit status
+- reports healthy or warning state
+- does not enable, disable, start, stop, or modify timers
+
 ## 2026-05-01 — `/report_status` command added
 
 Added a read-only Telegram status command for local daily reports.

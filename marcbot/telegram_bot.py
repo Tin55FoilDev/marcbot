@@ -23,6 +23,7 @@ from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.report_status import format_report_status_message
 from marcbot.service_status import format_service_report
 from marcbot.tail_reader import format_tail_message
+from marcbot.timer_status import format_timer_status_message
 from marcbot.uptime import format_uptime_report
 from marcbot.workspace_list import format_workspace_ls_message
 from marcbot.workspace_sender import validate_workspace_send
@@ -373,6 +374,22 @@ async def tail_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(tail_text)
 
 
+async def timer_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /timer_status."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /timer_status from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /timer_status for chat_id=%s", chat_id)
+
+    if update.message is not None:
+        await update.message.reply_text(format_timer_status_message())
+
+
 async def report_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /report_status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -435,6 +452,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/backup_status - show latest MarcBot app-level backup status\n"
+        "/timer_status - show MarcBot scheduled timer status\n"
         "/report_status - show latest daily status report status\n"
         "/logs - show recent MarcBot application logs\n"
         "/tail <app|service> - show approved diagnostic log tails\n"
@@ -503,6 +521,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("backup_status", backup_status_command))
+    application.add_handler(CommandHandler("timer_status", timer_status_command))
     application.add_handler(CommandHandler("report_status", report_status_command))
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("tail", tail_command))

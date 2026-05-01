@@ -294,6 +294,24 @@ The command summarizes:
 It does not generate reports, send Telegram files, call AI models, or modify systemd.
 
 
+## Timer status command
+
+Status: complete.
+
+MarcBot includes a read-only Telegram timer status command:
+
+    /timer_status
+
+The command summarizes approved MarcBot timers:
+
+- `marcbot-backup.timer`
+- `marcbot-daily-status-report.timer`
+
+It reports enablement, active state, next run, last trigger, paired service result, and overall health.
+
+It does not enable, disable, start, stop, or modify timers.
+
+
 ## Longer-term roadmap
 
 ### Workspace file workflow

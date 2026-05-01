@@ -267,6 +267,27 @@ Safety properties:
 - Telegram token redaction
 - Fixed `journalctl` command for service logs
 
+### `/timer_status`
+
+Shows read-only status for MarcBot's approved scheduled timers.
+
+Current approved timers:
+
+- `marcbot-backup.timer`
+- `marcbot-daily-status-report.timer`
+
+Reports:
+
+- timer enablement state
+- timer active/substate
+- next scheduled run
+- last timer trigger
+- paired service result
+- paired service exit status
+- overall health or warning state
+
+This command is read-only. It does not enable, disable, start, stop, or modify any timer.
+
 ### `/report_status`
 
 Shows the status of the latest local daily status report.
