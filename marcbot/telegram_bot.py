@@ -8,7 +8,7 @@ import sys
 from datetime import UTC, datetime
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
 from marcbot import __version__
 from marcbot.config import MarcBotConfig
@@ -315,6 +315,30 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(help_text)
 
 
+async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle unknown slash commands."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized unknown command from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    command_text = "<unknown>"
+    if update.message is not None and update.message.text:
+        command_text = update.message.text.split()[0]
+
+    LOGGER.info("Handled unknown command for chat_id=%s command=%s", chat_id, command_text)
+
+    if update.message is not None:
+        await update.message.reply_text(
+            "🤖 MarcBot\n"
+            f"Unknown command: {command_text}\n"
+            "Use /help to see available commands."
+        )
+
+
 def build_application(config: MarcBotConfig) -> Application:
     """Build a Telegram Application from validated MarcBot config."""
     if not config.telegram.enabled:
@@ -347,6 +371,9 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("help", help_command))
+
+    # This must remain after all known command handlers.
+    application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
 
     return application
 

@@ -151,6 +151,20 @@ Safety properties:
 
 Shows the Telegram command help text.
 
+## Unknown commands
+
+Unknown slash commands return a short help response instead of failing silently.
+
+Example:
+
+    /sendoc
+
+Expected response:
+
+    🤖 MarcBot
+    Unknown command: /sendoc
+    Use /help to see available commands.
+
 ## Safety model
 
 MarcBot command design favors:

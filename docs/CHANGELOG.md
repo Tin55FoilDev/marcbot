@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-04-30 — Unknown command response added
+
+Added a catch-all Telegram command handler for mistyped or unsupported slash commands.
+
+Behavior:
+
+- unknown slash commands no longer fail silently
+- approved chats receive a short response pointing to `/help`
+- unauthorized chats still receive only the generic unauthorized response
+- handler is registered after all known command handlers
+
 ## 2026-04-30 — `/senddoc <name>` command added
 
 Added Telegram file attachment support for approved MarcBot documentation.
