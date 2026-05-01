@@ -22,6 +22,7 @@ from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.service_status import format_service_report
 from marcbot.tail_reader import format_tail_message
 from marcbot.uptime import format_uptime_report
+from marcbot.workspace_list import format_workspace_ls_message
 from marcbot.workspace_sender import validate_workspace_send
 
 LOGGER = logging.getLogger(__name__)
@@ -227,6 +228,23 @@ async def senddoc_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     )
 
 
+async def ls_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /ls."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /ls from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /ls for chat_id=%s", chat_id)
+    listing_text = format_workspace_ls_message()
+
+    if update.message is not None:
+        await update.message.reply_text(listing_text)
+
+
 async def send_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /send <workspace-relative-path>."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -376,6 +394,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/docs - list approved MarcBot docs\n"
         "/doc <name> - show an approved MarcBot doc preview\n"
         "/senddoc <name> - send an approved MarcBot doc as a file\n"
+        "/ls - list workspace root entries\n"
         "/send <workspace-relative-path> - send a file from /srv/marcbot/workspace\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
@@ -441,6 +460,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("docs", docs_command))
     application.add_handler(CommandHandler("doc", doc_command))
     application.add_handler(CommandHandler("senddoc", senddoc_command))
+    application.add_handler(CommandHandler("ls", ls_command))
     application.add_handler(CommandHandler("send", send_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))

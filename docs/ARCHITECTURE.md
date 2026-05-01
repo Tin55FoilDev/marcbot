@@ -223,6 +223,25 @@ Safety properties:
 - bounded Telegram output
 - friendly unknown-name response
 
+### `marcbot.workspace_list`
+
+Read-only workspace listing helper.
+
+Current scope:
+
+- lists only `/srv/marcbot/workspace`
+- omits hidden dotfiles
+- sorts directories before files
+- reports file sizes
+- bounds Telegram output
+
+Safety properties:
+
+- read-only
+- no shell execution
+- fixed workspace root
+- no arbitrary paths in first implementation
+
 ### `marcbot.workspace_sender`
 
 Safe workspace file-send validator.

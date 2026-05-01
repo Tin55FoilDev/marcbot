@@ -1,5 +1,55 @@
 # Changelog
 
+## 2026-05-01 — Read-only `/ls` workspace listing added
+
+Added initial safe workspace discovery.
+
+New command:
+
+- `/ls`
+
+Scope:
+
+- lists top-level entries under `/srv/marcbot/workspace`
+- shows directories and files
+- shows basic file sizes
+- omits hidden dotfiles
+- bounds Telegram output
+
+This helps discover files before using `/send <workspace-relative-path>`.
+
+Safety properties:
+
+- read-only
+- fixed workspace root
+- no shell execution
+- no arbitrary paths in first implementation
+
+## 2026-05-01 — Read-only `/ls` workspace listing added
+
+Added initial safe workspace discovery.
+
+New command:
+
+- `/ls`
+
+Scope:
+
+- lists top-level entries under `/srv/marcbot/workspace`
+- shows directories and files
+- shows basic file sizes
+- omits hidden dotfiles
+- bounds Telegram output
+
+This helps discover files before using `/send <workspace-relative-path>`.
+
+Safety properties:
+
+- read-only
+- fixed workspace root
+- no shell execution
+- no arbitrary paths in first implementation
+
 ## 2026-04-30 — Daily app-level backup timer added
 
 Added systemd-based daily MarcBot app-level backup automation.

@@ -118,6 +118,31 @@ Safety properties:
 - File size limit enforced
 - Request is logged
 
+### `/ls`
+
+Lists visible top-level entries under the MarcBot workspace.
+
+Workspace root:
+
+    /srv/marcbot/workspace
+
+Reports:
+
+- directories
+- files
+- basic file sizes
+
+Safety properties:
+
+- Read-only
+- Fixed workspace root
+- No shell execution
+- No arbitrary absolute paths
+- Hidden dotfiles are omitted
+- Output is bounded for Telegram
+
+Use `/send <workspace-relative-path>` to send one of the listed files.
+
 ### `/send <workspace-relative-path>`
 
 Sends a file from the MarcBot workspace as a Telegram file attachment.

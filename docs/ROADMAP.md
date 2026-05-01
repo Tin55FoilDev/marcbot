@@ -208,6 +208,25 @@ Purpose:
 - warn if backup is stale
 - keep Telegram read-only for backup operations
 
+### Workspace discovery
+
+Status: initial implementation.
+
+Current command:
+
+    /ls
+
+Purpose:
+
+- list top-level workspace entries
+- make `/send <workspace-relative-path>` easier to use
+- keep workspace browsing read-only and bounded
+
+Future expansion:
+
+- `/ls <workspace-relative-directory>`
+- `/tree <workspace-relative-directory>`
+
 ## Longer-term roadmap
 
 ### Workspace file workflow
