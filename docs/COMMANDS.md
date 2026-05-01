@@ -118,6 +118,39 @@ Safety properties:
 - File size limit enforced
 - Request is logged
 
+### `/send <workspace-relative-path>`
+
+Sends a file from the MarcBot workspace as a Telegram file attachment.
+
+Workspace root:
+
+    /srv/marcbot/workspace
+
+Example:
+
+    /send reports/send-test.txt
+
+This resolves internally to:
+
+    /srv/marcbot/workspace/reports/send-test.txt
+
+Safety properties:
+
+- Workspace-relative paths only
+- Absolute paths rejected
+- Parent-directory traversal rejected
+- Resolved path must remain under `/srv/marcbot/workspace`
+- Non-regular files rejected
+- File size limit enforced
+- Request is logged
+
+Rejected examples:
+
+    /send /etc/passwd
+    /send ../config/marcbot.toml
+    /send ../../home/marc/.ssh/id_ed25519
+    /send /srv/marcbot/config/marcbot.toml
+
 ### `/status`
 
 

@@ -20,6 +20,7 @@ from marcbot.health import format_health_report, run_health_checks
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.service_status import format_service_report
 from marcbot.uptime import format_uptime_report
+from marcbot.workspace_sender import validate_workspace_send
 
 LOGGER = logging.getLogger(__name__)
 
@@ -224,6 +225,39 @@ async def senddoc_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     )
 
 
+async def send_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /send <workspace-relative-path>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /send from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    requested_path = " ".join(context.args).strip()
+    result = validate_workspace_send(requested_path)
+    LOGGER.info(
+        "Handled /send for chat_id=%s requested_path=%s ok=%s",
+        chat_id,
+        requested_path or "<empty>",
+        result.ok,
+    )
+
+    if update.message is None:
+        return
+
+    if not result.ok or result.path is None:
+        await update.message.reply_text(result.message)
+        return
+
+    await update.message.reply_document(
+        document=result.path,
+        filename=result.path.name,
+        caption=f"🤖 MarcBot workspace file: {requested_path}",
+    )
+
+
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -305,6 +339,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/docs - list approved MarcBot docs\n"
         "/doc <name> - show an approved MarcBot doc preview\n"
         "/senddoc <name> - send an approved MarcBot doc as a file\n"
+        "/send <workspace-relative-path> - send a file from /srv/marcbot/workspace\n"
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/logs - show recent MarcBot application logs\n"
@@ -367,6 +402,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("docs", docs_command))
     application.add_handler(CommandHandler("doc", doc_command))
     application.add_handler(CommandHandler("senddoc", senddoc_command))
+    application.add_handler(CommandHandler("send", send_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))

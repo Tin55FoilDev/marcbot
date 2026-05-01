@@ -136,6 +136,8 @@ Safety model:
 
 ### 2. `/send <workspace-relative-path>`
 
+Status: implemented.
+
 Send a file from `/srv/marcbot/workspace`.
 
 Safety model:
@@ -256,9 +258,9 @@ For each new feature:
 
 Recommended order:
 
-1. `/senddoc <name>`
-2. safe `/send <workspace-relative-path>`
-3. `/tail <approved-log-name>`
+1. `/tail <approved-log-name>`
+2. backup visibility
+3. update-check visibility
 4. backup visibility
 5. update-check visibility
 

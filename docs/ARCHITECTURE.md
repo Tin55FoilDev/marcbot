@@ -198,6 +198,24 @@ Safety properties:
 - bounded Telegram output
 - friendly unknown-name response
 
+### `marcbot.workspace_sender`
+
+Safe workspace file-send validator.
+
+Workspace root:
+
+    /srv/marcbot/workspace
+
+Safety properties:
+
+- workspace-relative paths only
+- rejects absolute paths
+- rejects parent-directory traversal
+- resolves the real path before sending
+- verifies resolved path stays inside workspace
+- rejects non-regular files
+- enforces a file size limit
+
 ### `marcbot.telegram_bot`
 
 Telegram command wiring.

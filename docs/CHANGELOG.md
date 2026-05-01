@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-04-30 — Safe workspace `/send` command added
+
+Added Telegram file sending for files under the MarcBot workspace.
+
+New command:
+
+- `/send <workspace-relative-path>`
+
+Workspace root:
+
+- `/srv/marcbot/workspace`
+
+Safety properties:
+
+- rejects absolute paths
+- rejects parent-directory traversal
+- resolves the path before sending
+- verifies the resolved path remains under the workspace root
+- rejects non-regular files
+- enforces a file size limit
+- logs each request
+- does not allow arbitrary server path sending
+
 ## 2026-04-30 — Unknown command response added
 
 Added a catch-all Telegram command handler for mistyped or unsupported slash commands.
