@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-04-30 — Daily app-level backup timer added
+
+Added systemd-based daily MarcBot app-level backup automation.
+
+New units:
+
+- `marcbot-backup.service`
+- `marcbot-backup.timer`
+
+Schedule:
+
+- daily at 23:30
+- persistent timer
+- randomized delay up to 5 minutes
+
+Backup script:
+
+- `/srv/marcbot/app/scripts/backup_marcbot.sh`
+
+Output:
+
+- `/srv/marcbot/backups/marcbot-backup-YYYYMMDD-HHMMSS.tar.gz`
+- `/srv/marcbot/backups/marcbot-backup-YYYYMMDD-HHMMSS.tar.gz.sha256`
+- `/srv/marcbot/backups/latest-backup.txt`
+
+Telegram remains read-only for backups through `/backup_status`.
+
 ## 2026-04-30 — Read-only `/backup_status` command added
 
 Added backup visibility for MarcBot app-level backups.

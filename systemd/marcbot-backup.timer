@@ -1,0 +1,11 @@
+[Unit]
+Description=Run MarcBot app-level backup daily
+
+[Timer]
+OnCalendar=*-*-* 23:30:00
+Persistent=true
+RandomizedDelaySec=5m
+Unit=marcbot-backup.service
+
+[Install]
+WantedBy=timers.target

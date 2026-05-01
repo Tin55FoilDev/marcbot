@@ -1,0 +1,17 @@
+[Unit]
+Description=MarcBot app-level backup
+Documentation=file:/srv/marcbot/app/docs/DEPLOY.md
+Wants=marcbot-backup.timer
+
+[Service]
+Type=oneshot
+User=marc
+Group=marc
+WorkingDirectory=/srv/marcbot
+ExecStart=/srv/marcbot/app/scripts/backup_marcbot.sh
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/marcbot

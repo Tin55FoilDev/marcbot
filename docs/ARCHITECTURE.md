@@ -466,3 +466,29 @@ Each should follow the same pattern:
 - no arbitrary shell
 - explicit errors
 - tests before Telegram wiring
+
+## App-level backup architecture
+
+MarcBot uses a split backup design:
+
+- backup creation is handled by a fixed shell script and systemd timer
+- backup visibility is handled by the read-only `/backup_status` Telegram command
+
+Backup creation path:
+
+    marcbot-backup.timer
+        -> marcbot-backup.service
+            -> /srv/marcbot/app/scripts/backup_marcbot.sh
+                -> /srv/marcbot/backups/*.tar.gz
+                -> /srv/marcbot/backups/*.sha256
+                -> /srv/marcbot/backups/latest-backup.txt
+
+Safety model:
+
+- Telegram cannot trigger backup creation
+- Telegram cannot delete backups
+- `/backup_status` only reads fixed marker/artifact paths
+- service runs as user `marc`
+- service has systemd hardening enabled
+- `/srv/marcbot` is the only writable tree exposed to the service
+

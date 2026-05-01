@@ -286,3 +286,64 @@ Before adding new features:
 6. Inspect logs.
 7. Commit and push.
 8. Consider a VM backup after major milestones.
+
+## App-level backups
+
+MarcBot has a daily app-level backup timer in addition to any Proxmox VM backups.
+
+Backup script:
+
+    /srv/marcbot/app/scripts/backup_marcbot.sh
+
+Systemd units:
+
+    /etc/systemd/system/marcbot-backup.service
+    /etc/systemd/system/marcbot-backup.timer
+
+Repo copies:
+
+    /srv/marcbot/app/systemd/marcbot-backup.service
+    /srv/marcbot/app/systemd/marcbot-backup.timer
+
+Backup output:
+
+    /srv/marcbot/backups/marcbot-backup-YYYYMMDD-HHMMSS.tar.gz
+    /srv/marcbot/backups/marcbot-backup-YYYYMMDD-HHMMSS.tar.gz.sha256
+    /srv/marcbot/backups/latest-backup.txt
+
+The backup includes:
+
+    /srv/marcbot/app
+    /srv/marcbot/config
+    /srv/marcbot/state
+    /srv/marcbot/workspace
+    /srv/marcbot/logs
+
+The backup excludes:
+
+    /srv/marcbot/app/.venv
+    /srv/marcbot/backups
+    /srv/marcbot/tmp
+
+Manual backup run:
+
+    sudo -u marc bash -lc '
+    cd /srv/marcbot
+    /srv/marcbot/app/scripts/backup_marcbot.sh
+    '
+
+Manual systemd service run:
+
+    sudo systemctl start marcbot-backup.service
+    sudo systemctl status marcbot-backup.service --no-pager
+    sudo journalctl -u marcbot-backup.service -n 80 --no-pager
+
+Timer inspection:
+
+    sudo systemctl status marcbot-backup.timer --no-pager
+    sudo systemctl list-timers --all | grep -E 'marcbot-backup|NEXT'
+
+Telegram status check:
+
+    /backup_status
+

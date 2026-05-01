@@ -181,6 +181,8 @@ Reports:
 
 This command does not create, delete, or modify backups.
 
+Backup creation is handled separately by `marcbot-backup.timer`.
+
 Safety properties:
 
 - Read-only
