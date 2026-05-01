@@ -1,0 +1,29 @@
+# Example MarcBot source monitor allowlist.
+# Copy to /srv/marcbot/config/sources.toml and edit locally.
+#
+# The real /srv/marcbot/config/sources.toml file is local operational config
+# and should not be committed to Git.
+
+[[sources]]
+name = "openai-news"
+kind = "web_page"
+url = "https://openai.com/news/"
+enabled = true
+
+[[sources]]
+name = "anthropic-news"
+kind = "web_page"
+url = "https://www.anthropic.com/news"
+enabled = true
+
+[[sources]]
+name = "google-deepmind-news"
+kind = "web_page"
+url = "https://deepmind.google/blog/"
+enabled = true
+
+[[sources]]
+name = "huggingface-blog"
+kind = "web_page"
+url = "https://huggingface.co/blog"
+enabled = true

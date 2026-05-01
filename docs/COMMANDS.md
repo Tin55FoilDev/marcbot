@@ -360,6 +360,21 @@ MarcBot command design favors:
 - Explicit error handling
 - Tests for helper logic
 
+## CLI-only source monitor commands
+
+These commands are currently CLI-only and are not Telegram commands:
+
+    python -m marcbot source-monitor config-check
+    python -m marcbot source-monitor run
+
+`config-check` validates `/srv/marcbot/config/sources.toml` and reports the configured sources.
+
+`run` writes a local source monitor Markdown report under `/srv/marcbot/workspace/reports`.
+
+The real source config is local operational config and should not be committed to Git. A safe example may live under `docs/examples/`.
+
+Do not add Telegram source monitor commands until the local CLI/report behavior is stable and tested.
+
 ## Future command candidates
 
 Possible future commands:

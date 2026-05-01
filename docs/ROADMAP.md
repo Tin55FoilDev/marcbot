@@ -387,6 +387,21 @@ This keeps each operation isolated, observable, and independently testable.
 
 ## Longer-term roadmap
 
+### Source monitor / AI awareness
+
+Build a narrow allowlisted source monitor for Marc's AI information workflow. The first goal is controlled source checking and local Markdown reports, not autonomous browsing or LLM-driven decision-making.
+
+Planned sequence:
+
+1. Source monitor report scaffold.
+2. Local source config validation.
+3. Documentation and example config.
+4. Safe fetch implementation for allowlisted HTTPS sources.
+5. Bounded local Markdown reports.
+6. Optional Telegram report delivery after the local path is stable.
+7. Optional higher-level AI summaries after deterministic source collection is reliable.
+
+
 ### Workspace file workflow
 
 MarcBot should eventually help Marc move useful files off the Ubuntu server to his MacBook without broad SSH/SCP friction.

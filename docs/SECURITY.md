@@ -176,6 +176,23 @@ Log inspection from shell should be done as `marc`:
 
     sudo -u marc tail -n 80 /srv/marcbot/logs/marcbot.log
 
+## Source monitor safety
+
+The source monitor must remain allowlist-based.
+
+Rules:
+
+- Real source config lives outside Git at /srv/marcbot/config/sources.toml.
+- Git may contain safe examples only.
+- URLs must be explicit and validated before use.
+- Only HTTPS sources are allowed.
+- Telegram must not accept arbitrary fetch URLs.
+- Source monitor output must be bounded.
+- Fetch failures must produce clean operator-facing errors or report entries.
+- The feature must not become arbitrary browsing or shell execution.
+
+Stop development if the source monitor can be used to read arbitrary local files, fetch arbitrary Telegram-supplied URLs, expose secrets, or write outside MarcBot workspace/report paths.
+
 ## Command safety rules
 
 Current Telegram commands are intentionally narrow:

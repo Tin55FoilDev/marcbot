@@ -395,7 +395,19 @@ This is not part of the initial implementation.
 
 ---
 
+
 ## 8. Initial Non-Goals
+
+### Source monitor direction
+
+MarcBot may include a narrow allowlisted source monitor for Marc's broader AI information workflow.
+
+The source monitor should use explicit local configuration, validate sources before use, and produce local Markdown reports. It should not become open-ended browsing, arbitrary URL fetching from Telegram, or an autonomous web agent.
+
+Real operational source config belongs outside Git at /srv/marcbot/config/sources.toml. Git may contain only safe examples such as docs/examples/sources.example.toml.
+
+The source monitor should follow the same project standards as every other feature: small changes, tests where practical, ./scripts/check.sh, diff review, documentation updates, and commit/push only after clean validation.
+
 
 MarcBot will not initially support:
 
