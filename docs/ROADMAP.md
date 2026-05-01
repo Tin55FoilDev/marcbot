@@ -152,6 +152,8 @@ Safety model:
 
 ### 3. `/tail <approved-log-name>`
 
+Status: implemented.
+
 Show recent lines from approved logs.
 
 Possible approved names:
@@ -258,9 +260,9 @@ For each new feature:
 
 Recommended order:
 
-1. `/tail <approved-log-name>`
-2. backup visibility
-3. update-check visibility
+1. backup visibility
+2. update-check visibility
+3. scheduled reports
 4. backup visibility
 5. update-check visibility
 

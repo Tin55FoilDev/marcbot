@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-04-30 — Approved `/tail` diagnostic command added
+
+Added bounded diagnostic tail output for approved log sources.
+
+New command:
+
+- `/tail <app|service>`
+
+Approved names:
+
+- `app`
+- `service`
+
+Behavior:
+
+- `/tail app` reads the fixed MarcBot application log
+- `/tail service` reads the fixed MarcBot systemd service journal
+
+Safety properties:
+
+- approved tail names only
+- no arbitrary file paths
+- no arbitrary service names
+- bounded Telegram output
+- token redaction
+- fixed `journalctl` command for service logs
+
 ## 2026-04-30 — Safe workspace `/send` command added
 
 Added Telegram file sending for files under the MarcBot workspace.

@@ -19,6 +19,7 @@ from marcbot.git_status import format_git_report
 from marcbot.health import format_health_report, run_health_checks
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.service_status import format_service_report
+from marcbot.tail_reader import format_tail_message
 from marcbot.uptime import format_uptime_report
 from marcbot.workspace_sender import validate_workspace_send
 
@@ -299,6 +300,24 @@ async def health_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text(health_text)
 
 
+async def tail_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /tail <approved-log-name>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /tail from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    tail_name = " ".join(context.args).strip()
+    LOGGER.info("Handled /tail for chat_id=%s tail_name=%s", chat_id, tail_name or "<empty>")
+    tail_text = format_tail_message(tail_name)
+
+    if update.message is not None:
+        await update.message.reply_text(tail_text)
+
+
 async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /logs."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -343,6 +362,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/status - show basic MarcBot service status\n"
         "/health - run local MarcBot health checks\n"
         "/logs - show recent MarcBot application logs\n"
+        "/tail <app|service> - show approved diagnostic log tails\n"
         "/help - show this help message"
     )
 
@@ -406,6 +426,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("health", health_command))
     application.add_handler(CommandHandler("logs", logs_command))
+    application.add_handler(CommandHandler("tail", tail_command))
     application.add_handler(CommandHandler("help", help_command))
 
     # This must remain after all known command handlers.

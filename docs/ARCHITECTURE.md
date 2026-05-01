@@ -216,6 +216,29 @@ Safety properties:
 - rejects non-regular files
 - enforces a file size limit
 
+### `marcbot.tail_reader`
+
+Approved diagnostic tail reader.
+
+Current approved names:
+
+- `app`
+- `service`
+
+Sources:
+
+- `app`: `/srv/marcbot/logs/marcbot.log`
+- `service`: fixed `journalctl` query for `marcbot-telegram.service`
+
+Safety properties:
+
+- approved names only
+- no arbitrary paths
+- no arbitrary service names
+- bounded output
+- token redaction
+- fixed subprocess command for journal access
+
 ### `marcbot.telegram_bot`
 
 Telegram command wiring.
@@ -257,6 +280,7 @@ Current commands:
 - `/status`
 - `/health`
 - `/logs`
+- `/tail <app|service>`
 - `/help`
 
 Command categories:
@@ -283,6 +307,7 @@ Command categories:
 ### Diagnostics
 
 - `/logs`
+- `/tail <app|service>`
 - `/help`
 
 ## Command safety pattern

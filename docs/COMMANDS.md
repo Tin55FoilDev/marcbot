@@ -168,6 +168,34 @@ Current checks include:
 - Logs directory is writable
 - Config file loads
 
+### `/tail <app|service>`
+
+Shows a bounded diagnostic tail from an approved log source.
+
+Approved names:
+
+- `app`
+- `service`
+
+Examples:
+
+    /tail app
+    /tail service
+
+Current behavior:
+
+- `/tail app` reads the last 40 lines from `/srv/marcbot/logs/marcbot.log`
+- `/tail service` reads the last 40 journal lines for `marcbot-telegram.service`
+
+Safety properties:
+
+- Approved tail names only
+- No arbitrary file paths
+- No arbitrary service names
+- Bounded Telegram output
+- Telegram token redaction
+- Fixed `journalctl` command for service logs
+
 ### `/logs`
 
 Shows recent MarcBot application logs from:
