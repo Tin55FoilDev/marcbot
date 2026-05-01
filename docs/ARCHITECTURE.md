@@ -513,3 +513,46 @@ Safety model:
 - service has systemd hardening enabled
 - `/srv/marcbot` is the only writable tree exposed to the service
 
+
+## User and privilege model
+
+MarcBot uses a split-user operating model.
+
+### `adminuser`
+
+`adminuser` is the administrative server user.
+
+Responsibilities:
+
+- perform package installs and OS maintenance
+- manage systemd units
+- edit files that require elevated privileges
+- create or adjust directories under `/srv/marcbot` when sudo is required
+- run deployment and recovery commands that require root privileges
+
+`adminuser` has sudo capability.
+
+### `marc`
+
+`marc` is the MarcBot runtime user.
+
+Responsibilities:
+
+- run the MarcBot Telegram service
+- own and execute the MarcBot application process
+- write MarcBot logs, state, reports, backups, and workspace files where permitted
+- run non-privileged app validation commands when appropriate
+
+`marc` does not have sudo capability.
+
+### Design rule
+
+MarcBot must not depend on the runtime user `marc` having sudo access.
+
+Commands, scripts, systemd units, and documentation should clearly distinguish between:
+
+- administrative commands run by `adminuser` with `sudo`
+- runtime/app commands run as `marc`
+- systemd-managed execution of MarcBot services
+
+This mirrors the established OpenClaw operating pattern and is intentional.
