@@ -9,7 +9,12 @@ import sys
 from marcbot import __version__
 from marcbot.config import DEFAULT_CONFIG_PATH, load_config
 from marcbot.errors import MarcBotError
-from marcbot.llm_client import format_llm_models, list_openai_compatible_models
+from marcbot.llm_client import (
+    format_llm_health_result,
+    format_llm_models,
+    list_openai_compatible_models,
+    run_openai_compatible_health_check,
+)
 from marcbot.llm_config import format_llm_profiles, load_llm_config
 from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
@@ -48,6 +53,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="list models from a configured LLM provider",
     )
     llm_models_parser.add_argument("provider", help="configured provider name")
+    llm_health_parser = llm_subparsers.add_parser(
+        "health",
+        help="run a tiny health check for a configured LLM profile",
+    )
+    llm_health_parser.add_argument("profile", help="configured profile name")
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -172,6 +182,24 @@ def main(argv: list[str] | None = None) -> int:
                 models = list_openai_compatible_models(provider)
                 print(format_llm_models(args.provider, models))
                 LOGGER.info("LLM models listed: provider=%s", args.provider)
+                return 0
+
+            if args.llm_command == "health":
+                llm_config = load_llm_config()
+                profile = llm_config.profiles.get(args.profile)
+                if profile is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-037",
+                        f"Unknown LLM profile: {args.profile}",
+                    )
+                provider = llm_config.providers[profile.provider]
+                result = run_openai_compatible_health_check(
+                    provider=provider,
+                    profile_name=profile.name,
+                    model=profile.model,
+                )
+                print(format_llm_health_result(result))
+                LOGGER.info("LLM health checked: profile=%s", profile.name)
                 return 0
 
             parser.print_help()

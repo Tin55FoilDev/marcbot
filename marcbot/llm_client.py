@@ -32,6 +32,16 @@ class LlmModelInfo:
     owned_by: str = ""
 
 
+@dataclass(frozen=True)
+class LlmHealthResult:
+    """Result from an LLM profile health check."""
+
+    provider_name: str
+    profile_name: str
+    model: str
+    response_text: str
+
+
 def _provider_headers(provider: LlmProviderConfig) -> dict[str, str]:
     """Build HTTP headers for a provider."""
     headers = {
@@ -62,6 +72,55 @@ def _read_json_response(response: Any) -> dict[str, Any]:
         raise MarcBotError("MBOT-LLM-026", "LLM provider JSON response must be an object")
 
     return parsed
+
+
+def _post_json_response(
+    provider: LlmProviderConfig,
+    endpoint: str,
+    payload: dict[str, Any],
+    opener: UrlOpener | None = None,
+) -> dict[str, Any]:
+    """POST JSON to an LLM provider endpoint and return parsed JSON."""
+    if not provider.enabled:
+        raise MarcBotError("MBOT-LLM-020", f"LLM provider is disabled: {provider.name}")
+
+    if provider.provider_type != "openai_compatible":
+        raise MarcBotError(
+            "MBOT-LLM-021",
+            f"LLM provider does not support this operation yet: {provider.name}",
+        )
+
+    if not provider.base_url:
+        raise MarcBotError("MBOT-LLM-022", f"LLM provider is missing base_url: {provider.name}")
+
+    headers = _provider_headers(provider)
+    headers["Content-Type"] = "application/json"
+
+    request = urllib.request.Request(
+        f"{provider.base_url}/{endpoint.lstrip('/')}",
+        data=json.dumps(payload).encode("utf-8"),
+        headers=headers,
+        method="POST",
+    )
+    active_opener = opener or urllib.request.build_opener()
+
+    try:
+        with active_opener.open(request, timeout=provider.timeout_seconds) as response:
+            return _read_json_response(response)
+    except TimeoutError as exc:
+        raise MarcBotError("MBOT-LLM-023", f"LLM provider timed out: {provider.name}") from exc
+    except urllib.error.HTTPError as exc:
+        message = f"LLM provider returned HTTP {exc.code}: {provider.name}"
+        if exc.code in (401, 403) and provider.api_key_env:
+            message += f". Check {provider.api_key_env}."
+        raise MarcBotError("MBOT-LLM-027", message) from exc
+    except urllib.error.URLError as exc:
+        raise MarcBotError(
+            "MBOT-LLM-028",
+            f"Unable to reach LLM provider: {provider.name}",
+        ) from exc
+    except OSError as exc:
+        raise MarcBotError("MBOT-LLM-029", f"LLM provider request failed: {provider.name}") from exc
 
 
 def list_openai_compatible_models(
@@ -126,6 +185,77 @@ def list_openai_compatible_models(
         )
 
     return tuple(sorted(models, key=lambda model: model.model_id))
+
+
+def run_openai_compatible_health_check(
+    provider: LlmProviderConfig,
+    profile_name: str,
+    model: str,
+    opener: UrlOpener | None = None,
+) -> LlmHealthResult:
+    """Run a tiny deterministic chat completion health check."""
+    payload: dict[str, Any] = {
+        "model": model,
+        "messages": [
+            {
+                "role": "user",
+                "content": "Reply exactly: marcbot-ok",
+            },
+        ],
+        "temperature": 0,
+        "max_tokens": 80,
+    }
+
+    parsed = _post_json_response(
+        provider=provider,
+        endpoint="chat/completions",
+        payload=payload,
+        opener=opener,
+    )
+
+    choices = parsed.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise MarcBotError("MBOT-LLM-032", "LLM health response has no choices")
+
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        raise MarcBotError("MBOT-LLM-033", "LLM health choice must be an object")
+
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        raise MarcBotError("MBOT-LLM-034", "LLM health choice has no message object")
+
+    content = message.get("content")
+    if not isinstance(content, str) or not content.strip():
+        raise MarcBotError("MBOT-LLM-035", "LLM health response content is empty")
+
+    response_text = content.strip()
+    if "marcbot-ok" not in response_text.lower():
+        raise MarcBotError(
+            "MBOT-LLM-036",
+            f"LLM health response did not contain expected marker: {profile_name}",
+        )
+
+    return LlmHealthResult(
+        provider_name=provider.name,
+        profile_name=profile_name,
+        model=model,
+        response_text=response_text,
+    )
+
+
+def format_llm_health_result(result: LlmHealthResult) -> str:
+    """Format an LLM health check result for operator output."""
+    return "\n".join(
+        [
+            "MarcBot LLM health",
+            f"Profile: {result.profile_name}",
+            f"Provider: {result.provider_name}",
+            f"Model: {result.model}",
+            "Status: ok",
+            f"Response: {result.response_text}",
+        ]
+    )
 
 
 def format_llm_models(provider_name: str, models: tuple[LlmModelInfo, ...]) -> str:

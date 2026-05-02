@@ -9,7 +9,12 @@ from dataclasses import dataclass
 import pytest
 
 from marcbot.errors import MarcBotError
-from marcbot.llm_client import format_llm_models, list_openai_compatible_models
+from marcbot.llm_client import (
+    format_llm_health_result,
+    format_llm_models,
+    list_openai_compatible_models,
+    run_openai_compatible_health_check,
+)
 from marcbot.llm_config import LlmProviderConfig
 
 
@@ -182,3 +187,89 @@ def test_format_llm_models() -> None:
     assert "Provider: lmstudio" in output
     assert "Count: 1" in output
     assert "- model-a" in output
+
+def test_run_openai_compatible_health_check() -> None:
+    opener = FakeOpener(
+        FakeResponse(
+            b"""{
+              "choices": [
+                {
+                  "message": {
+                    "content": "marcbot-ok"
+                  }
+                }
+              ]
+            }"""
+        )
+    )
+
+    result = run_openai_compatible_health_check(
+        provider=make_provider(),
+        profile_name="local_fast",
+        model="google/gemma-4-e4b",
+        opener=opener,
+    )
+
+    assert result.provider_name == "lmstudio"
+    assert result.profile_name == "local_fast"
+    assert result.model == "google/gemma-4-e4b"
+    assert result.response_text == "marcbot-ok"
+    assert opener.requests[0].full_url == "http://10.0.1.22:1234/v1/chat/completions"
+    assert opener.requests[0].get_method() == "POST"
+
+
+def test_run_health_check_requires_expected_marker() -> None:
+    opener = FakeOpener(
+        FakeResponse(
+            b"""{
+              "choices": [
+                {
+                  "message": {
+                    "content": "wrong"
+                  }
+                }
+              ]
+            }"""
+        )
+    )
+
+    with pytest.raises(MarcBotError) as excinfo:
+        run_openai_compatible_health_check(
+            provider=make_provider(),
+            profile_name="local_fast",
+            model="google/gemma-4-e4b",
+            opener=opener,
+        )
+
+    assert excinfo.value.code == "MBOT-LLM-036"
+
+
+def test_run_health_check_rejects_empty_choices() -> None:
+    with pytest.raises(MarcBotError) as excinfo:
+        run_openai_compatible_health_check(
+            provider=make_provider(),
+            profile_name="local_fast",
+            model="google/gemma-4-e4b",
+            opener=FakeOpener(FakeResponse(b"{\"choices\": []}")),
+        )
+
+    assert excinfo.value.code == "MBOT-LLM-032"
+
+
+def test_format_llm_health_result() -> None:
+    result = run_openai_compatible_health_check(
+        provider=make_provider(),
+        profile_name="local_fast",
+        model="google/gemma-4-e4b",
+        opener=FakeOpener(
+            FakeResponse(b"{\"choices\": [{\"message\": {\"content\": \"marcbot-ok\"}}]}")
+        ),
+    )
+
+    output = format_llm_health_result(result)
+
+    assert "MarcBot LLM health" in output
+    assert "Profile: local_fast" in output
+    assert "Provider: lmstudio" in output
+    assert "Status: ok" in output
+    assert "Response: marcbot-ok" in output
