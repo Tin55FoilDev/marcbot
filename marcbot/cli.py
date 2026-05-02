@@ -9,6 +9,7 @@ import sys
 from marcbot import __version__
 from marcbot.config import DEFAULT_CONFIG_PATH, load_config
 from marcbot.errors import MarcBotError
+from marcbot.llm_client import format_llm_models, list_openai_compatible_models
 from marcbot.llm_config import format_llm_profiles, load_llm_config
 from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
@@ -42,6 +43,11 @@ def build_parser() -> argparse.ArgumentParser:
     llm_parser = subparsers.add_parser("llm", help="inspect configured LLM providers and profiles")
     llm_subparsers = llm_parser.add_subparsers(dest="llm_command")
     llm_subparsers.add_parser("profiles", help="list configured LLM profiles")
+    llm_models_parser = llm_subparsers.add_parser(
+        "models",
+        help="list models from a configured LLM provider",
+    )
+    llm_models_parser.add_argument("provider", help="configured provider name")
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -153,6 +159,19 @@ def main(argv: list[str] | None = None) -> int:
                 llm_config = load_llm_config()
                 print(format_llm_profiles(llm_config))
                 LOGGER.info("LLM profiles listed: %s", llm_config.path)
+                return 0
+
+            if args.llm_command == "models":
+                llm_config = load_llm_config()
+                provider = llm_config.providers.get(args.provider)
+                if provider is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-031",
+                        f"Unknown LLM provider: {args.provider}",
+                    )
+                models = list_openai_compatible_models(provider)
+                print(format_llm_models(args.provider, models))
+                LOGGER.info("LLM models listed: provider=%s", args.provider)
                 return 0
 
             parser.print_help()
