@@ -883,3 +883,16 @@ Likely next items:
 6. Add safe document reading
 7. Add first scheduled report
 8. Add VM backup checkpoint after current baseline
+
+## 2026-05-02 — LLM provider/profile CLI baseline
+
+Added documentation for the local LLM provider/profile foundation.
+
+Current baseline:
+
+- LLM config file: `/srv/marcbot/config/llm-providers.toml`
+- LLM secret env file: `/srv/marcbot/config/llm.env`
+- CLI profile listing
+- LM Studio `/v1/models` discovery
+- LM Studio chat-completion health check for `local_fast`
+- documented current model behavior notes for Gemma, GPT-OSS, Qwen, and Nomic embedding model

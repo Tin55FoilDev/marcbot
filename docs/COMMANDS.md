@@ -452,3 +452,15 @@ Telegram access remains read-only through:
 The timer is visible through:
 
     /timer_status
+
+## CLI-only LLM commands
+
+Current LLM commands are CLI-only and are documented in `docs/LLM.md`.
+
+~~bash
+python -m marcbot llm profiles
+python -m marcbot llm models lmstudio
+python -m marcbot llm health local_fast
+~~
+
+There are no Telegram LLM prompt commands yet.

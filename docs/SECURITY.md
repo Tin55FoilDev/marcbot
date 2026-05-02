@@ -458,3 +458,21 @@ LLM providers and profiles must be configured outside Git. Secrets, tokens, and 
 
 Capabilities should receive LLM access through named profiles. A capability should not accept arbitrary provider URLs, arbitrary model IDs, arbitrary file paths, or arbitrary URLs from Telegram.
 
+### Current LLM secret handling
+
+MarcBot LLM provider secrets are stored outside Git in:
+
+~~text
+/srv/marcbot/config/llm.env
+~~
+
+The file must remain owned by `marc:marc` and mode `600`.
+
+Current LLM functionality is CLI-only:
+
+- profile listing
+- LM Studio model discovery
+- tiny profile health check
+
+MarcBot does not currently expose arbitrary Telegram prompt relay or arbitrary
+provider/model configuration from Telegram.

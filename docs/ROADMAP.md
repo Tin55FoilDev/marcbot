@@ -548,3 +548,18 @@ Initial profile categories:
 
 Local models are expected to be useful for heartbeat functions, backups, simple analysis, deterministic reports, and model experimentation. Frontier models are expected to be preferred for open-ended chat, research, discussion, planning, and adversarial or ambiguous reasoning.
 
+### LLM provider/profile operational baseline
+
+The LLM foundation now supports CLI-only provider/profile operations:
+
+~~bash
+python -m marcbot llm profiles
+python -m marcbot llm models lmstudio
+python -m marcbot llm health local_fast
+~~
+
+Next likely steps:
+
+1. Add read-only Telegram LLM status/profile visibility.
+2. Keep arbitrary prompt relay out of Telegram until a separate safety design exists.
+3. Add task-to-profile routing only after profile health checks are stable.
