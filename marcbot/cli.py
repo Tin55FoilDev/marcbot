@@ -9,6 +9,7 @@ import sys
 from marcbot import __version__
 from marcbot.config import DEFAULT_CONFIG_PATH, load_config
 from marcbot.errors import MarcBotError
+from marcbot.llm_config import format_llm_profiles, load_llm_config
 from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
 from marcbot.report_sender import send_latest_report
@@ -37,6 +38,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("doctor", help="check MarcBot runtime environment")
     subparsers.add_parser("config-check", help="validate MarcBot local configuration")
     subparsers.add_parser("telegram", help="run Telegram bot in foreground polling mode")
+
+    llm_parser = subparsers.add_parser("llm", help="inspect configured LLM providers and profiles")
+    llm_subparsers = llm_parser.add_subparsers(dest="llm_command")
+    llm_subparsers.add_parser("profiles", help="list configured LLM profiles")
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -142,6 +147,16 @@ def main(argv: list[str] | None = None) -> int:
             LOGGER.info("Starting Telegram foreground bot")
             run_foreground_bot(config)
             return 0
+
+        if args.command == "llm":
+            if args.llm_command == "profiles":
+                llm_config = load_llm_config()
+                print(format_llm_profiles(llm_config))
+                LOGGER.info("LLM profiles listed: %s", llm_config.path)
+                return 0
+
+            parser.print_help()
+            return 1
 
         if args.command == "source-monitor":
             if args.source_monitor_command == "config-check":
