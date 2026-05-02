@@ -49,6 +49,67 @@ def extract_source_report_summary(report_text: str) -> str | None:
     return summary or None
 
 
+def _parse_fetch_result_blocks(report_text: str) -> list[dict[str, str]]:
+    """Parse source blocks from the Fetch results section."""
+    lines = report_text.splitlines()
+    in_fetch_results = False
+    blocks: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped == "## Fetch results":
+            in_fetch_results = True
+            continue
+
+        if not in_fetch_results:
+            continue
+
+        if stripped.startswith("## "):
+            break
+
+        if line.startswith("- "):
+            if current is not None:
+                blocks.append(current)
+            current = {"name": line[2:].strip()}
+            continue
+
+        if current is not None and line.startswith("  - ") and ": " in line:
+            key, value = line[4:].split(": ", 1)
+            current[key.strip()] = value.strip()
+
+    if current is not None:
+        blocks.append(current)
+
+    return blocks
+
+
+def extract_source_report_rss_highlights(report_text: str) -> str | None:
+    """Extract compact RSS latest-item highlights from a source monitor report."""
+    highlights: list[str] = []
+
+    for block in _parse_fetch_result_blocks(report_text):
+        if block.get("kind") != "rss_feed":
+            continue
+
+        latest_title = block.get("latest_item_title", "n/a")
+        if latest_title == "n/a":
+            continue
+
+        name = block.get("name", "unknown-source")
+        latest_published = block.get("latest_item_published", "n/a")
+        highlights.append(f"- {name}: {latest_title}")
+        if latest_published != "n/a":
+            highlights.append(f"  published: {latest_published}")
+
+    if not highlights:
+        return None
+
+    return "\n".join(["## RSS latest items", "", *highlights])
+
+
+
 def _extract_generated_line(report_text: str) -> str | None:
     for line in report_text.splitlines():
         if line.startswith("Generated: "):
@@ -118,6 +179,11 @@ def format_source_status_message(
         if generated_line is not None:
             message_parts.append(generated_line)
         message_parts.extend(["", summary])
+
+        rss_highlights = extract_source_report_rss_highlights(report_text)
+        if rss_highlights is not None:
+            message_parts.extend(["", rss_highlights])
+
         message = "\n".join(message_parts)
 
     if len(message) <= MAX_SOURCE_STATUS_CHARS:

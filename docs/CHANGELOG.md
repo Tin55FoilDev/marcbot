@@ -1,3 +1,12 @@
+## 2026-05-02 — RSS latest items added to source status
+
+Improved `/report_status source <project>` output for RSS sources.
+
+- Added compact `RSS latest items` output from the newest local source monitor report.
+- Shows RSS source name, latest item title, and published/updated date when available.
+- Keeps Telegram source status read-only; no network fetches or LLM calls are performed.
+- Keeps the existing source status character cap.
+
 ## 2026-05-02 — RSS feed source kind added
 
 Added deterministic RSS/Atom metadata support to the source monitor.

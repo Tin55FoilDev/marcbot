@@ -303,6 +303,20 @@ Reports:
 
 This command is read-only. It does not enable, disable, start, stop, or modify any timer.
 
+### `/report_status source <project>`
+
+Shows the newest local source monitor report summary for a validated source-monitor project.
+
+For RSS sources, the output includes a compact `RSS latest items` section when RSS metadata is available in the newest local report.
+
+This command is read-only:
+
+- it reads only local report files;
+- it does not fetch network sources;
+- it does not fetch linked articles;
+- it does not call an LLM;
+- it remains bounded by the source-status character cap.
+
 ### `/report_status`
 
 Shows the status of the latest local daily status report.

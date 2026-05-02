@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from marcbot.source_status import (
+    extract_source_report_rss_highlights,
     extract_source_report_summary,
     find_latest_source_monitor_report,
     format_source_status_message,
@@ -65,6 +66,54 @@ def test_extract_source_report_summary_returns_none_when_missing() -> None:
     assert extract_source_report_summary("# No summary\n") is None
 
 
+
+def test_extract_source_report_rss_highlights_returns_latest_items() -> None:
+    report = """# MarcBot Source Monitor - ai - 2026-05-01
+
+## Fetch results
+
+- openai-news
+  - kind: rss_feed
+  - url: https://openai.com/news/rss.xml
+  - fetched: true
+  - status: 200
+  - bytes_read: 1234
+  - title: n/a
+  - feed_title: OpenAI News
+  - latest_item_title: New model release
+  - latest_item_link: https://openai.com/news/example/
+  - latest_item_published: Sat, 02 May 2026 11:30:00 GMT
+  - change: unchanged
+  - error: none
+- anthropic-news
+  - kind: web_page
+  - title: Anthropic News
+  - change: unchanged
+  - error: none
+"""
+
+    highlights = extract_source_report_rss_highlights(report)
+
+    assert highlights == """## RSS latest items
+
+- openai-news: New model release
+  published: Sat, 02 May 2026 11:30:00 GMT"""
+
+
+def test_extract_source_report_rss_highlights_returns_none_without_rss_items() -> None:
+    report = """# MarcBot Source Monitor - ai - 2026-05-01
+
+## Fetch results
+
+- anthropic-news
+  - kind: web_page
+  - title: Anthropic News
+  - change: unchanged
+  - error: none
+"""
+
+    assert extract_source_report_rss_highlights(report) is None
+
 def test_format_source_status_message_handles_missing_report(tmp_path: Path) -> None:
     message = format_source_status_message(reports_dir=tmp_path)
 
@@ -96,7 +145,14 @@ Attention:
 ## Fetch results
 
 - openai-news
-  - title: OpenAI News
+  - kind: rss_feed
+  - title: n/a
+  - feed_title: OpenAI News
+  - latest_item_title: New model release
+  - latest_item_link: https://openai.com/news/example/
+  - latest_item_published: Sat, 02 May 2026 11:30:00 GMT
+  - change: unchanged
+  - error: none
 """,
         encoding="utf-8",
     )
@@ -110,6 +166,9 @@ Attention:
     assert "Changed: 1" in message
     assert "## Observations" in message
     assert "openai-news: metadata changed" in message
+    assert "## RSS latest items" in message
+    assert "openai-news: New model release" in message
+    assert "published: Sat, 02 May 2026 11:30:00 GMT" in message
     assert "## Fetch results" not in message
 
 

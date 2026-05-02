@@ -230,6 +230,18 @@ Each report includes a compact summary section near the top, followed by determi
 
 Errored counts include fetch failures such as timeouts, URL errors, HTTP errors, or OS errors. Disabled sources are reported in the per-source details but are not counted as errored.
 
+## Telegram RSS highlights
+
+`/report_status source <project>` includes a compact `RSS latest items` section when the newest local report contains `rss_feed` metadata.
+
+The Telegram status view remains read-only:
+
+- it reads only the newest local report;
+- it does not perform network fetches;
+- it does not fetch linked articles;
+- it does not call an LLM;
+- it remains bounded by the source-status character cap.
+
 ## Telegram report access
 
 Source monitor report visibility is exposed through the generic report-status command:
