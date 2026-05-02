@@ -1,3 +1,18 @@
+## 0.3.0 — Source monitor baseline
+
+MarcBot 0.3.0 is the source monitor baseline.
+
+Highlights:
+
+- Added project-scoped source monitor configuration.
+- Added bounded allowlisted HTTPS source fetch metadata.
+- Added HTML page-title extraction.
+- Added metadata-only state tracking with new/changed/unchanged classification.
+- Added compact source-monitor summary counts.
+- Added generic Telegram report access through `/report_status source ai`.
+- Added scheduled local AI source-monitor report generation through `marcbot-source-monitor-ai.timer`.
+- Refreshed source-monitor documentation and deployment notes.
+
 ## 2026-05-01 — Source monitor documentation refreshed
 
 Updated project documentation after source-monitor report access and timer work.
