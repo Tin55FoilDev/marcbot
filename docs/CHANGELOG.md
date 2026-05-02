@@ -1,3 +1,12 @@
+## 2026-05-01 — AI source monitor timer visibility added
+
+Prepared MarcBot for scheduled local AI source monitor report generation.
+
+- Added `marcbot-source-monitor-ai.timer` to approved `/timer_status` visibility.
+- Documented the source monitor systemd service/timer pattern.
+- The scheduled run writes local reports only.
+- Telegram remains read-only through `/report_status source ai`.
+
 ## 2026-05-01 — Source monitor report status added
 
 Extended the generic `/report_status` command for source monitor visibility.

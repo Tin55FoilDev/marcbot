@@ -218,3 +218,24 @@ Source monitor report visibility is exposed through the generic report-status co
 The command reads the newest local AI source monitor report and returns only the compact summary section.
 
 The command does not fetch sources, parse articles, summarize content, classify importance, or call an LLM.
+
+## Scheduled local report generation
+
+The AI source monitor can be run by systemd using:
+
+    marcbot-source-monitor-ai.service
+    marcbot-source-monitor-ai.timer
+
+The service runs:
+
+    python -m marcbot source-monitor run ai
+
+The scheduled job writes local reports only. It does not send Telegram messages, call an LLM, or perform Telegram-triggered network fetches.
+
+The latest report summary is available through:
+
+    /report_status source ai
+
+Timer health is visible through:
+
+    /timer_status

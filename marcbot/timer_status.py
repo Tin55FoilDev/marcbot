@@ -8,6 +8,11 @@ from dataclasses import dataclass
 APPROVED_TIMERS: tuple[tuple[str, str, str], ...] = (
     ("Backup timer", "marcbot-backup.timer", "marcbot-backup.service"),
     (
+        "AI source monitor timer",
+        "marcbot-source-monitor-ai.timer",
+        "marcbot-source-monitor-ai.service",
+    ),
+    (
         "Daily report timer",
         "marcbot-daily-status-report.timer",
         "marcbot-daily-status-report.service",

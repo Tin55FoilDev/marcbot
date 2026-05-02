@@ -417,3 +417,22 @@ Timer check:
 
     sudo systemctl status marcbot-daily-status-report.timer --no-pager
     sudo systemctl list-timers --all | grep -E 'marcbot-daily-status-report|NEXT'
+
+## Source monitor scheduled report generation
+
+The AI source monitor is designed to run from a systemd timer:
+
+    marcbot-source-monitor-ai.timer
+    marcbot-source-monitor-ai.service
+
+The timer runs local report generation only:
+
+    python -m marcbot source-monitor run ai
+
+Telegram access remains read-only through:
+
+    /report_status source ai
+
+The timer is visible through:
+
+    /timer_status
