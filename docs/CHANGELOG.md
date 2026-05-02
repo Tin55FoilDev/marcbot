@@ -1,3 +1,8 @@
+## Unreleased
+
+- Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
+
+
 ## 2026-05-02 — RSS latest items added to source status
 
 Improved `/report_status source <project>` output for RSS sources.

@@ -521,3 +521,30 @@ The timer writes local reports only. Telegram access is read-only through:
 The timer is visible in:
 
     /timer_status
+
+
+## LLM provider/profile foundation
+
+MarcBot should grow from deterministic command and report workflows into a controlled, multi-provider LLM system.
+
+Planned sequence:
+
+1. Add a reusable LLM provider/profile configuration layer.
+2. Support OpenAI-compatible local providers, starting with LM Studio.
+3. Support model discovery for LM Studio through `/v1/models`.
+4. Support profile validation and tiny completion health checks from the CLI.
+5. Add OpenAI/frontier provider structure for future GPT-5.5-style profiles.
+6. Allow capabilities to assign work to named profiles instead of hardcoded models.
+7. Expose read-only LLM profile/model/health status through Telegram.
+8. Later, add explicit controlled chat sessions, such as `/chat_start <profile>`, rather than an unrestricted prompt interface.
+
+Initial profile categories:
+
+- `frontier_chat` for chat, research, planning, and discussion.
+- `frontier_analysis` for higher-confidence analysis.
+- `local_fast` for low-risk utility tasks.
+- `local_careful` for bounded local analysis.
+- `local_experimental` for testing newly added local models.
+
+Local models are expected to be useful for heartbeat functions, backups, simple analysis, deterministic reports, and model experimentation. Frontier models are expected to be preferred for open-ended chat, research, discussion, planning, and adversarial or ambiguous reasoning.
+

@@ -484,3 +484,14 @@ Day 2 target:
 - verify local CLI behavior
 - commit and push
 
+
+## LLM capability direction
+
+MarcBot should support both local and frontier LLM usage through a reusable provider/profile layer.
+
+Local LM Studio models are expected to support low-risk utility tasks, deterministic report commentary, simple analysis, backup/status summaries, and ongoing model experimentation. Marc should be able to add new LM Studio models, discover them, test them, and assign them to MarcBot profiles without changing application code.
+
+Online frontier models, such as GPT-5.5 when configured, are expected to support chat, research, planning, discussion, and higher-confidence analysis where stronger reasoning and manipulation resistance matter.
+
+Capabilities should assign work to named profiles rather than directly to hardcoded model IDs.
+

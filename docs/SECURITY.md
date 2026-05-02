@@ -440,3 +440,21 @@ For each new feature:
 8. Test from Telegram.
 9. Inspect logs.
 10. Commit and push only after clean validation.
+
+
+## LLM safety boundaries
+
+MarcBot should support LLM use through controlled providers and named profiles, not through arbitrary model calls scattered through the codebase.
+
+Initial LLM access should be CLI-only. Telegram LLM exposure should start with constrained commands such as profile listing, provider model listing, and profile health checks.
+
+MarcBot should not expose an unrestricted Telegram prompt interface by default. Future chat support should use explicit chat sessions, such as `/chat_start <profile>`, with clear model/profile selection and a clear stop/reset path.
+
+Local models should be treated as useful but lower-trust automation components. They are appropriate for low-risk utility tasks, heartbeat functions, backup summaries, simple bounded analysis, and experimentation. They should not be treated as equivalent to frontier models for adversarial content, ambiguous reasoning, security-sensitive interpretation, or high-confidence analysis.
+
+Frontier models may be assigned to chat, research, discussion, planning, and higher-confidence analysis profiles when configured.
+
+LLM providers and profiles must be configured outside Git. Secrets, tokens, and provider credentials must not be committed. MarcBot should read provider credentials from environment variables or another explicitly approved secret mechanism.
+
+Capabilities should receive LLM access through named profiles. A capability should not accept arbitrary provider URLs, arbitrary model IDs, arbitrary file paths, or arbitrary URLs from Telegram.
+

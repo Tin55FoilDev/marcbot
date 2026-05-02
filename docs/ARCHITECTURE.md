@@ -557,6 +557,34 @@ Commands, scripts, systemd units, and documentation should clearly distinguish b
 
 This mirrors the established OpenClaw operating pattern and is intentional.
 
+
+## LLM provider and profile architecture
+
+MarcBot is intended to support multiple LLM providers through a controlled provider/profile layer.
+
+A provider is where a model is served. Initial expected providers include:
+
+- `lmstudio`: a local OpenAI-compatible endpoint served from the Mac mini.
+- `openai`: online frontier model access, such as GPT-5.5, when configured.
+
+A model is the concrete model identifier exposed by a provider.
+
+A profile is MarcBot's named usage configuration for a model. Capabilities should depend on profiles, not hardcoded model names. This allows MarcBot to add, test, and use new models without changing application code.
+
+Example profile categories:
+
+- `frontier_chat`: online frontier model for chat, research, planning, and discussion.
+- `frontier_analysis`: online frontier model for high-confidence analysis.
+- `local_fast`: local LM Studio model for low-risk utility tasks.
+- `local_careful`: local LM Studio model for bounded local analysis.
+- `local_experimental`: local model testing profile.
+
+Capabilities should assign work to named profiles rather than directly to providers or model IDs. For example, a future source-analysis capability may use `frontier_analysis`, while heartbeat or backup summaries may use `local_fast`.
+
+Model discovery and model testing are first-class requirements. As Marc adds models to LM Studio, MarcBot should be able to list available provider models, validate configured profiles, and test a profile before assigning it to a task.
+
+The initial LLM foundation should be CLI-only. Telegram access should begin with controlled status and health commands, not a general unrestricted prompt interface.
+
 ## Source monitor architecture
 
 MarcBot includes a narrow, allowlisted source monitor for local report generation.
