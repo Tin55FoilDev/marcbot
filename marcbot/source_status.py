@@ -26,7 +26,7 @@ def find_latest_source_monitor_report(
 
 
 def extract_source_report_summary(report_text: str) -> str | None:
-    """Extract the bounded summary section from a source monitor report."""
+    """Extract the bounded Summary and Observations sections from a report."""
     lines = report_text.splitlines()
     start_index: int | None = None
 
@@ -41,7 +41,7 @@ def extract_source_report_summary(report_text: str) -> str | None:
     end_index = len(lines)
     for index in range(start_index + 1, len(lines)):
         line = lines[index].strip()
-        if line.startswith("## ") and line != "## Summary":
+        if line.startswith("## ") and line not in {"## Summary", "## Observations"}:
             end_index = index
             break
 

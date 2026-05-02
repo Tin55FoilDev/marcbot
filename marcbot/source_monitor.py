@@ -301,6 +301,53 @@ def _format_summary(fetch_results: tuple[SourceFetchResult, ...]) -> list[str]:
     ]
 
 
+def _format_observations(fetch_results: tuple[SourceFetchResult, ...]) -> list[str]:
+    """Format deterministic observations from source monitor metadata."""
+    lines = [
+        "## Observations",
+        "",
+    ]
+
+    if not fetch_results:
+        lines.extend(
+            [
+                "No source observations are available.",
+                "",
+            ]
+        )
+        return lines
+
+    attention_lines: list[str] = []
+
+    for result in fetch_results:
+        source_name = result.source.name
+
+        if result.error is not None and result.error != "disabled":
+            attention_lines.append(f"- {source_name}: error: {result.error}")
+            continue
+
+        if result.change_state == "new":
+            title = result.title or "n/a"
+            attention_lines.append(f"- {source_name}: new source observed; title: {title}")
+            continue
+
+        if result.change_state == "changed":
+            title = result.title or "n/a"
+            attention_lines.append(f"- {source_name}: metadata changed; title: {title}")
+
+    if attention_lines:
+        lines.extend(["Attention:", *attention_lines, ""])
+        return lines
+
+    lines.extend(
+        [
+            "No new, changed, or errored sources were detected.",
+            "",
+        ]
+    )
+    return lines
+
+
 def _format_configured_sources(config: SourceConfig) -> list[str]:
     """Format configured source information for the report."""
     lines = [
@@ -416,6 +463,7 @@ def build_source_monitor_report(
     lines.append("")
 
     lines.extend(_format_summary(fetch_results))
+    lines.extend(_format_observations(fetch_results))
     lines.extend(_format_configured_sources(config))
     lines.extend(_format_fetch_results(fetch_results))
 
@@ -423,8 +471,8 @@ def build_source_monitor_report(
         [
             "## Next steps",
             "",
-            "- Add Telegram command access to the latest local source monitor report.",
-            "- Keep output local and bounded before adding scheduled delivery.",
+            "- Expand the allowlisted AI source list deliberately.",
+            "- Improve deterministic extraction only after source stability is proven.",
             "- Add higher-level summaries only after deterministic fetching is reliable.",
             "",
         ]

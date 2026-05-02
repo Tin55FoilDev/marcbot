@@ -199,7 +199,7 @@ The state file does not store fetched page bodies or article content.
 
 ## Summary counts
 
-Each report includes a compact summary section near the top.
+Each report includes a compact summary section near the top, followed by deterministic observations that call out new, changed, and errored sources.
 
     Total sources checked
     New
@@ -215,7 +215,7 @@ Source monitor report visibility is exposed through the generic report-status co
 
     /report_status source ai
 
-The command reads the newest local AI source monitor report and returns only the compact summary section.
+The command reads the newest local AI source monitor report and returns the compact summary section plus deterministic observations. Observations name new, changed, and errored sources without parsing article bodies or using an LLM.
 
 The command does not fetch sources, parse articles, summarize content, classify importance, or call an LLM.
 

@@ -327,7 +327,7 @@ For the current AI source-monitor project:
 
     /report_status source ai
 
-This reads the newest local source-monitor report and returns only the compact summary section. It does not fetch sources, run web requests, parse articles, or call an LLM.
+This reads the newest local source-monitor report and returns the compact summary section plus deterministic observations. It does not fetch sources, run web requests, parse articles, or call an LLM.
 
 The generic report-status pattern should be preferred over one-off report commands.
 

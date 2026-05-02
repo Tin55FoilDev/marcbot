@@ -423,6 +423,104 @@ def test_fetch_configured_sources_returns_one_result_per_source() -> None:
     assert results[1].source == disabled
 
 
+
+def test_build_source_monitor_report_includes_observations() -> None:
+    now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
+    config = SourceConfig(
+        project_name="ai",
+        path=Path("/tmp/sources.toml"),
+        exists=True,
+        sources=(
+            make_source(name="openai-news"),
+            make_source(name="anthropic-news", url="https://www.anthropic.com/news"),
+            make_source(name="errored-source", url="https://example.com/error"),
+            make_source(name="unchanged-source", url="https://example.com/unchanged"),
+        ),
+    )
+    fetch_results = (
+        SourceFetchResult(
+            source=make_source(name="openai-news"),
+            fetched=True,
+            status=200,
+            bytes_read=1234,
+            title="OpenAI News",
+            error=None,
+            change_state="new",
+        ),
+        SourceFetchResult(
+            source=make_source(name="anthropic-news", url="https://www.anthropic.com/news"),
+            fetched=True,
+            status=200,
+            bytes_read=2345,
+            title="Anthropic News",
+            error=None,
+            change_state="changed",
+        ),
+        SourceFetchResult(
+            source=make_source(name="errored-source", url="https://example.com/error"),
+            fetched=False,
+            status=None,
+            bytes_read=0,
+            title=None,
+            error="timeout",
+            change_state="changed",
+        ),
+        SourceFetchResult(
+            source=make_source(name="unchanged-source", url="https://example.com/unchanged"),
+            fetched=True,
+            status=200,
+            bytes_read=3456,
+            title="Unchanged News",
+            error=None,
+            change_state="unchanged",
+        ),
+    )
+
+    report = build_source_monitor_report(
+        now=now,
+        config=config,
+        fetch_results=fetch_results,
+        state_path=Path("/tmp/state.json"),
+    )
+
+    assert "## Observations" in report
+    assert "Attention:" in report
+    assert "- openai-news: new source observed; title: OpenAI News" in report
+    assert "- anthropic-news: metadata changed; title: Anthropic News" in report
+    assert "- errored-source: error: timeout" in report
+    assert "unchanged-source: metadata changed" not in report
+
+
+def test_build_source_monitor_report_observations_quiet_when_unchanged_only() -> None:
+    now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
+    config = SourceConfig(
+        project_name="ai",
+        path=Path("/tmp/sources.toml"),
+        exists=True,
+        sources=(make_source(name="openai-news"),),
+    )
+    fetch_results = (
+        SourceFetchResult(
+            source=make_source(name="openai-news"),
+            fetched=True,
+            status=200,
+            bytes_read=1234,
+            title="OpenAI News",
+            error=None,
+            change_state="unchanged",
+        ),
+    )
+
+    report = build_source_monitor_report(
+        now=now,
+        config=config,
+        fetch_results=fetch_results,
+        state_path=Path("/tmp/state.json"),
+    )
+
+    assert "## Observations" in report
+    assert "No new, changed, or errored sources were detected." in report
+
 def test_write_source_monitor_report_creates_project_report_and_state(
     tmp_path: Path,
 ) -> None:

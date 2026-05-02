@@ -9,6 +9,7 @@ Added Git-tracked systemd templates and recovery documentation for the AI source
 
 ## 0.3.0 — Source monitor baseline
 
+- Added deterministic source monitor observations to local reports and `/report_status source <project>` output so new, changed, and errored sources are named without LLM summarization.
 MarcBot 0.3.0 is the source monitor baseline.
 
 Highlights:

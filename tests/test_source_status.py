@@ -22,7 +22,7 @@ def test_find_latest_source_monitor_report_returns_none_when_missing(
     assert find_latest_source_monitor_report(reports_dir=tmp_path) is None
 
 
-def test_extract_source_report_summary_returns_summary_section_only() -> None:
+def test_extract_source_report_summary_returns_summary_and_observations() -> None:
     report = """# MarcBot Source Monitor - ai - 2026-05-01
 
 Generated: 2026-05-01T12:30:00+00:00
@@ -34,6 +34,11 @@ New: 0
 Changed: 1
 Unchanged: 3
 Errored: 0
+
+## Observations
+
+Attention:
+- openai-news: metadata changed; title: OpenAI News
 
 ## Configured sources
 
@@ -48,7 +53,12 @@ Total sources checked: 4
 New: 0
 Changed: 1
 Unchanged: 3
-Errored: 0"""
+Errored: 0
+
+## Observations
+
+Attention:
+- openai-news: metadata changed; title: OpenAI News"""
 
 
 def test_extract_source_report_summary_returns_none_when_missing() -> None:
@@ -78,6 +88,11 @@ Changed: 1
 Unchanged: 3
 Errored: 0
 
+## Observations
+
+Attention:
+- openai-news: metadata changed; title: OpenAI News
+
 ## Fetch results
 
 - openai-news
@@ -93,6 +108,8 @@ Errored: 0
     assert "Generated: 2026-05-01T13:00:00+00:00" in message
     assert "## Summary" in message
     assert "Changed: 1" in message
+    assert "## Observations" in message
+    assert "openai-news: metadata changed" in message
     assert "## Fetch results" not in message
 
 
