@@ -1,0 +1,11 @@
+[Unit]
+Description=Run MarcBot AI source monitor report
+
+[Timer]
+OnCalendar=*-*-* 07:35:00 America/New_York
+Persistent=true
+RandomizedDelaySec=2m
+Unit=marcbot-source-monitor-ai.service
+
+[Install]
+WantedBy=timers.target

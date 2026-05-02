@@ -1,3 +1,12 @@
+## 2026-05-01 — Source monitor systemd templates tracked
+
+Added Git-tracked systemd templates and recovery documentation for the AI source monitor timer.
+
+- Added `systemd/marcbot-source-monitor-ai.service`.
+- Added `systemd/marcbot-source-monitor-ai.timer`.
+- Documented install, comparison, and restore steps.
+- Clarified that local source config remains outside Git.
+
 ## 0.3.0 — Source monitor baseline
 
 MarcBot 0.3.0 is the source monitor baseline.

@@ -1,0 +1,18 @@
+[Unit]
+Description=MarcBot AI source monitor report
+Documentation=file:/srv/marcbot/app/docs/SOURCE_MONITOR.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=marc
+Group=marc
+WorkingDirectory=/srv/marcbot/app
+ExecStart=/srv/marcbot/app/.venv/bin/python -m marcbot source-monitor run ai
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/marcbot

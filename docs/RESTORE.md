@@ -499,3 +499,37 @@ Avoid:
     - extracting archives without checking contents first
     - enabling arbitrary shell execution from Telegram
     - deleting the damaged state before preserving a snapshot, unless disk pressure forces it
+
+## Restore source monitor systemd timer
+
+The AI source monitor timer is recoverable from Git-tracked systemd templates.
+
+Tracked templates:
+
+    /srv/marcbot/app/systemd/marcbot-source-monitor-ai.service
+    /srv/marcbot/app/systemd/marcbot-source-monitor-ai.timer
+
+Install the units:
+
+    sudo cp /srv/marcbot/app/systemd/marcbot-source-monitor-ai.service /etc/systemd/system/marcbot-source-monitor-ai.service
+    sudo cp /srv/marcbot/app/systemd/marcbot-source-monitor-ai.timer /etc/systemd/system/marcbot-source-monitor-ai.timer
+    sudo chmod 644 /etc/systemd/system/marcbot-source-monitor-ai.service
+    sudo chmod 644 /etc/systemd/system/marcbot-source-monitor-ai.timer
+    sudo systemd-analyze verify /etc/systemd/system/marcbot-source-monitor-ai.service /etc/systemd/system/marcbot-source-monitor-ai.timer
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now marcbot-source-monitor-ai.timer
+
+Verify:
+
+    systemctl --no-pager --full status marcbot-source-monitor-ai.timer
+    systemctl --no-pager --full status marcbot-source-monitor-ai.service
+    sudo -u marc env HOME=/home/marc PATH="/srv/marcbot/app/.venv/bin:/usr/local/bin:/usr/bin:/bin" bash -lc 'cd /srv/marcbot/app && python -m marcbot source-monitor config-check ai'
+
+Telegram checks:
+
+    /timer_status
+    /report_status source ai
+
+The source monitor config remains local operational configuration outside Git:
+
+    /srv/marcbot/config/source-projects/ai/sources.toml

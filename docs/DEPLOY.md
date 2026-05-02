@@ -351,6 +351,11 @@ Telegram status check:
 
 MarcBot can generate local AI source monitor reports through a systemd service and timer.
 
+Tracked template files:
+
+    /srv/marcbot/app/systemd/marcbot-source-monitor-ai.service
+    /srv/marcbot/app/systemd/marcbot-source-monitor-ai.timer
+
 Installed unit files:
 
     /etc/systemd/system/marcbot-source-monitor-ai.service
@@ -381,6 +386,14 @@ Timer inspection:
     sudo systemctl status marcbot-source-monitor-ai.timer --no-pager
     sudo systemctl list-timers --all | grep -E 'source-monitor-ai|NEXT'
 
+Install or refresh source monitor units from Git templates:
+
+    sudo cp /srv/marcbot/app/systemd/marcbot-source-monitor-ai.service /etc/systemd/system/marcbot-source-monitor-ai.service
+    sudo cp /srv/marcbot/app/systemd/marcbot-source-monitor-ai.timer /etc/systemd/system/marcbot-source-monitor-ai.timer
+    sudo chmod 644 /etc/systemd/system/marcbot-source-monitor-ai.service
+    sudo chmod 644 /etc/systemd/system/marcbot-source-monitor-ai.timer
+    sudo systemd-analyze verify /etc/systemd/system/marcbot-source-monitor-ai.service /etc/systemd/system/marcbot-source-monitor-ai.timer
+
 Enable timer:
 
     sudo systemctl daemon-reload
@@ -392,3 +405,10 @@ Telegram checks:
     /report_status source ai
 
 The timer writes local reports only. Telegram reads the latest local summary and does not trigger source fetching.
+
+Compare tracked source monitor units against installed units:
+
+    diff -u /srv/marcbot/app/systemd/marcbot-source-monitor-ai.service /etc/systemd/system/marcbot-source-monitor-ai.service
+    diff -u /srv/marcbot/app/systemd/marcbot-source-monitor-ai.timer /etc/systemd/system/marcbot-source-monitor-ai.timer
+
+No output from `diff` means the tracked template and installed unit match.
