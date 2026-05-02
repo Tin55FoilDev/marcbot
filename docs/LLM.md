@@ -303,3 +303,34 @@ Check:
 - Validate with `./scripts/check.sh`.
 - Review diffs before commit.
 - Document model behavior changes as they are observed.
+
+## Telegram status command
+
+### `/llm_status`
+
+`/llm_status` is the first Telegram-facing LLM command.
+
+It is read-only and bounded:
+
+- Lists configured profiles.
+- Runs the tiny health check for `local_fast`.
+- Reads `/srv/marcbot/config/llm.env` from code.
+- Does not accept arbitrary prompts.
+- Does not expose secrets.
+- Does not allow arbitrary provider/model selection.
+
+Expected output includes:
+
+~~text
+🤖 MarcBot LLM status
+
+Profiles: 3
+- local_fast: google/gemma-4-e4b via lmstudio
+
+Health check:
+Profile: local_fast
+Provider: lmstudio
+Model: google/gemma-4-e4b
+Status: ok
+Response: marcbot-ok
+~~

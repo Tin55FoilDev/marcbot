@@ -21,6 +21,7 @@ from marcbot.errors import MarcBotError
 from marcbot.git_status import format_git_report
 from marcbot.health import format_health_report, run_health_checks
 from marcbot.latest_report import validate_latest_daily_status_report
+from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.report_status import format_report_status_message
 from marcbot.service_status import format_service_report
@@ -472,6 +473,23 @@ async def report_status_command(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text(message)
 
 
+async def llm_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /llm_status."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /llm_status from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /llm_status for chat_id=%s", chat_id)
+    status_text = format_llm_status_message()
+
+    if update.message is not None:
+        await update.message.reply_text(status_text)
+
+
 async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /logs."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -594,6 +612,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("backup_status", backup_status_command))
     application.add_handler(CommandHandler("timer_status", timer_status_command))
     application.add_handler(CommandHandler("report_status", report_status_command))
+    application.add_handler(CommandHandler("llm_status", llm_status_command))
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("tail", tail_command))
     application.add_handler(CommandHandler("help", help_command))

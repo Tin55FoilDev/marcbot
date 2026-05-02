@@ -896,3 +896,15 @@ Current baseline:
 - LM Studio `/v1/models` discovery
 - LM Studio chat-completion health check for `local_fast`
 - documented current model behavior notes for Gemma, GPT-OSS, Qwen, and Nomic embedding model
+
+## 2026-05-02 — `/llm_status` command added
+
+Added a read-only Telegram LLM status command.
+
+Current behavior:
+
+- lists configured LLM profiles
+- runs the tiny `local_fast` profile health check
+- reads `/srv/marcbot/config/llm.env` locally
+- does not accept arbitrary prompts
+- does not expose provider tokens

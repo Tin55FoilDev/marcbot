@@ -80,3 +80,4 @@ def test_build_application_does_not_register_source_status_command() -> None:
 
     assert "source_status" not in command_names
     assert "report_status" in command_names
+    assert "llm_status" in command_names

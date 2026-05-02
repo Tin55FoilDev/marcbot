@@ -464,3 +464,16 @@ python -m marcbot llm health local_fast
 ~~
 
 There are no Telegram LLM prompt commands yet.
+
+### `/llm_status`
+
+Shows read-only LLM provider/profile status.
+
+Current behavior:
+
+- Lists configured LLM profiles.
+- Runs the tiny `local_fast` health check.
+- Reads the local LLM env file from `/srv/marcbot/config/llm.env`.
+- Does not accept arbitrary prompts.
+- Does not expose tokens.
+- Does not allow arbitrary provider or model selection.
