@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -127,6 +128,86 @@ def _find_first_descendant(element: ET.Element, child_name: str) -> ET.Element |
     return None
 
 
+def _strip_cdata(value: str) -> str:
+    """Return normalized XML-ish text with CDATA markers removed."""
+    return " ".join(
+        value.replace("<![CDATA[", "")
+        .replace("]]>", "")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .split()
+    )
+
+
+def _first_tag_text(xml_text: str, tag_name: str) -> str | None:
+    """Return the first tag text match from bounded XML-like text."""
+    pattern = (
+        rf"<(?:[A-Za-z0-9_]+:)?{tag_name}\b[^>]*>"
+        rf"(.*?)"
+        rf"</(?:[A-Za-z0-9_]+:)?{tag_name}>"
+    )
+    match = re.search(pattern, xml_text, flags=re.IGNORECASE | re.DOTALL)
+    if match is None:
+        return None
+
+    normalized = _strip_cdata(match.group(1))
+    return normalized or None
+
+
+def _first_atom_link(xml_text: str) -> str | None:
+    """Return the first Atom link href from bounded XML-like text."""
+    pattern = (
+        r"<(?:[A-Za-z0-9_]+:)?link\b"
+        r"[^>]*\bhref=[\"']([^\"']+)[\"'][^>]*/?>"
+    )
+    match = re.search(pattern, xml_text, flags=re.IGNORECASE | re.DOTALL)
+    if match is None:
+        return None
+
+    normalized = _strip_cdata(match.group(1))
+    return normalized or None
+
+
+def _fallback_rss_metadata(data: bytes) -> dict[str, str | None]:
+    """Extract RSS/Atom metadata from partial bounded XML text."""
+    metadata: dict[str, str | None] = {
+        "feed_title": None,
+        "latest_item_title": None,
+        "latest_item_link": None,
+        "latest_item_published": None,
+    }
+
+    xml_text = data.decode("utf-8", errors="replace")
+    lower_xml = xml_text.lower()
+
+    item_start = lower_xml.find("<item")
+    entry_start = lower_xml.find("<entry")
+
+    if item_start != -1:
+        channel_text = xml_text[:item_start]
+        item_text = xml_text[item_start:]
+        metadata["feed_title"] = _first_tag_text(channel_text, "title")
+        metadata["latest_item_title"] = _first_tag_text(item_text, "title")
+        metadata["latest_item_link"] = _first_tag_text(item_text, "link")
+        metadata["latest_item_published"] = _first_tag_text(item_text, "pubDate")
+        return metadata
+
+    if entry_start != -1:
+        feed_text = xml_text[:entry_start]
+        entry_text = xml_text[entry_start:]
+        metadata["feed_title"] = _first_tag_text(feed_text, "title")
+        metadata["latest_item_title"] = _first_tag_text(entry_text, "title")
+        metadata["latest_item_link"] = _first_atom_link(entry_text)
+        metadata["latest_item_published"] = _first_tag_text(
+            entry_text, "updated"
+        ) or _first_tag_text(entry_text, "published")
+        return metadata
+
+    metadata["feed_title"] = _first_tag_text(xml_text, "title")
+    return metadata
+
+
 def extract_rss_metadata(data: bytes) -> dict[str, str | None]:
     """Extract deterministic RSS/Atom metadata from bounded response bytes."""
     metadata: dict[str, str | None] = {
@@ -142,14 +223,14 @@ def extract_rss_metadata(data: bytes) -> dict[str, str | None]:
     try:
         root = ET.fromstring(data.decode("utf-8", errors="replace"))
     except ET.ParseError:
-        return metadata
+        return _fallback_rss_metadata(data)
 
     root_name = _local_xml_name(root)
 
     if root_name == "rss":
         channel = _find_first_descendant(root, "channel")
         if channel is None:
-            return metadata
+            return _fallback_rss_metadata(data)
 
         item = _find_first_child(channel, "item")
         metadata["feed_title"] = _xml_text(_find_first_child(channel, "title"))
@@ -179,7 +260,7 @@ def extract_rss_metadata(data: bytes) -> dict[str, str | None]:
 
         return metadata
 
-    return metadata
+    return _fallback_rss_metadata(data)
 
 
 def fetch_source_metadata(source: SourceDefinition) -> SourceFetchResult:
@@ -217,7 +298,11 @@ def fetch_source_metadata(source: SourceDefinition) -> SourceFetchResult:
                 status=response.status,
                 bytes_read=len(bounded_data),
                 error=None,
-                title=extract_html_title(bounded_data),
+                title=(
+                    None
+                    if source.kind == "rss_feed"
+                    else extract_html_title(bounded_data)
+                ),
                 feed_title=rss_metadata.get("feed_title"),
                 latest_item_title=rss_metadata.get("latest_item_title"),
                 latest_item_link=rss_metadata.get("latest_item_link"),
@@ -407,6 +492,11 @@ def _format_summary(fetch_results: tuple[SourceFetchResult, ...]) -> list[str]:
     ]
 
 
+
+def _source_observation_title(result: SourceFetchResult) -> str:
+    """Return the best compact title for source observations."""
+    return result.title or result.latest_item_title or result.feed_title or "n/a"
+
 def _format_observations(fetch_results: tuple[SourceFetchResult, ...]) -> list[str]:
     """Format deterministic observations from source monitor metadata."""
     lines = [
@@ -433,12 +523,12 @@ def _format_observations(fetch_results: tuple[SourceFetchResult, ...]) -> list[s
             continue
 
         if result.change_state == "new":
-            title = result.title or "n/a"
+            title = _source_observation_title(result)
             attention_lines.append(f"- {source_name}: new source observed; title: {title}")
             continue
 
         if result.change_state == "changed":
-            title = result.title or "n/a"
+            title = _source_observation_title(result)
             attention_lines.append(f"- {source_name}: metadata changed; title: {title}")
 
     if attention_lines:

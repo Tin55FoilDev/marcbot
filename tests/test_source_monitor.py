@@ -256,6 +256,82 @@ def test_summarize_fetch_results_counts_states_and_errors() -> None:
     }
 
 
+
+
+def test_observations_prefer_rss_latest_item_title() -> None:
+    config = SourceConfig(
+        project_name="ai",
+        path=Path("/tmp/sources.toml"),
+        exists=True,
+        sources=(
+            SourceDefinition(
+                name="openai-news",
+                kind="rss_feed",
+                url="https://openai.com/news/rss.xml",
+                enabled=True,
+            ),
+        ),
+    )
+    result = SourceFetchResult(
+        source=config.sources[0],
+        fetched=True,
+        status=200,
+        bytes_read=1234,
+        title=None,
+        feed_title="OpenAI News",
+        latest_item_title="Introducing Advanced Account Security",
+        latest_item_link="https://openai.com/index/advanced-account-security",
+        latest_item_published="Thu, 30 Apr 2026 00:00:00 GMT",
+    )
+
+    previous_state = {
+        "sources": {
+            "openai-news": {
+                "url": "https://openai.com/news/rss.xml",
+                "kind": "rss_feed",
+                "enabled": True,
+                "title": None,
+                "feed_title": "OpenAI News",
+                "latest_item_title": "Older item",
+                "latest_item_link": "https://openai.com/older",
+                "latest_item_published": "Wed, 29 Apr 2026 00:00:00 GMT",
+                "status": 200,
+                "error": None,
+            }
+        }
+    }
+    fetch_results = apply_change_detection((result,), previous_state)
+
+    report = build_source_monitor_report(
+        config=config,
+        fetch_results=fetch_results,
+    )
+
+    assert (
+        "- openai-news: metadata changed; "
+        "title: Introducing Advanced Account Security"
+    ) in report
+
+def test_extract_rss_metadata_reads_truncated_rss_feed() -> None:
+    data = b"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title><![CDATA[OpenAI News]]></title>
+<item>
+<title><![CDATA[Introducing Advanced Account Security]]></title>
+<link>https://openai.com/news/advanced-account-security/</link>
+<pubDate>Sat, 02 May 2026 11:30:00 GMT</pubDate>
+"""
+
+    metadata = extract_rss_metadata(data)
+
+    assert metadata == {
+        "feed_title": "OpenAI News",
+        "latest_item_title": "Introducing Advanced Account Security",
+        "latest_item_link": "https://openai.com/news/advanced-account-security/",
+        "latest_item_published": "Sat, 02 May 2026 11:30:00 GMT",
+    }
+
 def test_build_source_monitor_state_contains_metadata_only() -> None:
     now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
     result = SourceFetchResult(
