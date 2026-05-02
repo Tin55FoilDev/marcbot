@@ -9,6 +9,7 @@ Added Git-tracked systemd templates and recovery documentation for the AI source
 
 ## 0.3.0 — Source monitor baseline
 
+- Documented the expanded recommended AI source allowlist covering model labs, local model tooling, and agent framework news.
 - Documented that `openai-news` should use the OpenAI RSS feed to avoid predictable HTTP 403 failures from the HTML news page.
 - Added deterministic source monitor observations to local reports and `/report_status source <project>` output so new, changed, and errored sources are named without LLM summarization.
 MarcBot 0.3.0 is the source monitor baseline.

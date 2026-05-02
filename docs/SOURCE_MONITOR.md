@@ -219,6 +219,23 @@ The command reads the newest local AI source monitor report and returns the comp
 
 The command does not fetch sources, parse articles, summarize content, classify importance, or call an LLM.
 
+## Recommended AI source allowlist
+
+The live AI source config is stored outside Git at `/srv/marcbot/config/source-projects/ai/sources.toml`.
+
+Current recommended sources:
+
+- `openai-news` — `https://openai.com/news/rss.xml`
+- `anthropic-news` — `https://www.anthropic.com/news`
+- `google-deepmind-news` — `https://deepmind.google/blog/`
+- `huggingface-blog` — `https://huggingface.co/blog`
+- `mistral-news` — `https://mistral.ai/news/`
+- `meta-ai-blog` — `https://ai.meta.com/blog/`
+- `lmstudio-changelog` — `https://lmstudio.ai/changelog`
+- `langchain-blog` — `https://www.langchain.com/blog`
+
+These sources cover frontier/small model announcements, local model tooling, and AI agent framework news. RSS URLs may be configured as `kind = "web_page"` until MarcBot has a dedicated `rss_feed` source kind.
+
 ## Source notes
 
 - `openai-news` should use `https://openai.com/news/rss.xml` rather than the HTML news page. The HTML page may reject simple bounded fetches with HTTP 403, while the RSS feed is more suitable for deterministic monitoring.
