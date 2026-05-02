@@ -219,6 +219,10 @@ The command reads the newest local AI source monitor report and returns the comp
 
 The command does not fetch sources, parse articles, summarize content, classify importance, or call an LLM.
 
+## Source notes
+
+- `openai-news` should use `https://openai.com/news/rss.xml` rather than the HTML news page. The HTML page may reject simple bounded fetches with HTTP 403, while the RSS feed is more suitable for deterministic monitoring.
+
 ## Scheduled local report generation
 
 The AI source monitor can be run by systemd using:
