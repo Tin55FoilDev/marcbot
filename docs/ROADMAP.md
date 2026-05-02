@@ -306,6 +306,7 @@ The command summarizes approved MarcBot timers:
 
 - `marcbot-backup.timer`
 - `marcbot-daily-status-report.timer`
+- `marcbot-source-monitor-ai.timer`
 
 It reports enablement, active state, next run, last trigger, paired service result, and overall health.
 
@@ -500,3 +501,23 @@ Schedule:
 
 The timer runs after the daily app-level backup timer so the report can include recent backup status.
 
+## AI source monitor timer
+
+MarcBot now includes scheduled local AI source monitor report generation.
+
+Systemd units:
+
+    marcbot-source-monitor-ai.service
+    marcbot-source-monitor-ai.timer
+
+The service runs:
+
+    python -m marcbot source-monitor run ai
+
+The timer writes local reports only. Telegram access is read-only through:
+
+    /report_status source ai
+
+The timer is visible in:
+
+    /timer_status

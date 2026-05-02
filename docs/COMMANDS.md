@@ -329,6 +329,8 @@ For the current AI source-monitor project:
 
 This reads the newest local source-monitor report and returns only the compact summary section. It does not fetch sources, run web requests, parse articles, or call an LLM.
 
+The generic report-status pattern should be preferred over one-off report commands.
+
 ### `/logs`
 
 Shows recent MarcBot application logs from:
@@ -383,7 +385,7 @@ These commands are currently CLI-only and are not Telegram commands:
 
 The real source config is local operational config and should not be committed to Git. A safe example may live under `docs/examples/`.
 
-Do not add Telegram source monitor commands until the local CLI/report behavior is stable and tested.
+Do not add one-off Telegram commands for each source monitor project. Use the generic report command pattern instead, for example `/report_status source ai`.
 
 ## Future command candidates
 

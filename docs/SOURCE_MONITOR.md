@@ -239,3 +239,12 @@ The latest report summary is available through:
 Timer health is visible through:
 
     /timer_status
+
+## Deployment note
+
+The live systemd unit files are installed under:
+
+    /etc/systemd/system/marcbot-source-monitor-ai.service
+    /etc/systemd/system/marcbot-source-monitor-ai.timer
+
+These live unit files are operational server configuration. If template copies are later added to the repository, keep them synchronized with the installed units and update `docs/DEPLOY.md`.

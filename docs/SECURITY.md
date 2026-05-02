@@ -193,6 +193,24 @@ Rules:
 
 Stop development if the source monitor can be used to read arbitrary local files, fetch arbitrary Telegram-supplied URLs, expose secrets, or write outside MarcBot workspace/report paths.
 
+
+Telegram source-monitor report access is read-only:
+
+- `/report_status source <project>` reads the newest local report summary for a validated project name.
+- It must not fetch sources.
+- It must not accept arbitrary URLs.
+- It must not accept arbitrary local file paths.
+- It must not call an LLM.
+- It must keep Telegram output bounded.
+- It should use the generic report-status pattern rather than one-off source-monitor commands.
+
+Scheduled source-monitor runs are performed by systemd, not by Telegram:
+
+    marcbot-source-monitor-ai.service
+    marcbot-source-monitor-ai.timer
+
+
+
 ## Command safety rules
 
 Current Telegram commands are intentionally narrow:

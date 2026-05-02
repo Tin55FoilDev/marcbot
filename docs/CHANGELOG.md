@@ -1,3 +1,13 @@
+## 2026-05-01 — Source monitor documentation refreshed
+
+Updated project documentation after source-monitor report access and timer work.
+
+- Clarified that `/report_status source ai` is the supported Telegram read-only path.
+- Removed stale guidance implying Telegram source-monitor access was still future work.
+- Added architecture notes for source project config, reports, and metadata state.
+- Added deploy notes for `marcbot-source-monitor-ai.service` and `marcbot-source-monitor-ai.timer`.
+- Strengthened source-monitor safety notes.
+
 ## 2026-05-01 — AI source monitor timer visibility added
 
 Prepared MarcBot for scheduled local AI source monitor report generation.

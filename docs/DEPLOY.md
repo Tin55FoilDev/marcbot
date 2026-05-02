@@ -347,3 +347,48 @@ Telegram status check:
 
     /backup_status
 
+## AI source monitor systemd timer
+
+MarcBot can generate local AI source monitor reports through a systemd service and timer.
+
+Installed unit files:
+
+    /etc/systemd/system/marcbot-source-monitor-ai.service
+    /etc/systemd/system/marcbot-source-monitor-ai.timer
+
+Service behavior:
+
+    User=marc
+    Group=marc
+    WorkingDirectory=/srv/marcbot/app
+    ExecStart=/srv/marcbot/app/.venv/bin/python -m marcbot source-monitor run ai
+
+Timer behavior:
+
+    OnCalendar=*-*-* 07:35:00 America/New_York
+    Persistent=true
+    RandomizedDelaySec=2m
+    Unit=marcbot-source-monitor-ai.service
+
+Manual service run:
+
+    sudo systemctl start marcbot-source-monitor-ai.service
+    sudo systemctl status marcbot-source-monitor-ai.service --no-pager
+    sudo journalctl -u marcbot-source-monitor-ai.service -n 80 --no-pager
+
+Timer inspection:
+
+    sudo systemctl status marcbot-source-monitor-ai.timer --no-pager
+    sudo systemctl list-timers --all | grep -E 'source-monitor-ai|NEXT'
+
+Enable timer:
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now marcbot-source-monitor-ai.timer
+
+Telegram checks:
+
+    /timer_status
+    /report_status source ai
+
+The timer writes local reports only. Telegram reads the latest local summary and does not trigger source fetching.

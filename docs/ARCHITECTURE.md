@@ -556,3 +556,37 @@ Commands, scripts, systemd units, and documentation should clearly distinguish b
 - systemd-managed execution of MarcBot services
 
 This mirrors the established OpenClaw operating pattern and is intentional.
+
+## Source monitor architecture
+
+MarcBot includes a narrow, allowlisted source monitor for local report generation.
+
+The source monitor is project-scoped. Each project has local configuration outside Git and local workspace output under MarcBot-controlled directories.
+
+Configuration layout:
+
+    /srv/marcbot/config/source-projects/<project>/sources.toml
+
+Current AI project configuration:
+
+    /srv/marcbot/config/source-projects/ai/sources.toml
+
+Workspace layout:
+
+    /srv/marcbot/workspace/source-projects/<project>/reports/
+    /srv/marcbot/workspace/source-projects/<project>/state/source-monitor-state.json
+
+The source monitor performs bounded HTTPS fetches only for configured allowlisted sources. It records metadata such as HTTP status, bytes read, page title, and clean error information. It does not store fetched page bodies in state.
+
+The AI source monitor is scheduled by systemd:
+
+    marcbot-source-monitor-ai.service
+    marcbot-source-monitor-ai.timer
+
+The service runs as `marc` and executes:
+
+    python -m marcbot source-monitor run ai
+
+Telegram does not trigger source fetching. Telegram report access reads the latest local report summary through:
+
+    /report_status source ai
