@@ -51,6 +51,27 @@ Git may contain a safe example template:
 
     docs/examples/sources.example.toml
 
+## Source kinds
+
+MarcBot currently supports these source kinds:
+
+- `web_page` — bounded HTTPS fetch with basic HTML title extraction.
+- `rss_feed` — bounded HTTPS fetch with deterministic RSS/Atom metadata extraction.
+- `github_releases` — reserved source kind for GitHub release tracking.
+
+### `rss_feed` sources
+
+`rss_feed` is intended for RSS or Atom feeds such as release feeds, changelogs, and news feeds.
+
+RSS/Atom parsing is deterministic and uses only bounded response bytes. MarcBot stores and reports metadata only:
+
+- feed title
+- latest item title
+- latest item link
+- latest item published/updated date
+
+MarcBot does not fetch linked articles, summarize article bodies, call an LLM, or store feed bodies in state.
+
 ## Source rules
 
 Each configured source must be explicit and allowlisted.

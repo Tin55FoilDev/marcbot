@@ -1,3 +1,13 @@
+## 2026-05-02 — RSS feed source kind added
+
+Added deterministic RSS/Atom metadata support to the source monitor.
+
+- Added `rss_feed` as a supported source kind.
+- Extracts feed title, latest item title, latest item link, and latest published/updated date.
+- Stores RSS metadata only; feed bodies and linked articles are not stored.
+- Keeps source monitor fetching bounded and non-LLM.
+- Documented the safer `PY` heredoc pattern for long pasted code changes.
+
 ## 2026-05-01 — Source monitor systemd templates tracked
 
 Added Git-tracked systemd templates and recovery documentation for the AI source monitor timer.

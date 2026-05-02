@@ -274,6 +274,32 @@ After restoring the VM or server from backup:
 - No arbitrary shell execution exists in the Telegram command path.
 - No arbitrary file read command exists in the Telegram command path.
 
+## Long pasted code blocks
+
+For long pasted shell/Python changes, prefer writing Python to a temporary file with a quoted heredoc and then executing that script from the repo.
+
+Recommended pattern:
+
+    cat > /tmp/marcbot_patch_example.py <<'PY'
+    from pathlib import Path
+
+    path = Path("example.txt")
+    path.write_text("example\n", encoding="utf-8")
+    PY
+
+    sudo -u marc env \
+      HOME=/home/marc \
+      PATH="/srv/marcbot/app/.venv/bin:/usr/local/bin:/usr/bin:/bin" \
+      bash -lc '
+    set -e
+    cd /srv/marcbot/app
+    python /tmp/marcbot_patch_example.py
+    '
+
+This avoids failures from nested shell quoting, editor wrapping, or pasted code being interpreted by Bash before Python receives it.
+
+Prefer this over embedding complex Python directly inside a nested `bash -lc '...'` command.
+
 ## Current operational standard
 
 Before adding new features:

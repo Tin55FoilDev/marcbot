@@ -26,6 +26,24 @@ def test_source_reports_dir_uses_project_layout() -> None:
     )
 
 
+
+def test_load_source_config_accepts_rss_feed_kind(tmp_path: Path) -> None:
+    config_path = tmp_path / "sources.toml"
+    config_path.write_text(
+        """
+[[sources]]
+name = "openai-news"
+kind = "rss_feed"
+url = "https://openai.com/news/rss.xml"
+enabled = true
+""",
+        encoding="utf-8",
+    )
+
+    config = load_source_config(path=config_path)
+
+    assert config.sources[0].kind == "rss_feed"
+
 @pytest.mark.parametrize(
     "project_name",
     ["ai", "stocks", "openclaw-updates", "project_1"],
@@ -144,6 +162,7 @@ url = "https://example.com/b"
         ),
     ],
 )
+
 def test_invalid_source_config_raises_clean_error(
     tmp_path: Path,
     body: str,

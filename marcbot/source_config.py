@@ -17,7 +17,7 @@ DEFAULT_SOURCE_CONFIG_PATH = (
     SOURCE_PROJECTS_CONFIG_DIR / DEFAULT_SOURCE_PROJECT_NAME / "sources.toml"
 )
 
-SUPPORTED_SOURCE_KINDS = frozenset({"github_releases", "web_page"})
+SUPPORTED_SOURCE_KINDS = frozenset({"github_releases", "rss_feed", "web_page"})
 
 _SOURCE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 _PROJECT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")

@@ -10,6 +10,7 @@ from marcbot.source_monitor import (
     build_source_monitor_state,
     classify_source_change,
     extract_html_title,
+    extract_rss_metadata,
     fetch_configured_sources,
     fetch_source_metadata,
     load_source_monitor_state,
@@ -55,6 +56,63 @@ def test_extract_html_title_returns_normalized_title() -> None:
 def test_extract_html_title_returns_none_when_missing() -> None:
     assert extract_html_title(b"<html><body>No title</body></html>") is None
 
+
+
+def test_extract_rss_metadata_reads_rss_feed() -> None:
+    data = b"""<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>OpenAI News</title>
+    <item>
+      <title>New model release</title>
+      <link>https://openai.com/news/example/</link>
+      <pubDate>Sat, 02 May 2026 11:30:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
+"""
+
+    metadata = extract_rss_metadata(data)
+
+    assert metadata == {
+        "feed_title": "OpenAI News",
+        "latest_item_title": "New model release",
+        "latest_item_link": "https://openai.com/news/example/",
+        "latest_item_published": "Sat, 02 May 2026 11:30:00 GMT",
+    }
+
+
+def test_extract_rss_metadata_reads_atom_feed() -> None:
+    data = b"""<?xml version="1.0" encoding="UTF-8" ?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Atom Feed</title>
+  <entry>
+    <title>Agent update</title>
+    <link href="https://example.com/agent-update" />
+    <updated>2026-05-02T11:30:00Z</updated>
+  </entry>
+</feed>
+"""
+
+    metadata = extract_rss_metadata(data)
+
+    assert metadata == {
+        "feed_title": "Example Atom Feed",
+        "latest_item_title": "Agent update",
+        "latest_item_link": "https://example.com/agent-update",
+        "latest_item_published": "2026-05-02T11:30:00Z",
+    }
+
+
+def test_extract_rss_metadata_returns_empty_metadata_for_invalid_xml() -> None:
+    metadata = extract_rss_metadata(b"not xml")
+
+    assert metadata == {
+        "feed_title": None,
+        "latest_item_title": None,
+        "latest_item_link": None,
+        "latest_item_published": None,
+    }
 
 def test_classify_source_change_marks_new_when_missing_previous() -> None:
     result = SourceFetchResult(
@@ -220,6 +278,10 @@ def test_build_source_monitor_state_contains_metadata_only() -> None:
         "fetched": True,
         "status": 200,
         "title": "OpenAI News",
+        "feed_title": None,
+        "latest_item_title": None,
+        "latest_item_link": None,
+        "latest_item_published": None,
         "error": None,
     }
 
@@ -234,6 +296,42 @@ def test_load_source_monitor_state_returns_empty_for_invalid_json(tmp_path: Path
 
     assert load_source_monitor_state(state_path) == {}
 
+
+
+def test_build_source_monitor_state_includes_rss_metadata() -> None:
+    now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)
+    result = SourceFetchResult(
+        source=make_source(
+            name="openai-news",
+            kind="rss_feed",
+            url="https://openai.com/news/rss.xml",
+        ),
+        fetched=True,
+        status=200,
+        bytes_read=1234,
+        title=None,
+        feed_title="OpenAI News",
+        latest_item_title="New model release",
+        latest_item_link="https://openai.com/news/example/",
+        latest_item_published="Sat, 02 May 2026 11:30:00 GMT",
+        error=None,
+        change_state="new",
+    )
+
+    state = build_source_monitor_state("ai", (result,), now)
+
+    assert state["sources"]["openai-news"] == {
+        "kind": "rss_feed",
+        "url": "https://openai.com/news/rss.xml",
+        "fetched": True,
+        "status": 200,
+        "title": None,
+        "feed_title": "OpenAI News",
+        "latest_item_title": "New model release",
+        "latest_item_link": "https://openai.com/news/example/",
+        "latest_item_published": "Sat, 02 May 2026 11:30:00 GMT",
+        "error": None,
+    }
 
 def test_build_source_monitor_report_includes_project_status() -> None:
     now = datetime(2026, 5, 1, 12, 30, tzinfo=UTC)

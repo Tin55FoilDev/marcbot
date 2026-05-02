@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from html.parser import HTMLParser
@@ -66,6 +67,10 @@ class SourceFetchResult:
     bytes_read: int
     error: str | None = None
     title: str | None = None
+    feed_title: str | None = None
+    latest_item_title: str | None = None
+    latest_item_link: str | None = None
+    latest_item_published: str | None = None
     change_state: str | None = None
 
 
@@ -93,6 +98,90 @@ def extract_html_title(data: bytes) -> str | None:
     return parser.title
 
 
+def _xml_text(element: ET.Element | None) -> str | None:
+    """Return normalized XML element text."""
+    if element is None or element.text is None:
+        return None
+    normalized = " ".join(element.text.split())
+    return normalized or None
+
+
+def _local_xml_name(element: ET.Element) -> str:
+    """Return an XML element name without its namespace."""
+    return element.tag.rsplit("}", 1)[-1]
+
+
+def _find_first_child(element: ET.Element, child_name: str) -> ET.Element | None:
+    """Find the first direct child with a local XML tag name."""
+    for child in element:
+        if _local_xml_name(child) == child_name:
+            return child
+    return None
+
+
+def _find_first_descendant(element: ET.Element, child_name: str) -> ET.Element | None:
+    """Find the first descendant with a local XML tag name."""
+    for child in element.iter():
+        if _local_xml_name(child) == child_name:
+            return child
+    return None
+
+
+def extract_rss_metadata(data: bytes) -> dict[str, str | None]:
+    """Extract deterministic RSS/Atom metadata from bounded response bytes."""
+    metadata: dict[str, str | None] = {
+        "feed_title": None,
+        "latest_item_title": None,
+        "latest_item_link": None,
+        "latest_item_published": None,
+    }
+
+    if not data:
+        return metadata
+
+    try:
+        root = ET.fromstring(data.decode("utf-8", errors="replace"))
+    except ET.ParseError:
+        return metadata
+
+    root_name = _local_xml_name(root)
+
+    if root_name == "rss":
+        channel = _find_first_descendant(root, "channel")
+        if channel is None:
+            return metadata
+
+        item = _find_first_child(channel, "item")
+        metadata["feed_title"] = _xml_text(_find_first_child(channel, "title"))
+
+        if item is not None:
+            metadata["latest_item_title"] = _xml_text(_find_first_child(item, "title"))
+            metadata["latest_item_link"] = _xml_text(_find_first_child(item, "link"))
+            metadata["latest_item_published"] = _xml_text(
+                _find_first_child(item, "pubDate")
+            )
+
+        return metadata
+
+    if root_name == "feed":
+        entry = _find_first_child(root, "entry")
+        metadata["feed_title"] = _xml_text(_find_first_child(root, "title"))
+
+        if entry is not None:
+            metadata["latest_item_title"] = _xml_text(_find_first_child(entry, "title"))
+            link = _find_first_child(entry, "link")
+            metadata["latest_item_link"] = (
+                link.attrib.get("href") if link is not None else None
+            )
+            metadata["latest_item_published"] = _xml_text(
+                _find_first_child(entry, "updated")
+            ) or _xml_text(_find_first_child(entry, "published"))
+
+        return metadata
+
+    return metadata
+
+
 def fetch_source_metadata(source: SourceDefinition) -> SourceFetchResult:
     """Fetch bounded metadata for one enabled allowlisted source."""
     if not source.enabled:
@@ -117,6 +206,11 @@ def fetch_source_metadata(source: SourceDefinition) -> SourceFetchResult:
         with urlopen(request, timeout=FETCH_TIMEOUT_SECONDS) as response:
             data = response.read(MAX_FETCH_BYTES + 1)
             bounded_data = data[:MAX_FETCH_BYTES]
+            rss_metadata = (
+                extract_rss_metadata(bounded_data)
+                if source.kind == "rss_feed"
+                else {}
+            )
             return SourceFetchResult(
                 source=source,
                 fetched=True,
@@ -124,6 +218,10 @@ def fetch_source_metadata(source: SourceDefinition) -> SourceFetchResult:
                 bytes_read=len(bounded_data),
                 error=None,
                 title=extract_html_title(bounded_data),
+                feed_title=rss_metadata.get("feed_title"),
+                latest_item_title=rss_metadata.get("latest_item_title"),
+                latest_item_link=rss_metadata.get("latest_item_link"),
+                latest_item_published=rss_metadata.get("latest_item_published"),
             )
     except HTTPError as exc:
         return SourceFetchResult(
@@ -191,6 +289,10 @@ def _comparison_fields(result: SourceFetchResult) -> dict[str, Any]:
     return {
         "status": result.status,
         "title": result.title,
+        "feed_title": result.feed_title,
+        "latest_item_title": result.latest_item_title,
+        "latest_item_link": result.latest_item_link,
+        "latest_item_published": result.latest_item_published,
         "error": result.error,
     }
 
@@ -251,6 +353,10 @@ def build_source_monitor_state(
                 "fetched": result.fetched,
                 "status": result.status,
                 "title": result.title,
+                "feed_title": result.feed_title,
+                "latest_item_title": result.latest_item_title,
+                "latest_item_link": result.latest_item_link,
+                "latest_item_published": result.latest_item_published,
                 "error": result.error,
             }
             for result in fetch_results
@@ -411,6 +517,10 @@ def _format_fetch_results(fetch_results: tuple[SourceFetchResult, ...]) -> list[
                 f"  - status: {result.status if result.status is not None else 'n/a'}",
                 f"  - bytes_read: {result.bytes_read}",
                 f"  - title: {result.title or 'n/a'}",
+                f"  - feed_title: {result.feed_title or 'n/a'}",
+                f"  - latest_item_title: {result.latest_item_title or 'n/a'}",
+                f"  - latest_item_link: {result.latest_item_link or 'n/a'}",
+                f"  - latest_item_published: {result.latest_item_published or 'n/a'}",
                 f"  - change: {result.change_state or 'n/a'}",
                 f"  - error: {result.error or 'none'}",
             ]
