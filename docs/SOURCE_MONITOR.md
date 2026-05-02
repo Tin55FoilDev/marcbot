@@ -208,3 +208,13 @@ Each report includes a compact summary section near the top.
     Errored
 
 Errored counts include fetch failures such as timeouts, URL errors, HTTP errors, or OS errors. Disabled sources are reported in the per-source details but are not counted as errored.
+
+## Telegram report access
+
+Source monitor report visibility is exposed through the generic report-status command:
+
+    /report_status source ai
+
+The command reads the newest local AI source monitor report and returns only the compact summary section.
+
+The command does not fetch sources, parse articles, summarize content, classify importance, or call an LLM.

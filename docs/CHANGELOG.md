@@ -1,3 +1,12 @@
+## 2026-05-01 — Source monitor report status added
+
+Extended the generic `/report_status` command for source monitor visibility.
+
+- `/report_status` keeps its existing daily status report behavior.
+- `/report_status source ai` reads the newest local AI source monitor report.
+- The source-monitor status response returns only the compact summary section and report path.
+- It does not perform network fetches or call an LLM.
+
 # Changelog
 
 ## 0.2.1 — Scheduled reporting baseline

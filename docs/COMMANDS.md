@@ -319,6 +319,16 @@ Reports:
 
 This command is read-only. It does not generate a report, send a report, call an AI model, or modify systemd.
 
+The report status command also supports source-monitor project summaries:
+
+    /report_status source <project>
+
+For the current AI source-monitor project:
+
+    /report_status source ai
+
+This reads the newest local source-monitor report and returns only the compact summary section. It does not fetch sources, run web requests, parse articles, or call an LLM.
+
 ### `/logs`
 
 Shows recent MarcBot application logs from:

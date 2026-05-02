@@ -65,3 +65,18 @@ def test_build_application_accepts_valid_config() -> None:
 
     assert application.bot_data["allowed_chat_ids"] == (12345,)
     assert application.bot_data["app_environment"] == "test"
+
+
+def test_build_application_does_not_register_source_status_command() -> None:
+    application = build_application(make_config())
+
+    command_names = {
+        command
+        for handlers in application.handlers.values()
+        for handler in handlers
+        if hasattr(handler, "commands")
+        for command in handler.commands
+    }
+
+    assert "source_status" not in command_names
+    assert "report_status" in command_names

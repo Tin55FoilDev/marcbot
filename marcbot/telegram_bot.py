@@ -24,6 +24,7 @@ from marcbot.latest_report import validate_latest_daily_status_report
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.report_status import format_report_status_message
 from marcbot.service_status import format_service_report
+from marcbot.source_status import format_source_status_message
 from marcbot.tail_reader import format_tail_message
 from marcbot.timer_status import format_timer_status_message
 from marcbot.uptime import format_uptime_report
@@ -453,10 +454,22 @@ async def report_status_command(update: Update, context: ContextTypes.DEFAULT_TY
         await _reject_unauthorized(update)
         return
 
-    LOGGER.info("Handled /report_status for chat_id=%s", chat_id)
+    args = tuple(context.args or ())
+    LOGGER.info("Handled /report_status for chat_id=%s args=%s", chat_id, args)
+
+    if not args:
+        message = format_report_status_message()
+    elif len(args) == 2 and args[0].lower() == "source":
+        message = format_source_status_message(project_name=args[1])
+    else:
+        message = (
+            "Usage:\n"
+            "/report_status\n"
+            "/report_status source <project>"
+        )
 
     if update.message is not None:
-        await update.message.reply_text(format_report_status_message())
+        await update.message.reply_text(message)
 
 
 async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -509,6 +522,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/backup_status - show latest MarcBot app-level backup status\n"
         "/timer_status - show MarcBot scheduled timer status\n"
         "/report_status - show latest daily status report status\n"
+        "/report_status source <project> - show latest source monitor summary\n"
         "/logs - show recent MarcBot application logs\n"
         "/tail <app|service> - show approved diagnostic log tails\n"
         "/help - show this help message"
