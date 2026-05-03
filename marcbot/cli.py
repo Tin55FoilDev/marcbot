@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 from marcbot import __version__
@@ -280,7 +282,118 @@ def build_parser() -> argparse.ArgumentParser:
         help="source project name (default: ai)",
     )
 
+    support_parser = subparsers.add_parser(
+        "support",
+        help="support and session restart helpers",
+    )
+    support_subparsers = support_parser.add_subparsers(
+        dest="support_command",
+        required=True,
+    )
+    support_subparsers.add_parser(
+        "snapshot",
+        help="print a redacted MarcBot session restart snapshot",
+    )
+
     return parser
+
+
+def _run_git_command(args: list[str]) -> str:
+    """Run a read-only git command and return stripped output."""
+
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except OSError, subprocess.CalledProcessError:
+        return "unknown"
+
+    return result.stdout.strip()
+
+
+def _format_support_snapshot() -> str:
+    """Format a redacted support snapshot for restarting AI sessions."""
+
+    docs_to_check = [
+        "docs/SESSION_START.md",
+        "docs/ROADMAP.md",
+        "docs/CHANGELOG.md",
+        "docs/ARCHITECTURE.md",
+        "docs/SECURITY.md",
+        "docs/COMMANDS.md",
+        "docs/LLM.md",
+    ]
+
+    branch = _run_git_command(["branch", "--show-current"]) or "unknown"
+    commit = _run_git_command(["log", "-1", "--oneline"]) or "unknown"
+    status = _run_git_command(["status", "--short"])
+    status_summary = "dirty" if status else "clean"
+
+    lines = [
+        "# MarcBot Support Snapshot",
+        "",
+        f"Generated: {datetime.now(UTC).isoformat()}",
+        f"MarcBot version: {__version__}",
+        "",
+        "## Git",
+        "",
+        f"Branch: {branch}",
+        f"Latest commit: {commit}",
+        f"Working tree: {status_summary}",
+    ]
+
+    if status:
+        lines.extend(["", "Changed files:", status])
+
+    lines.extend(
+        [
+            "",
+            "## Runtime paths",
+            "",
+            f"Repo/app: {Path.cwd()}",
+            f"Workspace: {WORKSPACE_DIR}",
+            f"Logs: {LOG_DIR}",
+            "",
+            "## Runtime directory check",
+            "",
+        ]
+    )
+
+    missing_dirs = missing_runtime_dirs()
+    if missing_dirs:
+        lines.extend(f"- missing: {path}" for path in missing_dirs)
+    else:
+        lines.append("- required runtime directories found")
+
+    lines.extend(["", "## Important docs", ""])
+
+    for doc in docs_to_check:
+        state = "present" if Path(doc).is_file() else "missing"
+        lines.append(f"- {doc}: {state}")
+
+    lines.extend(
+        [
+            "",
+            "## Validation command",
+            "",
+            "Run from the repo as the marc user:",
+            "",
+            "    ./scripts/check.sh",
+            "",
+            "## Security note",
+            "",
+            "This snapshot intentionally does not include secrets, local config file "
+            "contents, environment variables, tokens, or unrestricted logs.",
+            "",
+            "For a new AI session, attach or paste this snapshot with "
+            "docs/SESSION_START.md and the exact error or feature goal.",
+        ]
+    )
+
+    return "\n".join(lines)
 
 
 def run_doctor() -> int:
@@ -560,6 +673,12 @@ def main(argv: list[str] | None = None) -> int:
 
             parser.print_help()
             return 1
+
+        if args.command == "support":
+            if args.support_command == "snapshot":
+                print(_format_support_snapshot())
+                LOGGER.info("Support snapshot generated")
+                return 0
 
         if args.command == "source-monitor":
             if args.source_monitor_command == "config-check":

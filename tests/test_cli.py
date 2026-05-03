@@ -331,6 +331,20 @@ def test_summary_completion_does_not_retry_non_empty_error(monkeypatch) -> None:
     assert excinfo.value.code == "MBOT-LLM-027"
 
 
+def test_support_snapshot_prints_redacted_restart_packet(capsys) -> None:
+    result = main(["support", "snapshot"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "# MarcBot Support Snapshot" in captured.out
+    assert "MarcBot version:" in captured.out
+    assert "## Git" in captured.out
+    assert "## Important docs" in captured.out
+    assert "docs/SESSION_START.md:" in captured.out
+    assert "## Security note" in captured.out
+    assert "environment variables" in captured.out
+
+
 def test_build_source_monitor_summary_input_compacts_large_report(tmp_path) -> None:
     from pathlib import Path
 
