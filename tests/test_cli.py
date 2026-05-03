@@ -189,3 +189,46 @@ def test_llm_summarize_file_missing_file_returns_error(
     assert result == 1
     assert "ERROR [MBOT-LLM-052]" in captured.err
     assert "missing.md" in captured.err
+
+def test_llm_summarize_file_save_existing_output_returns_error(
+    capsys, monkeypatch, tmp_path
+) -> None:
+    import marcbot.cli as cli
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    report = workspace / "report.md"
+    report.write_text("report content", encoding="utf-8")
+    output = workspace / "summary.md"
+    output.write_text("existing", encoding="utf-8")
+
+    def load_test_summary_input(path):
+        from marcbot.llm_file_summary import load_workspace_summary_input
+
+        return load_workspace_summary_input(path, workspace_dir=workspace)
+
+    def resolve_test_summary_output(path):
+        from marcbot.llm_file_summary import resolve_workspace_summary_output_path
+
+        return resolve_workspace_summary_output_path(path, workspace_dir=workspace)
+
+    monkeypatch.setattr(cli, "load_workspace_summary_input", load_test_summary_input)
+    monkeypatch.setattr(
+        cli,
+        "resolve_workspace_summary_output_path",
+        resolve_test_summary_output,
+    )
+
+    result = main(
+        [
+            "llm",
+            "summarize-file-save",
+            "report_summary",
+            "report.md",
+            "summary.md",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "ERROR [MBOT-LLM-061]" in captured.err

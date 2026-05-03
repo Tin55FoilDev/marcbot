@@ -126,3 +126,74 @@ def build_summary_prompt(summary_input: WorkspaceSummaryInput) -> str:
         f"{summary_input.text}\n\n"
         "Summary:"
     )
+
+
+def resolve_workspace_summary_output_path(
+    requested_path: str,
+    workspace_dir: Path = WORKSPACE_DIR,
+) -> Path:
+    """Validate and resolve a workspace-relative output path for a summary file."""
+
+    candidate = _clean_workspace_relative_path(requested_path)
+
+    try:
+        resolved_workspace = workspace_dir.resolve(strict=True)
+    except OSError as exc:
+        raise MarcBotError(
+            "MBOT-LLM-059",
+            f"Workspace directory is not available: {workspace_dir}",
+        ) from exc
+
+    resolved_path = (resolved_workspace / candidate).resolve(strict=False)
+
+    if resolved_path == resolved_workspace or resolved_workspace not in resolved_path.parents:
+        raise MarcBotError(
+            "MBOT-LLM-060",
+            "Resolved summary output path is outside the workspace",
+        )
+
+    if resolved_path.exists():
+        raise MarcBotError(
+            "MBOT-LLM-061",
+            f"Workspace summary output already exists: {requested_path}",
+        )
+
+    parent = resolved_path.parent
+    if parent.exists() and not parent.is_dir():
+        raise MarcBotError(
+            "MBOT-LLM-062",
+            f"Workspace summary output parent is not a directory: {requested_path}",
+        )
+
+    return resolved_path
+
+
+def write_workspace_summary_output(
+    requested_path: str,
+    content: str,
+    workspace_dir: Path = WORKSPACE_DIR,
+) -> Path:
+    """Write a generated summary to a new workspace-relative output file."""
+
+    text = content.strip()
+    if not text:
+        raise MarcBotError(
+            "MBOT-LLM-063",
+            "Workspace summary output content must not be empty",
+        )
+
+    output_path = resolve_workspace_summary_output_path(
+        requested_path,
+        workspace_dir=workspace_dir,
+    )
+
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(text + "\n", encoding="utf-8")
+    except OSError as exc:
+        raise MarcBotError(
+            "MBOT-LLM-064",
+            f"Unable to write workspace summary output: {requested_path}",
+        ) from exc
+
+    return output_path

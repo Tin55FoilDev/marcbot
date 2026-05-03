@@ -111,3 +111,58 @@ def test_build_summary_prompt(tmp_path) -> None:
     assert "File path: daily.md" in prompt
     assert "MarcBot report content" in prompt
     assert "Summary:" in prompt
+
+def test_resolve_workspace_summary_output_path(tmp_path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    from marcbot.llm_file_summary import resolve_workspace_summary_output_path
+
+    result = resolve_workspace_summary_output_path(
+        "summaries/daily.summary.md",
+        workspace_dir=workspace,
+    )
+
+    assert result == workspace / "summaries" / "daily.summary.md"
+
+
+def test_resolve_workspace_summary_output_path_rejects_existing_file(tmp_path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    existing = workspace / "summary.md"
+    existing.write_text("already here", encoding="utf-8")
+
+    from marcbot.llm_file_summary import resolve_workspace_summary_output_path
+
+    with pytest.raises(MarcBotError) as excinfo:
+        resolve_workspace_summary_output_path("summary.md", workspace_dir=workspace)
+
+    assert excinfo.value.code == "MBOT-LLM-061"
+
+
+def test_write_workspace_summary_output(tmp_path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    from marcbot.llm_file_summary import write_workspace_summary_output
+
+    result = write_workspace_summary_output(
+        "summaries/daily.summary.md",
+        "Generated summary",
+        workspace_dir=workspace,
+    )
+
+    assert result == workspace / "summaries" / "daily.summary.md"
+    assert result.read_text(encoding="utf-8") == "Generated summary\n"
+
+
+def test_write_workspace_summary_output_rejects_empty_content(tmp_path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    from marcbot.llm_file_summary import write_workspace_summary_output
+
+    with pytest.raises(MarcBotError) as excinfo:
+        write_workspace_summary_output("summary.md", "   ", workspace_dir=workspace)
+
+    assert excinfo.value.code == "MBOT-LLM-063"

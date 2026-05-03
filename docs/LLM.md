@@ -275,11 +275,14 @@ Current task-routed prompt command:
 
 The `ask-task` command resolves the task to its configured profile, then uses that profile's provider, model, temperature, max_tokens, and prompt guardrails.
 
-Current workspace file summary command:
+Current workspace file summary commands:
 
     python -m marcbot llm summarize-file report_summary reports/example.md
+    python -m marcbot llm summarize-file-save report_summary reports/example.md summaries/example.summary.md
 
 The `summarize-file` command reads a UTF-8 text file from `/srv/marcbot/workspace`, builds a fixed summary prompt, and routes it through the configured LLM task.
+
+The `summarize-file-save` command uses the same input boundary and writes the generated summary to a new workspace-relative output file. It refuses to overwrite existing files.
 
 Safety boundaries:
 
@@ -292,7 +295,9 @@ Safety boundaries:
 - workspace file summaries only accept workspace-relative paths
 - workspace file summaries reject absolute paths and parent traversal
 - workspace file summaries reject files over 3000 characters before provider calls
-- workspace file summaries print output only; they do not save generated summaries
+- `summarize-file` prints output only
+- `summarize-file-save` writes only to new workspace-relative files
+- `summarize-file-save` refuses to overwrite existing files
 
 
 ## Current profile guidance

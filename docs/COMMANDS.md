@@ -467,6 +467,7 @@ python -m marcbot llm tasks
 python -m marcbot llm task report_summary
 python -m marcbot llm ask-task report_summary "Summarize this in one sentence: MarcBot is online."
 python -m marcbot llm summarize-file report_summary reports/example.md
+python -m marcbot llm summarize-file-save report_summary reports/example.md summaries/example.summary.md
 ~~
 
 There are no Telegram LLM prompt commands yet.

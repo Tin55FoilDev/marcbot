@@ -3,6 +3,23 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — CLI-only saved workspace LLM summaries added
+
+Added a CLI-only command for saving generated LLM summaries back into the MarcBot workspace.
+
+New command:
+
+    python -m marcbot llm summarize-file-save <task> <input-path> <output-path>
+
+Behavior:
+
+- uses the same workspace-relative input validation as `summarize-file`
+- writes generated summaries only to workspace-relative output paths
+- creates output parent directories under `/srv/marcbot/workspace`
+- refuses to overwrite existing output files
+- does not expose saved summary generation through Telegram
+
+
 ## 2026-05-02 — CLI-only workspace file summarization added
 
 Added a CLI-only command for summarizing workspace-relative UTF-8 text files through a configured LLM task route.
