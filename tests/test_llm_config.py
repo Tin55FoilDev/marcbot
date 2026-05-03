@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from marcbot.errors import MarcBotError
-from marcbot.llm_config import format_llm_profiles, load_llm_config
+from marcbot.llm_config import format_llm_profile_detail, format_llm_profiles, load_llm_config
 
 
 def write_llm_config(tmp_path: Path, content: str) -> Path:
@@ -42,6 +42,46 @@ intended_use = "low_risk_utility"
     assert config.providers["lmstudio"].provider_type == "openai_compatible"
     assert config.profiles["local_fast"].provider == "lmstudio"
     assert config.profiles["local_fast"].model == "google/gemma-4-e4b"
+
+
+def test_format_llm_profile_detail(tmp_path: Path) -> None:
+    """Format one configured profile with provider details."""
+    config_path = write_llm_config(
+        tmp_path,
+        """
+[providers.lmstudio]
+enabled = true
+type = "openai_compatible"
+base_url = "http://10.0.1.22:1234/v1"
+api_key_env = "MARCBOT_LMSTUDIO_API_KEY"
+timeout_seconds = 30
+
+[profiles.local_fast]
+provider = "lmstudio"
+model = "google/gemma-4-e4b"
+temperature = 0.2
+max_tokens = 500
+intended_use = "low_risk_utility"
+""",
+    )
+
+    config = load_llm_config(config_path)
+    profile = config.profiles["local_fast"]
+    provider = config.providers[profile.provider]
+
+    output = format_llm_profile_detail(profile, provider)
+
+    assert "MarcBot LLM profile" in output
+    assert "Name: local_fast" in output
+    assert "Provider: lmstudio" in output
+    assert "Provider type: openai_compatible" in output
+    assert "Model: google/gemma-4-e4b" in output
+    assert "Temperature: 0.2" in output
+    assert "Max tokens: 500" in output
+    assert "Intended use: low_risk_utility" in output
+    assert "Provider enabled: yes" in output
+    assert "Base URL: http://10.0.1.22:1234/v1" in output
+    assert "API key env: MARCBOT_LMSTUDIO_API_KEY" in output
 
 
 def test_format_llm_profiles(tmp_path: Path) -> None:

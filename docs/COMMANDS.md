@@ -459,6 +459,7 @@ Current LLM commands are CLI-only and are documented in `docs/LLM.md`.
 
 ~~bash
 python -m marcbot llm profiles
+python -m marcbot llm profile local_fast
 python -m marcbot llm models lmstudio
 python -m marcbot llm health local_fast
 ~~

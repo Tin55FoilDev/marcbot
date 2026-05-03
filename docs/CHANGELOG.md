@@ -3,6 +3,23 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — LLM profile detail CLI command added
+
+Added a CLI-only LLM profile detail command.
+
+New command:
+
+    python -m marcbot llm profile <profile>
+
+Behavior:
+
+- shows one configured profile and its provider details
+- does not call the provider
+- does not load provider secrets
+- does not send prompts
+- keeps model/profile selection visibility outside Telegram chat workflows for now
+
+
 ## 2026-05-02 — RSS latest items added to source status
 
 Improved `/report_status source <project>` output for RSS sources.

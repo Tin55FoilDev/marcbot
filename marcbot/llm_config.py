@@ -231,6 +231,33 @@ def load_llm_config(path: Path = DEFAULT_LLM_CONFIG_PATH) -> LlmConfig:
     return LlmConfig(path=path, providers=providers, profiles=profiles)
 
 
+def format_llm_profile_detail(
+    profile: LlmProfileConfig,
+    provider: LlmProviderConfig,
+) -> str:
+    """Format one configured LLM profile for operator output."""
+    enabled = "yes" if provider.enabled else "no"
+    intended_use = profile.intended_use or "(not set)"
+    api_key_env = provider.api_key_env or "(not set)"
+    base_url = provider.base_url or "(not set)"
+
+    return "\n".join(
+        [
+            "MarcBot LLM profile",
+            f"Name: {profile.name}",
+            f"Provider: {profile.provider}",
+            f"Provider type: {provider.provider_type}",
+            f"Model: {profile.model}",
+            f"Temperature: {profile.temperature:g}",
+            f"Max tokens: {profile.max_tokens}",
+            f"Intended use: {intended_use}",
+            f"Provider enabled: {enabled}",
+            f"Base URL: {base_url}",
+            f"API key env: {api_key_env}",
+        ]
+    )
+
+
 def format_llm_profiles(config: LlmConfig) -> str:
     """Format configured LLM profiles for operator output."""
     lines = [

@@ -87,6 +87,7 @@ set -a
 set +a
 
 python -m marcbot llm profiles
+python -m marcbot llm profile local_fast
 python -m marcbot llm models lmstudio
 python -m marcbot llm health local_fast
 '
@@ -97,6 +98,27 @@ python -m marcbot llm health local_fast
 Lists configured profiles from `/srv/marcbot/config/llm-providers.toml`.
 
 This does not call the provider.
+
+### `python -m marcbot llm profile local_fast`
+
+Shows one configured profile and its provider details.
+
+This command does not call the provider, load provider secrets, or send a prompt. It is intended for operator visibility before assigning profiles to future tasks.
+
+Expected output shape:
+
+    MarcBot LLM profile
+    Name: local_fast
+    Provider: lmstudio
+    Provider type: openai_compatible
+    Model: google/gemma-4-e4b
+    Temperature: 0.2
+    Max tokens: 500
+    Intended use: low_risk_utility
+    Provider enabled: yes
+    Base URL: http://10.0.1.22:1234/v1
+    API key env: MARCBOT_LMSTUDIO_API_KEY
+
 
 ### `python -m marcbot llm models lmstudio`
 
