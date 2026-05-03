@@ -2,8 +2,11 @@
 
 import logging
 
+import pytest
+
 from marcbot import __version__
 from marcbot.cli import main
+from marcbot.errors import MarcBotError
 
 
 def test_version_command(capsys) -> None:
@@ -232,3 +235,94 @@ def test_llm_summarize_file_save_existing_output_returns_error(
 
     assert result == 1
     assert "ERROR [MBOT-LLM-061]" in captured.err
+
+def test_summary_completion_retries_empty_response(monkeypatch) -> None:
+    import marcbot.cli as cli
+    from marcbot.llm_client import LlmCompletionResult
+
+    calls = {"count": 0}
+
+    def flaky_completion(**kwargs):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise MarcBotError("MBOT-LLM-035", "empty response")
+        return LlmCompletionResult(
+            profile_name=kwargs["profile_name"],
+            provider_name=kwargs["provider"].name,
+            model=kwargs["model"],
+            response_text="Recovered summary",
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(cli, "run_openai_compatible_completion", flaky_completion)
+
+    class Provider:
+        name = "test-provider"
+
+    result = cli._run_summary_completion_with_retry(
+        provider=Provider(),
+        profile_name="local_fast",
+        model="test-model",
+        prompt="Summarize this.",
+        temperature=0.2,
+        max_tokens=100,
+    )
+
+    assert calls["count"] == 2
+    assert result.response_text == "Recovered summary"
+
+
+def test_summary_completion_reraises_empty_after_retry(monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    calls = {"count": 0}
+
+    def empty_completion(**kwargs):
+        calls["count"] += 1
+        raise MarcBotError("MBOT-LLM-035", "empty response")
+
+    monkeypatch.setattr(cli, "run_openai_compatible_completion", empty_completion)
+
+    class Provider:
+        name = "test-provider"
+
+    with pytest.raises(MarcBotError) as excinfo:
+        cli._run_summary_completion_with_retry(
+            provider=Provider(),
+            profile_name="local_fast",
+            model="test-model",
+            prompt="Summarize this.",
+            temperature=0.2,
+            max_tokens=100,
+        )
+
+    assert calls["count"] == 2
+    assert excinfo.value.code == "MBOT-LLM-035"
+
+
+def test_summary_completion_does_not_retry_non_empty_error(monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    calls = {"count": 0}
+
+    def auth_failure(**kwargs):
+        calls["count"] += 1
+        raise MarcBotError("MBOT-LLM-027", "auth failed")
+
+    monkeypatch.setattr(cli, "run_openai_compatible_completion", auth_failure)
+
+    class Provider:
+        name = "test-provider"
+
+    with pytest.raises(MarcBotError) as excinfo:
+        cli._run_summary_completion_with_retry(
+            provider=Provider(),
+            profile_name="local_fast",
+            model="test-model",
+            prompt="Summarize this.",
+            temperature=0.2,
+            max_tokens=100,
+        )
+
+    assert calls["count"] == 1
+    assert excinfo.value.code == "MBOT-LLM-027"

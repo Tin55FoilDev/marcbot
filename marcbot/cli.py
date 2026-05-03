@@ -35,6 +35,54 @@ from marcbot.telegram_bot import run_foreground_bot
 
 LOGGER = logging.getLogger(__name__)
 
+SUMMARY_COMPLETION_ATTEMPTS = 2
+
+
+def _run_summary_completion_with_retry(
+    *,
+    provider,
+    profile_name: str,
+    model: str,
+    prompt: str,
+    temperature: float,
+    max_tokens: int,
+):
+    """Run a summary completion with one retry for empty provider responses."""
+
+    last_error: MarcBotError | None = None
+
+    for attempt in range(1, SUMMARY_COMPLETION_ATTEMPTS + 1):
+        try:
+            return run_openai_compatible_completion(
+                provider=provider,
+                profile_name=profile_name,
+                model=model,
+                prompt=prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+        except MarcBotError as exc:
+            if exc.code != "MBOT-LLM-035":
+                raise
+
+            last_error = exc
+            LOGGER.warning(
+                "LLM summary completion returned empty content: "
+                "profile=%s model=%s attempt=%s/%s",
+                profile_name,
+                model,
+                attempt,
+                SUMMARY_COMPLETION_ATTEMPTS,
+            )
+
+    if last_error is None:
+        raise MarcBotError(
+            "MBOT-LLM-065",
+            "LLM summary completion failed without a captured error",
+        )
+
+    raise last_error
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the MarcBot CLI parser."""
@@ -366,7 +414,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
 
                 provider = llm_config.providers[profile.provider]
-                result = run_openai_compatible_completion(
+                result = _run_summary_completion_with_retry(
                     provider=provider,
                     profile_name=profile.name,
                     model=profile.model,
@@ -405,7 +453,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
 
                 provider = llm_config.providers[profile.provider]
-                result = run_openai_compatible_completion(
+                result = _run_summary_completion_with_retry(
                     provider=provider,
                     profile_name=profile.name,
                     model=profile.model,

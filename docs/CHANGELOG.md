@@ -3,6 +3,18 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — LLM summary empty-response retry added
+
+Added a narrow retry guard for CLI-only summary commands.
+
+Behavior:
+
+- `summarize-file` and `summarize-file-save` retry once when the provider returns empty response content
+- non-empty provider errors are not retried
+- saved summaries are still written only after a successful non-empty provider response
+- failed provider responses do not create partial output files
+
+
 ## 2026-05-02 — CLI-only saved workspace LLM summaries added
 
 Added a CLI-only command for saving generated LLM summaries back into the MarcBot workspace.

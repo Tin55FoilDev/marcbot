@@ -298,6 +298,8 @@ Safety boundaries:
 - `summarize-file` prints output only
 - `summarize-file-save` writes only to new workspace-relative files
 - `summarize-file-save` refuses to overwrite existing files
+- summary commands retry once when the provider returns empty response content
+- saved summaries are written only after a successful non-empty provider response
 
 
 ## Current profile guidance
