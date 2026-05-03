@@ -3,6 +3,17 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — LLM ask prompt length guardrail added
+
+Added a prompt length guardrail for one-shot LLM completions.
+
+Behavior:
+
+- rejects prompts longer than 4000 characters
+- returns a clean MarcBot error instead of sending overlong input to a provider
+- keeps local model latency and context use more predictable for future task workflows
+
+
 ## 2026-05-02 — CLI-only LLM ask command added
 
 Added a CLI-only one-shot LLM prompt command.

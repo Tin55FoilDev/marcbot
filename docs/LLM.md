@@ -167,6 +167,7 @@ Safety boundaries:
 
 - requires an explicit configured profile
 - uses the profile's configured provider, model, temperature, and max_tokens
+- rejects prompts longer than 4000 characters
 - does not allow arbitrary provider URL override from the command line
 - does not allow arbitrary model override from the command line
 - does not provide tool access

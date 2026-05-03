@@ -12,6 +12,8 @@ from typing import Any, Protocol
 from marcbot.errors import MarcBotError
 from marcbot.llm_config import LlmProviderConfig
 
+MAX_LLM_PROMPT_CHARS = 4000
+
 
 class UrlOpener(Protocol):
     """Protocol for urllib-compatible openers used by tests."""
@@ -235,6 +237,12 @@ def run_openai_compatible_completion(
     """Run a bounded one-shot chat completion for a configured profile."""
     if not isinstance(prompt, str) or not prompt.strip():
         raise MarcBotError("MBOT-LLM-038", "LLM completion prompt must not be empty")
+
+    if len(prompt.strip()) > MAX_LLM_PROMPT_CHARS:
+        raise MarcBotError(
+            "MBOT-LLM-040",
+            f"LLM completion prompt exceeds {MAX_LLM_PROMPT_CHARS} characters",
+        )
 
     if max_tokens < 1:
         raise MarcBotError("MBOT-LLM-039", "LLM completion max_tokens must be positive")

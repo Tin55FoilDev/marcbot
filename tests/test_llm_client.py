@@ -10,6 +10,7 @@ import pytest
 
 from marcbot.errors import MarcBotError
 from marcbot.llm_client import (
+    MAX_LLM_PROMPT_CHARS,
     format_llm_completion_result,
     format_llm_health_result,
     format_llm_models,
@@ -238,6 +239,21 @@ def test_run_openai_compatible_completion_rejects_empty_prompt() -> None:
         )
 
     assert excinfo.value.code == "MBOT-LLM-038"
+
+
+def test_run_openai_compatible_completion_rejects_overlong_prompt() -> None:
+    with pytest.raises(MarcBotError) as excinfo:
+        run_openai_compatible_completion(
+            provider=make_provider(),
+            profile_name="local_fast",
+            model="google/gemma-4-e4b",
+            prompt="x" * (MAX_LLM_PROMPT_CHARS + 1),
+            temperature=0.2,
+            max_tokens=100,
+            opener=FakeOpener(FakeResponse(b"{\"choices\": []}")),
+        )
+
+    assert excinfo.value.code == "MBOT-LLM-040"
 
 
 def test_run_openai_compatible_completion_rejects_nonpositive_max_tokens() -> None:
