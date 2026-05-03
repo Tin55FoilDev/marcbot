@@ -1,43 +1,197 @@
 # MarcBot
 
-MarcBot is a small personal automation bot intended to replace the reliable subset of OpenClaw used by Marc.
+MarcBot is Marc's personal-only Telegram bot and automation project.
 
-Initial goals:
+It is intended to replace the reliable subset of OpenClaw workflows with a smaller, safer, more testable system that Marc can maintain over time.
 
-- Telegram command gateway
-- systemd-managed service
-- cron-triggered notifications
-- safe named actions
-- local workspace management
-- optional LLM routing later
-- project scaffolding for reports and small web games
+Current baseline: **MarcBot 0.3.1**.
 
-## Current baseline
+## Design goals
 
-MarcBot 0.2.1 is the first stable personal-operations baseline.
+MarcBot favors:
 
-Core capabilities:
+- narrow, explicit capabilities
+- stable behavior over rapid feature growth
+- CLI-first development workflows
+- safe Telegram commands
+- saved report and summary artifacts
+- local configuration outside Git
+- unit tests and Ruff validation
+- clear documentation for future AI-assisted development sessions
 
-- Telegram command interface with allowlisted chat authorization
-- read-only health and service diagnostics
-- allowlisted project documentation access
-- safe workspace listing and file retrieval
-- app-level backup script and daily systemd backup timer
-- read-only backup status reporting
-- GitHub-backed source workflow
+MarcBot intentionally avoids broad agent autonomy.
 
-MarcBot intentionally avoids arbitrary shell execution from Telegram.
-## Current operational baseline
+## Security model
 
-MarcBot 0.2.1 is the scheduled reporting baseline.
+Runtime MarcBot should stay constrained.
 
-It includes:
+MarcBot does **not** provide:
 
-- app-level backup visibility
-- recent backup listing
+- arbitrary shell execution from Telegram
+- arbitrary file writes from Telegram
+- arbitrary patch application from Telegram
+- unrestricted internet browsing from Telegram
+- secrets in Git, docs, logs, or chat
+- unrestricted self-modification commands
+
+Preferred pattern:
+
+- build and test features through CLI workflows first
+- save generated reports/summaries as artifacts
+- expose only bounded, reviewed artifact/status commands through Telegram
+- keep local operational config under `/srv/marcbot/config`, outside Git
+
+## Current capabilities
+
+MarcBot currently includes:
+
+- Telegram command gateway with allowlisted chat authorization
+- basic health, version, uptime, service, Git, log, and status commands
+- safe documentation access from Telegram
+- safe workspace-relative file listing and file sending
+- app-level backup visibility and recent backup listing
 - daily local status report generation
-- manual latest-report sending from Telegram
-- CLI latest-report Telegram sending
-- scheduled daily report Telegram delivery
-- timer visibility for backup, report generation, and report delivery
+- scheduled daily report delivery
+- timer visibility for backup/report jobs
+- source monitor project scaffolding
+- CLI-only source monitor report generation
+- CLI-only source monitor LLM summary generation
+- CLI-only LLM provider/profile/task inspection
+- CLI-only workspace file summarization
+- CLI-only saved workspace summary generation
+- read-only support snapshot generation for future session restarts
 
+## Session restart support
+
+MarcBot 0.3.1 adds explicit support for starting a fresh AI-assisted development/debugging session.
+
+Important files/commands:
+
+    docs/SESSION_START.md
+    python -m marcbot support snapshot
+
+Use `docs/SESSION_START.md` as the human-readable restart guide.
+
+Use `python -m marcbot support snapshot` to print a redacted live state packet containing version, Git state, runtime paths, required docs, and validation instructions.
+
+The snapshot intentionally excludes secrets, local config contents, environment variables, tokens, and unrestricted logs.
+
+Suggested new-session prompt:
+
+    I am continuing MarcBot development. Attached is docs/SESSION_START.md,
+    and here is the output of python -m marcbot support snapshot.
+
+    Please follow the documented security and development workflow. I am
+    logged into the server as adminuser. For repo commands, use sudo -u marc
+    with cd /srv/marcbot/app inside the sudo block.
+
+## Standard repo command pattern
+
+Marc is usually logged into the server as `adminuser`.
+
+The MarcBot repo/app is owned by the non-sudo runtime user `marc`.
+
+Run repo commands using this pattern:
+
+    sudo -u marc env \
+      HOME=/home/marc \
+      GIT_PAGER=cat \
+      PATH="/srv/marcbot/app/.venv/bin:/usr/local/bin:/usr/bin:/bin" \
+      bash -lc '
+    set -e
+    cd /srv/marcbot/app
+
+    git status --short
+    ./scripts/check.sh
+    '
+
+Keep `cd /srv/marcbot/app` inside the `sudo -u marc ... bash -lc` block.
+
+## Validation
+
+Before committing code or documentation changes, run:
+
+    ./scripts/check.sh
+
+Current clean baseline:
+
+- MarcBot version command passes
+- MarcBot doctor passes
+- pytest passes
+- Ruff passes
+
+For deployed Telegram-facing changes, restart/test the service and inspect logs.
+
+## Important paths
+
+Common paths:
+
+- repo/app: `/srv/marcbot/app`
+- runtime root: `/srv/marcbot`
+- workspace: `/srv/marcbot/workspace`
+- local config: `/srv/marcbot/config`
+- logs: `/srv/marcbot/logs/marcbot.log`
+
+Local config and secrets should remain outside Git.
+
+## Source monitor
+
+The current source monitor workflow is project-based.
+
+Common commands:
+
+    python -m marcbot source-monitor config-check ai
+    python -m marcbot source-monitor run ai
+    python -m marcbot source-monitor run-summary ai
+
+`run-summary` writes a source monitor report, builds a bounded summary input, routes the summary through the configured `source_monitor_analysis` task, and saves the summary under the source project's workspace `summaries/` directory.
+
+## LLM support
+
+LLM support is currently CLI-only.
+
+Current LLM command groups include:
+
+    python -m marcbot llm profiles
+    python -m marcbot llm profile <profile>
+    python -m marcbot llm models <provider>
+    python -m marcbot llm health <profile>
+    python -m marcbot llm tasks
+    python -m marcbot llm task <task>
+    python -m marcbot llm ask <profile> <prompt>
+    python -m marcbot llm ask-task <task> <prompt>
+    python -m marcbot llm summarize-file <task> <workspace-relative-path>
+    python -m marcbot llm summarize-file-save <task> <input-path> <output-path>
+
+LLM configuration lives outside Git under `/srv/marcbot/config`.
+
+The preferred model strategy is:
+
+- local models for bounded summaries, heartbeat-style checks, and low-risk deterministic jobs
+- frontier/online models later for richer chat and research workflows behind explicit controls
+- no arbitrary Telegram prompt-to-tool execution
+
+## Documentation
+
+Primary docs:
+
+- `docs/SESSION_START.md` — restart guide for new AI-assisted sessions
+- `docs/COMMANDS.md` — command reference
+- `docs/DEPLOY.md` — deployment/service guidance
+- `docs/LLM.md` — LLM configuration and workflows
+- `docs/ROADMAP.md` — near-term project direction
+- `docs/SECURITY.md` — security model and constraints
+- `docs/ARCHITECTURE.md` — architecture overview
+- `docs/CHANGELOG.md` — project changes
+
+## Development principle
+
+When changing MarcBot:
+
+1. make one small, bounded change
+2. add or update tests where practical
+3. update docs
+4. run `./scripts/check.sh`
+5. inspect the diff
+6. commit and push after validation
+7. restart/test services for deployed Telegram-facing changes
