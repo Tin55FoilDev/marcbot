@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from pathlib import Path
 
 from marcbot import __version__
 from marcbot.config import DEFAULT_CONFIG_PATH, load_config
@@ -19,6 +20,7 @@ from marcbot.llm_client import (
 )
 from marcbot.llm_config import format_llm_profile_detail, format_llm_profiles, load_llm_config
 from marcbot.llm_file_summary import (
+    WorkspaceSummaryInput,
     build_summary_prompt,
     load_workspace_summary_input,
     resolve_workspace_summary_output_path,
@@ -26,7 +28,7 @@ from marcbot.llm_file_summary import (
 )
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
-from marcbot.paths import LOG_DIR, missing_runtime_dirs
+from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
 from marcbot.report_sender import send_latest_report
 from marcbot.reports import write_daily_status_report
 from marcbot.source_config import format_source_config_summary, load_source_config
@@ -36,6 +38,73 @@ from marcbot.telegram_bot import run_foreground_bot
 LOGGER = logging.getLogger(__name__)
 
 SUMMARY_COMPLETION_ATTEMPTS = 2
+SOURCE_MONITOR_SUMMARY_INPUT_LIMIT = 3000
+
+
+def _build_source_monitor_summary_input(
+    report_path: Path,
+    requested_path: Path,
+) -> WorkspaceSummaryInput:
+    """Build a bounded source-monitor summary input from a generated report."""
+
+    report_text = report_path.read_text(encoding="utf-8")
+    if len(report_text) <= SOURCE_MONITOR_SUMMARY_INPUT_LIMIT:
+        return WorkspaceSummaryInput(
+            requested_path=str(requested_path),
+            resolved_path=report_path,
+            text=report_text,
+        )
+
+    lines = report_text.splitlines()
+    kept_lines: list[str] = []
+    in_fetch_results = False
+    fetch_items_kept = 0
+    max_fetch_items = 8
+
+    for line in lines:
+        if line == "## Fetch results":
+            in_fetch_results = True
+            kept_lines.append(line)
+            continue
+
+        if not in_fetch_results:
+            kept_lines.append(line)
+            continue
+
+        if line.startswith("- "):
+            if fetch_items_kept >= max_fetch_items:
+                continue
+            fetch_items_kept += 1
+            kept_lines.append(line)
+            continue
+
+        if fetch_items_kept <= max_fetch_items and (
+            line.startswith("  - kind:")
+            or line.startswith("  - fetched:")
+            or line.startswith("  - status:")
+            or line.startswith("  - title:")
+            or line.startswith("  - feed_title:")
+            or line.startswith("  - latest_item_title:")
+            or line.startswith("  - latest_item_link:")
+            or line.startswith("  - latest_item_published:")
+            or line.startswith("  - change:")
+            or line.startswith("  - error:")
+        ):
+            kept_lines.append(line)
+
+    compact_text = "\n".join(kept_lines).strip()
+    suffix = (
+        "\n\nNote: This is a compacted source-monitor report input. "
+        "The original full report remains saved on disk."
+    )
+    if len(compact_text) + len(suffix) > SOURCE_MONITOR_SUMMARY_INPUT_LIMIT:
+        compact_text = compact_text[: SOURCE_MONITOR_SUMMARY_INPUT_LIMIT - len(suffix)].rstrip()
+
+    return WorkspaceSummaryInput(
+        requested_path=str(requested_path),
+        resolved_path=report_path,
+        text=compact_text + suffix,
+    )
 
 
 def _run_summary_completion_with_retry(
@@ -67,8 +136,7 @@ def _run_summary_completion_with_retry(
 
             last_error = exc
             LOGGER.warning(
-                "LLM summary completion returned empty content: "
-                "profile=%s model=%s attempt=%s/%s",
+                "LLM summary completion returned empty content: profile=%s model=%s attempt=%s/%s",
                 profile_name,
                 model,
                 attempt,
@@ -185,6 +253,21 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default="ai",
         help="source project name (default: ai)",
+    )
+    source_monitor_run_summary_parser = source_monitor_subparsers.add_parser(
+        "run-summary",
+        help="write source monitor report and save an LLM summary",
+    )
+    source_monitor_run_summary_parser.add_argument(
+        "project",
+        nargs="?",
+        default="ai",
+        help="source project name (default: ai)",
+    )
+    source_monitor_run_summary_parser.add_argument(
+        "--task",
+        default="source_monitor_analysis",
+        help="configured LLM task name (default: source_monitor_analysis)",
     )
     source_monitor_config_parser = source_monitor_subparsers.add_parser(
         "config-check",
@@ -493,6 +576,58 @@ def main(argv: list[str] | None = None) -> int:
                 result = write_source_monitor_report(project_name=args.project)
                 print(result.message)
                 LOGGER.info("Source monitor report generated: %s", result.path)
+                return 0
+
+            if args.source_monitor_command == "run-summary":
+                result = write_source_monitor_report(project_name=args.project)
+                print(result.message)
+
+                input_path = result.path.relative_to(WORKSPACE_DIR)
+                output_path = (
+                    input_path.parent.parent / "summaries" / f"{input_path.stem}.summary.md"
+                )
+
+                summary_input = _build_source_monitor_summary_input(result.path, input_path)
+                prompt = build_summary_prompt(summary_input)
+                resolve_workspace_summary_output_path(str(output_path))
+
+                task_config = load_llm_task_config()
+                task = task_config.tasks.get(args.task)
+                if task is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-046",
+                        f"Unknown LLM task: {args.task}",
+                    )
+
+                llm_config = load_llm_config()
+                profile = llm_config.profiles.get(task.profile)
+                if profile is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-047",
+                        f"Unknown LLM profile for task {args.task}: {task.profile}",
+                    )
+
+                provider = llm_config.providers[profile.provider]
+                summary = _run_summary_completion_with_retry(
+                    provider=provider,
+                    profile_name=profile.name,
+                    model=profile.model,
+                    prompt=prompt,
+                    temperature=profile.temperature,
+                    max_tokens=profile.max_tokens,
+                )
+                written_summary_path = write_workspace_summary_output(
+                    str(output_path),
+                    summary.response_text,
+                )
+                print(f"Source monitor summary written: {written_summary_path}")
+                LOGGER.info(
+                    "Source monitor report summarized: project=%s report=%s summary=%s task=%s",
+                    args.project,
+                    result.path,
+                    written_summary_path,
+                    args.task,
+                )
                 return 0
 
             parser.print_help()

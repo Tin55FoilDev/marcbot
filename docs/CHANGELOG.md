@@ -3,6 +3,22 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — Source monitor LLM summary workflow added
+
+Added a CLI-only source monitor workflow that writes a source monitor report and saves an LLM summary artifact.
+
+Command:
+
+    python -m marcbot source-monitor run-summary ai
+
+Behavior:
+
+- writes the source monitor report first
+- summarizes the generated report through the configured `source_monitor_analysis` task by default
+- saves the summary under the source project's workspace `summaries/` directory
+- keeps Telegram prompt access closed
+
+
 ## 2026-05-02 — LLM summary empty-response retry added
 
 Added a narrow retry guard for CLI-only summary commands.

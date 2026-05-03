@@ -52,6 +52,7 @@ def test_config_check_missing_file_returns_error(capsys, monkeypatch, tmp_path) 
     assert test_log.is_file()
     assert str(missing_config) in test_log.read_text(encoding="utf-8")
 
+
 def test_llm_profile_missing_config_returns_error(capsys, monkeypatch, tmp_path) -> None:
     missing_config = tmp_path / "missing-llm-providers.toml"
 
@@ -70,6 +71,7 @@ def test_llm_profile_missing_config_returns_error(capsys, monkeypatch, tmp_path)
     assert "ERROR [MBOT-LLM-001]" in captured.err
     assert str(missing_config) in captured.err
 
+
 def test_llm_ask_missing_config_returns_error(capsys, monkeypatch, tmp_path) -> None:
     missing_config = tmp_path / "missing-llm-providers.toml"
 
@@ -87,6 +89,7 @@ def test_llm_ask_missing_config_returns_error(capsys, monkeypatch, tmp_path) -> 
     assert result == 1
     assert "ERROR [MBOT-LLM-001]" in captured.err
     assert str(missing_config) in captured.err
+
 
 def test_llm_tasks_missing_config_returns_error(capsys, monkeypatch, tmp_path) -> None:
     missing_config = tmp_path / "missing-llm-tasks.toml"
@@ -125,9 +128,8 @@ def test_llm_task_missing_config_returns_error(capsys, monkeypatch, tmp_path) ->
     assert "ERROR [MBOT-LLM-041]" in captured.err
     assert str(missing_config) in captured.err
 
-def test_llm_ask_task_missing_task_config_returns_error(
-    capsys, monkeypatch, tmp_path
-) -> None:
+
+def test_llm_ask_task_missing_task_config_returns_error(capsys, monkeypatch, tmp_path) -> None:
     missing_config = tmp_path / "missing-llm-tasks.toml"
 
     import marcbot.cli as cli
@@ -171,9 +173,8 @@ profile = "local_fast"
     assert "ERROR [MBOT-LLM-046]" in captured.err
     assert "missing_task" in captured.err
 
-def test_llm_summarize_file_missing_file_returns_error(
-    capsys, monkeypatch, tmp_path
-) -> None:
+
+def test_llm_summarize_file_missing_file_returns_error(capsys, monkeypatch, tmp_path) -> None:
     import marcbot.cli as cli
 
     workspace = tmp_path / "workspace"
@@ -192,6 +193,7 @@ def test_llm_summarize_file_missing_file_returns_error(
     assert result == 1
     assert "ERROR [MBOT-LLM-052]" in captured.err
     assert "missing.md" in captured.err
+
 
 def test_llm_summarize_file_save_existing_output_returns_error(
     capsys, monkeypatch, tmp_path
@@ -235,6 +237,7 @@ def test_llm_summarize_file_save_existing_output_returns_error(
 
     assert result == 1
     assert "ERROR [MBOT-LLM-061]" in captured.err
+
 
 def test_summary_completion_retries_empty_response(monkeypatch) -> None:
     import marcbot.cli as cli
@@ -326,3 +329,193 @@ def test_summary_completion_does_not_retry_non_empty_error(monkeypatch) -> None:
 
     assert calls["count"] == 1
     assert excinfo.value.code == "MBOT-LLM-027"
+
+
+def test_build_source_monitor_summary_input_compacts_large_report(tmp_path) -> None:
+    from pathlib import Path
+
+    from marcbot.cli import SOURCE_MONITOR_SUMMARY_INPUT_LIMIT, _build_source_monitor_summary_input
+
+    report_path = tmp_path / "source-monitor-large.md"
+    fetch_lines = []
+    for index in range(30):
+        fetch_lines.extend(
+            [
+                f"- source-{index}",
+                "  - kind: web_page",
+                "  - url: https://example.com",
+                "  - fetched: true",
+                "  - status: 200",
+                "  - bytes_read: 262144",
+                f"  - title: Example {index}",
+                "  - latest_item_title: n/a",
+                "  - change: unchanged",
+                "  - error: none",
+            ]
+        )
+
+    report_path.write_text(
+        "\n".join(
+            [
+                "# MarcBot Source Monitor - ai - 2026-05-03",
+                "",
+                "## Status",
+                "",
+                "Source monitor installed.",
+                "",
+                "## Summary",
+                "",
+                "Total sources checked: 30",
+                "New: 0",
+                "Changed: 0",
+                "Unchanged: 30",
+                "Errored: 0",
+                "",
+                "## Observations",
+                "",
+                "No new, changed, or errored sources were detected.",
+                "",
+                "## Fetch results",
+                *fetch_lines,
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    compact = _build_source_monitor_summary_input(
+        report_path,
+        Path("source-projects/ai/reports/source-monitor-large.md"),
+    )
+
+    assert compact.requested_path == "source-projects/ai/reports/source-monitor-large.md"
+    assert compact.resolved_path == report_path
+    assert len(compact.text) <= SOURCE_MONITOR_SUMMARY_INPUT_LIMIT
+    assert "## Summary" in compact.text
+    assert "## Observations" in compact.text
+    assert "## Fetch results" in compact.text
+    assert "compacted source-monitor report input" in compact.text
+
+
+def test_source_monitor_run_summary_writes_report_and_summary(
+    tmp_path,
+    monkeypatch,
+    capsys,
+) -> None:
+    import marcbot.cli as cli
+    from marcbot.llm_client import LlmCompletionResult
+    from marcbot.llm_config import LlmConfig, LlmProfileConfig, LlmProviderConfig
+    from marcbot.llm_file_summary import (
+        load_workspace_summary_input,
+        resolve_workspace_summary_output_path,
+        write_workspace_summary_output,
+    )
+    from marcbot.llm_tasks import LlmTaskConfig, LlmTaskProfile
+    from marcbot.source_monitor import SourceMonitorResult
+
+    workspace = tmp_path / "workspace"
+    report_dir = workspace / "source-projects" / "ai" / "reports"
+    report_dir.mkdir(parents=True)
+    report_path = report_dir / "source-monitor-2026-05-02-120000.md"
+    report_path.write_text("Source monitor report body", encoding="utf-8")
+
+    monkeypatch.setattr(cli, "WORKSPACE_DIR", workspace)
+    monkeypatch.setattr(
+        cli,
+        "load_workspace_summary_input",
+        lambda requested_path: load_workspace_summary_input(
+            requested_path,
+            workspace_dir=workspace,
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "resolve_workspace_summary_output_path",
+        lambda requested_path: resolve_workspace_summary_output_path(
+            requested_path,
+            workspace_dir=workspace,
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "write_workspace_summary_output",
+        lambda requested_path, content: write_workspace_summary_output(
+            requested_path,
+            content,
+            workspace_dir=workspace,
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "write_source_monitor_report",
+        lambda project_name: SourceMonitorResult(
+            path=report_path,
+            message=f"Source monitor report written: {report_path}",
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "load_llm_task_config",
+        lambda: LlmTaskConfig(
+            tasks={
+                "source_monitor_analysis": LlmTaskProfile(
+                    name="source_monitor_analysis",
+                    profile="local_fast",
+                    description="Analyze source monitor output",
+                )
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "load_llm_config",
+        lambda: LlmConfig(
+            path=tmp_path / "llm-providers.toml",
+            providers={
+                "lmstudio": LlmProviderConfig(
+                    name="lmstudio",
+                    enabled=True,
+                    provider_type="openai_compatible",
+                    base_url="http://localhost:1234/v1",
+                    api_key_env="MARCBOT_TEST_KEY",
+                    timeout_seconds=10.0,
+                )
+            },
+            profiles={
+                "local_fast": LlmProfileConfig(
+                    name="local_fast",
+                    provider="lmstudio",
+                    model="test-model",
+                    temperature=0.2,
+                    max_tokens=100,
+                    intended_use="test",
+                )
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "_run_summary_completion_with_retry",
+        lambda **kwargs: LlmCompletionResult(
+            profile_name=kwargs["profile_name"],
+            provider_name=kwargs["provider"].name,
+            model=kwargs["model"],
+            response_text="Saved source monitor summary",
+            finish_reason="stop",
+        ),
+    )
+
+    result = main(["source-monitor", "run-summary", "ai"])
+    captured = capsys.readouterr()
+
+    summary_path = (
+        workspace
+        / "source-projects"
+        / "ai"
+        / "summaries"
+        / "source-monitor-2026-05-02-120000.summary.md"
+    )
+
+    assert result == 0
+    assert "Source monitor report written:" in captured.out
+    assert "Source monitor summary written:" in captured.out
+    assert summary_path.read_text(encoding="utf-8") == "Saved source monitor summary\n"

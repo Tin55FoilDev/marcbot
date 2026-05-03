@@ -392,10 +392,16 @@ These commands are currently CLI-only and are not Telegram commands:
 
     python -m marcbot source-monitor config-check ai
     python -m marcbot source-monitor run ai
+    python -m marcbot source-monitor run-summary ai
+    python -m marcbot source-monitor run-summary ai
 
 `config-check` validates `/srv/marcbot/config/source-projects/<project>/sources.toml` and reports the configured sources.
 
 `run` writes a local source monitor Markdown report under `/srv/marcbot/workspace/source-projects/<project>/reports`.
+
+`run-summary` writes a local source monitor Markdown report, summarizes that generated report through the configured `source_monitor_analysis` LLM task, and saves the summary under `/srv/marcbot/workspace/source-projects/<project>/summaries`.
+
+`run-summary` writes a local source monitor Markdown report, summarizes that generated report through the configured `source_monitor_analysis` LLM task, and saves the summary under `/srv/marcbot/workspace/source-projects/<project>/summaries`.
 
 The real source config is local operational config and should not be committed to Git. A safe example may live under `docs/examples/`.
 

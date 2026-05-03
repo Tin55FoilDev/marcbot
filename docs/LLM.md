@@ -302,6 +302,21 @@ Safety boundaries:
 - saved summaries are written only after a successful non-empty provider response
 
 
+## Source monitor summary workflow
+
+The source monitor can generate a report and save an LLM summary in one CLI-only workflow:
+
+    python -m marcbot source-monitor run-summary ai
+
+Behavior:
+
+- writes the source monitor report first
+- summarizes the generated report through the configured `source_monitor_analysis` LLM task by default
+- saves the summary under the same source project in the workspace `summaries/` directory
+- uses the same workspace path, overwrite, empty-response retry, and non-empty-response safeguards as saved file summaries
+- remains CLI-only and does not expose arbitrary Telegram prompt access
+
+
 ## Current profile guidance
 
 Recommended current profile meanings:
