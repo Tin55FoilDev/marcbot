@@ -4,6 +4,42 @@ MarcBot is Marc's personal-only Telegram automation bot.
 
 The project goal is to build a stable, simple, secure replacement for OpenClaw-style personal operations. Development favors careful incremental progress over speed.
 
+## Short-term development path
+
+This section is a practical session-restart anchor. Keep it current at the end of each work session so a new session can quickly identify the next safe step.
+
+Current near-term order:
+
+1. Harden LLM file summary reliability.
+   - Add retry-on-empty behavior for safe summary tasks.
+   - Improve diagnostics when a provider returns empty content.
+   - Preserve the rule that failed provider responses must not create partial output files.
+
+2. Integrate LLM summaries into the source monitor workflow.
+   - Generate the source monitor report.
+   - Summarize it through the configured `source_monitor_analysis` task.
+   - Save the summary as a workspace artifact.
+
+3. Add status/listing commands for generated report and summary artifacts.
+   - Show latest reports.
+   - Show latest summaries.
+   - Include file paths, timestamps, and basic health/failure details.
+
+4. Schedule the stable source-monitor summary workflow.
+   - Add automation only after the manual CLI workflow is reliable.
+   - Prefer one narrow daily workflow before adding more scheduled tasks.
+
+5. Add Telegram delivery for saved artifacts only.
+   - Start with commands that send already-generated summaries.
+   - Do not expose arbitrary LLM prompts, arbitrary file paths, or arbitrary output paths through Telegram.
+
+6. Add broader model/profile testing.
+   - Support Marc's workflow of adding models in LM Studio.
+   - Compare profiles on fixed prompts.
+   - Document known-good models and task fit.
+
+Current design principle: CLI first, deterministic boundaries, saved artifacts, then Telegram delivery.
+
 ## Design priorities
 
 MarcBot should be:
