@@ -3,6 +3,24 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — CLI-only LLM task-routed ask command added
+
+Added a CLI-only one-shot prompt command that resolves a configured task name to its configured LLM profile.
+
+New command:
+
+    python -m marcbot llm ask-task <task> <prompt>
+
+Behavior:
+
+- loads task mappings from `/srv/marcbot/config/llm-tasks.toml`
+- resolves the task to an already-configured LLM profile
+- uses the resolved profile's provider, model, temperature, and max_tokens
+- uses the same prompt guardrails as `python -m marcbot llm ask`
+- does not allow arbitrary provider URL or model override from the command line
+- does not expose prompt access through Telegram
+
+
 ## 2026-05-02 — LLM task-to-profile mapping added
 
 Added CLI-only support for loading and inspecting LLM task-to-profile mappings.

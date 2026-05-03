@@ -121,3 +121,49 @@ def test_llm_task_missing_config_returns_error(capsys, monkeypatch, tmp_path) ->
     assert result == 1
     assert "ERROR [MBOT-LLM-041]" in captured.err
     assert str(missing_config) in captured.err
+
+def test_llm_ask_task_missing_task_config_returns_error(
+    capsys, monkeypatch, tmp_path
+) -> None:
+    missing_config = tmp_path / "missing-llm-tasks.toml"
+
+    import marcbot.cli as cli
+    from marcbot.llm_tasks import load_llm_task_config
+
+    def load_missing_llm_task_config():
+        return load_llm_task_config(missing_config)
+
+    monkeypatch.setattr(cli, "load_llm_task_config", load_missing_llm_task_config)
+
+    result = main(["llm", "ask-task", "report_summary", "Say hello."])
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "ERROR [MBOT-LLM-041]" in captured.err
+    assert str(missing_config) in captured.err
+
+
+def test_llm_ask_task_unknown_task_returns_error(capsys, monkeypatch, tmp_path) -> None:
+    task_config = tmp_path / "llm-tasks.toml"
+    task_config.write_text(
+        """
+[tasks.report_summary]
+profile = "local_fast"
+""",
+        encoding="utf-8",
+    )
+
+    import marcbot.cli as cli
+    from marcbot.llm_tasks import load_llm_task_config
+
+    def load_test_llm_task_config():
+        return load_llm_task_config(task_config)
+
+    monkeypatch.setattr(cli, "load_llm_task_config", load_test_llm_task_config)
+
+    result = main(["llm", "ask-task", "missing_task", "Say hello."])
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "ERROR [MBOT-LLM-046]" in captured.err
+    assert "missing_task" in captured.err

@@ -81,6 +81,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="show one configured LLM task-to-profile mapping",
     )
     llm_task_parser.add_argument("task", help="configured task name")
+    llm_ask_task_parser = llm_subparsers.add_parser(
+        "ask-task",
+        help="run a one-shot prompt through a configured LLM task route",
+    )
+    llm_ask_task_parser.add_argument("task", help="configured task name")
+    llm_ask_task_parser.add_argument("prompt", help="prompt text to send")
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -275,6 +281,40 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 print(format_llm_task_detail(task))
                 LOGGER.info("LLM task shown: task=%s", task.name)
+                return 0
+
+            if args.llm_command == "ask-task":
+                task_config = load_llm_task_config()
+                task = task_config.tasks.get(args.task)
+                if task is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-046",
+                        f"Unknown LLM task: {args.task}",
+                    )
+
+                llm_config = load_llm_config()
+                profile = llm_config.profiles.get(task.profile)
+                if profile is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-047",
+                        f"LLM task {task.name} references unknown profile: {task.profile}",
+                    )
+
+                provider = llm_config.providers[profile.provider]
+                result = run_openai_compatible_completion(
+                    provider=provider,
+                    profile_name=profile.name,
+                    model=profile.model,
+                    prompt=args.prompt,
+                    temperature=profile.temperature,
+                    max_tokens=profile.max_tokens,
+                )
+                print(format_llm_completion_result(result))
+                LOGGER.info(
+                    "LLM task completion ran: task=%s profile=%s",
+                    task.name,
+                    profile.name,
+                )
                 return 0
 
             parser.print_help()

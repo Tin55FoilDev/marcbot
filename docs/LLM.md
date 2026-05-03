@@ -269,13 +269,20 @@ Current inspection commands:
     python -m marcbot llm tasks
     python -m marcbot llm task report_summary
 
+Current task-routed prompt command:
+
+    python -m marcbot llm ask-task report_summary "Summarize this in one sentence: MarcBot is online."
+
+The `ask-task` command resolves the task to its configured profile, then uses that profile's provider, model, temperature, max_tokens, and prompt guardrails.
+
 Safety boundaries:
 
 - task mappings only point to already-configured LLM profiles
 - task mappings do not define provider URLs
 - task mappings do not define API keys
 - task mappings do not expose prompts through Telegram
-- this milestone only adds config loading and inspection
+- task-routed prompts stay CLI-only
+- task-routed prompts use the same 4000-character prompt guardrail as profile-based `llm ask`
 
 
 ## Current profile guidance
