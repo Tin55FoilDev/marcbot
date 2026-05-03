@@ -2,6 +2,17 @@
 
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
+## 0.3.1 — Session restart support
+
+MarcBot 0.3.1 adds session restart support for future AI-assisted development.
+
+Highlights:
+
+- added `docs/SESSION_START.md` as a restart guide for new development/debugging sessions
+- added `python -m marcbot support snapshot` to print a redacted live support snapshot
+- kept the support snapshot read-only and free of secrets, local config contents, environment variables, tokens, and unrestricted logs
+- kept validation clean at 244 tests plus Ruff
+
 
 ## 2026-05-02 — Source monitor LLM summary workflow added
 
