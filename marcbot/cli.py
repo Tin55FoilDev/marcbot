@@ -10,9 +10,11 @@ from marcbot import __version__
 from marcbot.config import DEFAULT_CONFIG_PATH, load_config
 from marcbot.errors import MarcBotError
 from marcbot.llm_client import (
+    format_llm_completion_result,
     format_llm_health_result,
     format_llm_models,
     list_openai_compatible_models,
+    run_openai_compatible_completion,
     run_openai_compatible_health_check,
 )
 from marcbot.llm_config import format_llm_profile_detail, format_llm_profiles, load_llm_config
@@ -63,6 +65,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="run a tiny health check for a configured LLM profile",
     )
     llm_health_parser.add_argument("profile", help="configured profile name")
+    llm_ask_parser = llm_subparsers.add_parser(
+        "ask",
+        help="run a one-shot prompt through a configured LLM profile",
+    )
+    llm_ask_parser.add_argument("profile", help="configured profile name")
+    llm_ask_parser.add_argument("prompt", help="prompt text to send")
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -218,6 +226,27 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 print(format_llm_health_result(result))
                 LOGGER.info("LLM health checked: profile=%s", profile.name)
+                return 0
+
+            if args.llm_command == "ask":
+                llm_config = load_llm_config()
+                profile = llm_config.profiles.get(args.profile)
+                if profile is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-037",
+                        f"Unknown LLM profile: {args.profile}",
+                    )
+                provider = llm_config.providers[profile.provider]
+                result = run_openai_compatible_completion(
+                    provider=provider,
+                    profile_name=profile.name,
+                    model=profile.model,
+                    prompt=args.prompt,
+                    temperature=profile.temperature,
+                    max_tokens=profile.max_tokens,
+                )
+                print(format_llm_completion_result(result))
+                LOGGER.info("LLM completion ran: profile=%s", profile.name)
                 return 0
 
             parser.print_help()

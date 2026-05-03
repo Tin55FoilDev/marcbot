@@ -3,6 +3,23 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — CLI-only LLM ask command added
+
+Added a CLI-only one-shot LLM prompt command.
+
+New command:
+
+    python -m marcbot llm ask <profile> <prompt>
+
+Behavior:
+
+- requires an explicit configured profile
+- uses the profile's configured provider, model, temperature, and max_tokens
+- does not allow arbitrary provider URL or model override from the command line
+- does not provide tool access, file access, conversation memory, or Telegram prompt access
+- uses the reusable LLM completion helper added in the previous milestone
+
+
 ## 2026-05-02 — LLM profile detail CLI command added
 
 Added a CLI-only LLM profile detail command.

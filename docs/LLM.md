@@ -90,6 +90,7 @@ python -m marcbot llm profiles
 python -m marcbot llm profile local_fast
 python -m marcbot llm models lmstudio
 python -m marcbot llm health local_fast
+python -m marcbot llm ask local_fast "Say OK in one sentence."
 '
 ~~
 
@@ -155,6 +156,34 @@ Model: google/gemma-4-e4b
 Status: ok
 Response: marcbot-ok
 ~~
+
+### `python -m marcbot llm ask local_fast "Say OK in one sentence."`
+
+Runs a bounded one-shot prompt through a configured profile.
+
+This is CLI-only. It is intended for operator testing of profile-based completion before any task routing or Telegram-facing prompt workflows are added.
+
+Safety boundaries:
+
+- requires an explicit configured profile
+- uses the profile's configured provider, model, temperature, and max_tokens
+- does not allow arbitrary provider URL override from the command line
+- does not allow arbitrary model override from the command line
+- does not provide tool access
+- does not provide file access
+- does not create conversation memory
+- does not expose prompt access through Telegram
+
+Expected output shape:
+
+    MarcBot LLM completion
+    Profile: local_fast
+    Provider: lmstudio
+    Model: google/gemma-4-e4b
+    Finish reason: stop
+
+    OK.
+
 
 ## Current LM Studio models observed
 

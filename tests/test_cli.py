@@ -66,3 +66,21 @@ def test_llm_profile_missing_config_returns_error(capsys, monkeypatch, tmp_path)
     assert result == 1
     assert "ERROR [MBOT-LLM-001]" in captured.err
     assert str(missing_config) in captured.err
+
+def test_llm_ask_missing_config_returns_error(capsys, monkeypatch, tmp_path) -> None:
+    missing_config = tmp_path / "missing-llm-providers.toml"
+
+    import marcbot.cli as cli
+    from marcbot.llm_config import load_llm_config
+
+    def load_missing_llm_config():
+        return load_llm_config(missing_config)
+
+    monkeypatch.setattr(cli, "load_llm_config", load_missing_llm_config)
+
+    result = main(["llm", "ask", "local_fast", "Say hello."])
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "ERROR [MBOT-LLM-001]" in captured.err
+    assert str(missing_config) in captured.err
