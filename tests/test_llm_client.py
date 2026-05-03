@@ -59,7 +59,7 @@ def make_provider(**overrides) -> LlmProviderConfig:
         "name": "lmstudio",
         "enabled": True,
         "provider_type": "openai_compatible",
-        "base_url": "http://10.0.1.22:1234/v1",
+        "base_url": "http://192.0.2.10:1234/v1",
         "api_key_env": "",
         "timeout_seconds": 30,
     }
@@ -86,7 +86,7 @@ def test_list_openai_compatible_models() -> None:
         "google/gemma-4-e4b",
         "qwen3.6-35b-a3b",
     ]
-    assert opener.requests[0].full_url == "http://10.0.1.22:1234/v1/models"
+    assert opener.requests[0].full_url == "http://192.0.2.10:1234/v1/models"
     assert opener.timeouts == [30]
 
 
@@ -222,7 +222,7 @@ def test_run_openai_compatible_completion() -> None:
     assert result.model == "google/gemma-4-e4b"
     assert result.response_text == "Hello from MarcBot"
     assert result.finish_reason == "stop"
-    assert opener.requests[0].full_url == "http://10.0.1.22:1234/v1/chat/completions"
+    assert opener.requests[0].full_url == "http://192.0.2.10:1234/v1/chat/completions"
     assert opener.requests[0].get_method() == "POST"
 
 
@@ -330,7 +330,7 @@ def test_run_openai_compatible_health_check() -> None:
     assert result.profile_name == "local_fast"
     assert result.model == "google/gemma-4-e4b"
     assert result.response_text == "marcbot-ok"
-    assert opener.requests[0].full_url == "http://10.0.1.22:1234/v1/chat/completions"
+    assert opener.requests[0].full_url == "http://192.0.2.10:1234/v1/chat/completions"
     assert opener.requests[0].get_method() == "POST"
 
 

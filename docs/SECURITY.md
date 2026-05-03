@@ -92,6 +92,23 @@ If the token is accidentally exposed:
 6. Restart the service.
 7. Test `/version`, `/health`, and `/logs`.
 
+## Public repository hygiene
+
+MarcBot may be published as a public repository for transparency, learning, and
+AI-assisted development support.
+
+Public repository rules:
+
+- Real secrets, tokens, API keys, credentials, local config contents, generated
+  logs, runtime state, backups, and private keys must remain outside Git.
+- Real local network addresses should stay in local config unless a public doc
+  explicitly needs an example.
+- Documentation and tests should use placeholder or documentation-only example
+  values.
+- Review both the current tree and Git history before changing repository
+  visibility.
+- Review GitHub repository security settings after changing visibility.
+
 ## Git safety
 
 The repository should contain code, tests, and documentation.

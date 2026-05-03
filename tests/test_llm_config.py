@@ -22,7 +22,7 @@ def test_load_llm_config_with_lmstudio_profile(tmp_path: Path) -> None:
 [providers.lmstudio]
 enabled = true
 type = "openai_compatible"
-base_url = "http://10.0.1.22:1234/v1"
+base_url = "http://192.0.2.10:1234/v1"
 api_key_env = "MARCBOT_LMSTUDIO_API_KEY"
 timeout_seconds = 30
 
@@ -38,7 +38,7 @@ intended_use = "low_risk_utility"
     config = load_llm_config(path)
 
     assert config.path == path
-    assert config.providers["lmstudio"].base_url == "http://10.0.1.22:1234/v1"
+    assert config.providers["lmstudio"].base_url == "http://192.0.2.10:1234/v1"
     assert config.providers["lmstudio"].provider_type == "openai_compatible"
     assert config.profiles["local_fast"].provider == "lmstudio"
     assert config.profiles["local_fast"].model == "google/gemma-4-e4b"
@@ -52,7 +52,7 @@ def test_format_llm_profile_detail(tmp_path: Path) -> None:
 [providers.lmstudio]
 enabled = true
 type = "openai_compatible"
-base_url = "http://10.0.1.22:1234/v1"
+base_url = "http://192.0.2.10:1234/v1"
 api_key_env = "MARCBOT_LMSTUDIO_API_KEY"
 timeout_seconds = 30
 
@@ -80,7 +80,7 @@ intended_use = "low_risk_utility"
     assert "Max tokens: 500" in output
     assert "Intended use: low_risk_utility" in output
     assert "Provider enabled: yes" in output
-    assert "Base URL: http://10.0.1.22:1234/v1" in output
+    assert "Base URL: http://192.0.2.10:1234/v1" in output
     assert "API key env: MARCBOT_LMSTUDIO_API_KEY" in output
 
 
@@ -90,7 +90,7 @@ def test_format_llm_profiles(tmp_path: Path) -> None:
         """
 [providers.lmstudio]
 type = "openai_compatible"
-base_url = "http://10.0.1.22:1234/v1"
+base_url = "http://192.0.2.10:1234/v1"
 
 [profiles.local_fast]
 provider = "lmstudio"
@@ -138,7 +138,7 @@ def test_profile_must_reference_known_provider(tmp_path: Path) -> None:
         """
 [providers.lmstudio]
 type = "openai_compatible"
-base_url = "http://10.0.1.22:1234/v1"
+base_url = "http://192.0.2.10:1234/v1"
 
 [profiles.local_fast]
 provider = "missing"
@@ -158,7 +158,7 @@ def test_unknown_provider_type_raises_clean_error(tmp_path: Path) -> None:
         """
 [providers.lmstudio]
 type = "bad"
-base_url = "http://10.0.1.22:1234/v1"
+base_url = "http://192.0.2.10:1234/v1"
 
 [profiles.local_fast]
 provider = "lmstudio"

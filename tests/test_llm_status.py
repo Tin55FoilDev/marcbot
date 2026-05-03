@@ -15,7 +15,7 @@ def write_config(path: Path) -> None:
 [providers.lmstudio]
 enabled = true
 type = "openai_compatible"
-base_url = "http://10.0.1.22:1234/v1"
+base_url = "http://192.0.2.10:1234/v1"
 api_key_env = "MARCBOT_LMSTUDIO_API_KEY"
 
 [profiles.local_fast]

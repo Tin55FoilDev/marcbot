@@ -18,6 +18,10 @@ The current implementation is intentionally narrow:
 
 This local-only TOML file defines providers and profiles.
 
+Note: `192.0.2.10` is a documentation/test example address. Real local LLM
+hostnames or IP addresses belong in `/srv/marcbot/config/llm-providers.toml`,
+outside Git.
+
 It is outside the Git repository and should not be committed.
 
 Current provider pattern:
@@ -26,7 +30,7 @@ Current provider pattern:
 [providers.lmstudio]
 enabled = true
 type = "openai_compatible"
-base_url = "http://10.0.1.22:1234/v1"
+base_url = "http://192.0.2.10:1234/v1"
 api_key_env = "MARCBOT_LMSTUDIO_API_KEY"
 timeout_seconds = 30
 ~~
@@ -117,7 +121,7 @@ Expected output shape:
     Max tokens: 500
     Intended use: low_risk_utility
     Provider enabled: yes
-    Base URL: http://10.0.1.22:1234/v1
+    Base URL: http://192.0.2.10:1234/v1
     API key env: MARCBOT_LMSTUDIO_API_KEY
 
 
@@ -409,8 +413,8 @@ Use `local_fast` with `google/gemma-4-e4b` for the current health check.
 Check:
 
 - LM Studio server is running.
-- LM Studio API is listening on `10.0.1.22:1234`.
-- VLAN/firewall rules allow MarcBot to reach `10.0.1.22:1234`.
+- LM Studio API is listening on `192.0.2.10:1234`.
+- VLAN/firewall rules allow MarcBot to reach `192.0.2.10:1234`.
 - `/srv/marcbot/config/llm-providers.toml` has the correct base URL.
 - `/srv/marcbot/config/llm.env` has the correct token.
 

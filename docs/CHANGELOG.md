@@ -1,5 +1,15 @@
 ## Unreleased
 
+## 2026-05-03 — Public-readiness hygiene added
+
+Prepared the repository for possible public visibility.
+
+Changes:
+
+- added an MIT license
+- replaced real local LLM LAN address examples with documentation/test example values
+- added public repository hygiene guidance to the security notes
+
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 ## 0.3.1 — Session restart support
