@@ -275,6 +275,12 @@ Current task-routed prompt command:
 
 The `ask-task` command resolves the task to its configured profile, then uses that profile's provider, model, temperature, max_tokens, and prompt guardrails.
 
+Current workspace file summary command:
+
+    python -m marcbot llm summarize-file report_summary reports/example.md
+
+The `summarize-file` command reads a UTF-8 text file from `/srv/marcbot/workspace`, builds a fixed summary prompt, and routes it through the configured LLM task.
+
 Safety boundaries:
 
 - task mappings only point to already-configured LLM profiles
@@ -283,6 +289,10 @@ Safety boundaries:
 - task mappings do not expose prompts through Telegram
 - task-routed prompts stay CLI-only
 - task-routed prompts use the same 4000-character prompt guardrail as profile-based `llm ask`
+- workspace file summaries only accept workspace-relative paths
+- workspace file summaries reject absolute paths and parent traversal
+- workspace file summaries reject files over 3000 characters before provider calls
+- workspace file summaries print output only; they do not save generated summaries
 
 
 ## Current profile guidance

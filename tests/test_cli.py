@@ -167,3 +167,25 @@ profile = "local_fast"
     assert result == 1
     assert "ERROR [MBOT-LLM-046]" in captured.err
     assert "missing_task" in captured.err
+
+def test_llm_summarize_file_missing_file_returns_error(
+    capsys, monkeypatch, tmp_path
+) -> None:
+    import marcbot.cli as cli
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    def load_missing_summary_input(path):
+        from marcbot.llm_file_summary import load_workspace_summary_input
+
+        return load_workspace_summary_input(path, workspace_dir=workspace)
+
+    monkeypatch.setattr(cli, "load_workspace_summary_input", load_missing_summary_input)
+
+    result = main(["llm", "summarize-file", "report_summary", "missing.md"])
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "ERROR [MBOT-LLM-052]" in captured.err
+    assert "missing.md" in captured.err

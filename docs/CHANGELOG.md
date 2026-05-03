@@ -3,6 +3,24 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — CLI-only workspace file summarization added
+
+Added a CLI-only command for summarizing workspace-relative UTF-8 text files through a configured LLM task route.
+
+New command:
+
+    python -m marcbot llm summarize-file <task> <workspace-relative-path>
+
+Behavior:
+
+- only accepts workspace-relative paths under `/srv/marcbot/workspace`
+- rejects absolute paths and parent traversal
+- rejects missing files, directories, empty files, non-UTF-8 files, and files over 3000 characters
+- builds a fixed summary prompt and routes it through the configured task profile
+- prints the LLM result only; it does not save generated summaries
+- does not expose file summarization through Telegram
+
+
 ## 2026-05-02 — CLI-only LLM task-routed ask command added
 
 Added a CLI-only one-shot prompt command that resolves a configured task name to its configured LLM profile.

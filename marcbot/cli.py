@@ -18,6 +18,7 @@ from marcbot.llm_client import (
     run_openai_compatible_health_check,
 )
 from marcbot.llm_config import format_llm_profile_detail, format_llm_profiles, load_llm_config
+from marcbot.llm_file_summary import build_summary_prompt, load_workspace_summary_input
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, missing_runtime_dirs
@@ -87,6 +88,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     llm_ask_task_parser.add_argument("task", help="configured task name")
     llm_ask_task_parser.add_argument("prompt", help="prompt text to send")
+    llm_summarize_file_parser = llm_subparsers.add_parser(
+        "summarize-file",
+        help="summarize a workspace-relative text file through a configured LLM task route",
+    )
+    llm_summarize_file_parser.add_argument("task", help="configured task name")
+    llm_summarize_file_parser.add_argument(
+        "path",
+        help="workspace-relative text file path",
+    )
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -314,6 +324,44 @@ def main(argv: list[str] | None = None) -> int:
                     "LLM task completion ran: task=%s profile=%s",
                     task.name,
                     profile.name,
+                )
+                return 0
+
+            if args.llm_command == "summarize-file":
+                summary_input = load_workspace_summary_input(args.path)
+                prompt = build_summary_prompt(summary_input)
+
+                task_config = load_llm_task_config()
+                task = task_config.tasks.get(args.task)
+                if task is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-046",
+                        f"Unknown LLM task: {args.task}",
+                    )
+
+                llm_config = load_llm_config()
+                profile = llm_config.profiles.get(task.profile)
+                if profile is None:
+                    raise MarcBotError(
+                        "MBOT-LLM-047",
+                        f"LLM task {task.name} references unknown profile: {task.profile}",
+                    )
+
+                provider = llm_config.providers[profile.provider]
+                result = run_openai_compatible_completion(
+                    provider=provider,
+                    profile_name=profile.name,
+                    model=profile.model,
+                    prompt=prompt,
+                    temperature=profile.temperature,
+                    max_tokens=profile.max_tokens,
+                )
+                print(format_llm_completion_result(result))
+                LOGGER.info(
+                    "LLM file summary ran: task=%s profile=%s path=%s",
+                    task.name,
+                    profile.name,
+                    summary_input.requested_path,
                 )
                 return 0
 
