@@ -42,6 +42,17 @@ class LlmHealthResult:
     response_text: str
 
 
+@dataclass(frozen=True)
+class LlmCompletionResult:
+    """Result from a one-shot LLM profile completion."""
+
+    provider_name: str
+    profile_name: str
+    model: str
+    response_text: str
+    finish_reason: str
+
+
 def _provider_headers(provider: LlmProviderConfig) -> dict[str, str]:
     """Build HTTP headers for a provider."""
     headers = {
@@ -187,6 +198,77 @@ def list_openai_compatible_models(
     return tuple(sorted(models, key=lambda model: model.model_id))
 
 
+def _first_chat_completion_text(parsed: dict[str, Any], purpose: str) -> tuple[str, str]:
+    """Extract the first chat completion message text and finish reason."""
+    choices = parsed.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise MarcBotError("MBOT-LLM-032", f"LLM {purpose} response has no choices")
+
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        raise MarcBotError("MBOT-LLM-033", f"LLM {purpose} choice must be an object")
+
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        raise MarcBotError("MBOT-LLM-034", f"LLM {purpose} choice has no message object")
+
+    content = message.get("content")
+    if not isinstance(content, str) or not content.strip():
+        raise MarcBotError("MBOT-LLM-035", f"LLM {purpose} response content is empty")
+
+    finish_reason = first_choice.get("finish_reason")
+    if not isinstance(finish_reason, str) or not finish_reason.strip():
+        finish_reason = "unknown"
+
+    return content.strip(), finish_reason.strip()
+
+
+def run_openai_compatible_completion(
+    provider: LlmProviderConfig,
+    profile_name: str,
+    model: str,
+    prompt: str,
+    temperature: float,
+    max_tokens: int,
+    opener: UrlOpener | None = None,
+) -> LlmCompletionResult:
+    """Run a bounded one-shot chat completion for a configured profile."""
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise MarcBotError("MBOT-LLM-038", "LLM completion prompt must not be empty")
+
+    if max_tokens < 1:
+        raise MarcBotError("MBOT-LLM-039", "LLM completion max_tokens must be positive")
+
+    payload: dict[str, Any] = {
+        "model": model,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt.strip(),
+            },
+        ],
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+
+    parsed = _post_json_response(
+        provider=provider,
+        endpoint="chat/completions",
+        payload=payload,
+        opener=opener,
+    )
+
+    response_text, finish_reason = _first_chat_completion_text(parsed, "completion")
+
+    return LlmCompletionResult(
+        provider_name=provider.name,
+        profile_name=profile_name,
+        model=model,
+        response_text=response_text,
+        finish_reason=finish_reason,
+    )
+
+
 def run_openai_compatible_health_check(
     provider: LlmProviderConfig,
     profile_name: str,
@@ -213,23 +295,7 @@ def run_openai_compatible_health_check(
         opener=opener,
     )
 
-    choices = parsed.get("choices")
-    if not isinstance(choices, list) or not choices:
-        raise MarcBotError("MBOT-LLM-032", "LLM health response has no choices")
-
-    first_choice = choices[0]
-    if not isinstance(first_choice, dict):
-        raise MarcBotError("MBOT-LLM-033", "LLM health choice must be an object")
-
-    message = first_choice.get("message")
-    if not isinstance(message, dict):
-        raise MarcBotError("MBOT-LLM-034", "LLM health choice has no message object")
-
-    content = message.get("content")
-    if not isinstance(content, str) or not content.strip():
-        raise MarcBotError("MBOT-LLM-035", "LLM health response content is empty")
-
-    response_text = content.strip()
+    response_text, _finish_reason = _first_chat_completion_text(parsed, "health")
     if "marcbot-ok" not in response_text.lower():
         raise MarcBotError(
             "MBOT-LLM-036",
@@ -241,6 +307,21 @@ def run_openai_compatible_health_check(
         profile_name=profile_name,
         model=model,
         response_text=response_text,
+    )
+
+
+def format_llm_completion_result(result: LlmCompletionResult) -> str:
+    """Format a one-shot LLM completion result for operator output."""
+    return "\n".join(
+        [
+            "MarcBot LLM completion",
+            f"Profile: {result.profile_name}",
+            f"Provider: {result.provider_name}",
+            f"Model: {result.model}",
+            f"Finish reason: {result.finish_reason}",
+            "",
+            result.response_text,
+        ]
     )
 
 

@@ -10,9 +10,11 @@ import pytest
 
 from marcbot.errors import MarcBotError
 from marcbot.llm_client import (
+    format_llm_completion_result,
     format_llm_health_result,
     format_llm_models,
     list_openai_compatible_models,
+    run_openai_compatible_completion,
     run_openai_compatible_health_check,
 )
 from marcbot.llm_config import LlmProviderConfig
@@ -187,6 +189,104 @@ def test_format_llm_models() -> None:
     assert "Provider: lmstudio" in output
     assert "Count: 1" in output
     assert "- model-a" in output
+
+def test_run_openai_compatible_completion() -> None:
+    opener = FakeOpener(
+        FakeResponse(
+            b"""{
+              "choices": [
+                {
+                  "finish_reason": "stop",
+                  "message": {
+                    "content": "Hello from MarcBot"
+                  }
+                }
+              ]
+            }"""
+        )
+    )
+
+    result = run_openai_compatible_completion(
+        provider=make_provider(),
+        profile_name="local_fast",
+        model="google/gemma-4-e4b",
+        prompt="Say hello.",
+        temperature=0.2,
+        max_tokens=100,
+        opener=opener,
+    )
+
+    assert result.provider_name == "lmstudio"
+    assert result.profile_name == "local_fast"
+    assert result.model == "google/gemma-4-e4b"
+    assert result.response_text == "Hello from MarcBot"
+    assert result.finish_reason == "stop"
+    assert opener.requests[0].full_url == "http://10.0.1.22:1234/v1/chat/completions"
+    assert opener.requests[0].get_method() == "POST"
+
+
+def test_run_openai_compatible_completion_rejects_empty_prompt() -> None:
+    with pytest.raises(MarcBotError) as excinfo:
+        run_openai_compatible_completion(
+            provider=make_provider(),
+            profile_name="local_fast",
+            model="google/gemma-4-e4b",
+            prompt="   ",
+            temperature=0.2,
+            max_tokens=100,
+            opener=FakeOpener(FakeResponse(b"{\"choices\": []}")),
+        )
+
+    assert excinfo.value.code == "MBOT-LLM-038"
+
+
+def test_run_openai_compatible_completion_rejects_nonpositive_max_tokens() -> None:
+    with pytest.raises(MarcBotError) as excinfo:
+        run_openai_compatible_completion(
+            provider=make_provider(),
+            profile_name="local_fast",
+            model="google/gemma-4-e4b",
+            prompt="Say hello.",
+            temperature=0.2,
+            max_tokens=0,
+            opener=FakeOpener(FakeResponse(b"{\"choices\": []}")),
+        )
+
+    assert excinfo.value.code == "MBOT-LLM-039"
+
+
+def test_format_llm_completion_result() -> None:
+    result = run_openai_compatible_completion(
+        provider=make_provider(),
+        profile_name="local_fast",
+        model="google/gemma-4-e4b",
+        prompt="Say hello.",
+        temperature=0.2,
+        max_tokens=100,
+        opener=FakeOpener(
+            FakeResponse(
+                b"""{
+                  "choices": [
+                    {
+                      "finish_reason": "stop",
+                      "message": {
+                        "content": "Hello"
+                      }
+                    }
+                  ]
+                }"""
+            )
+        ),
+    )
+
+    output = format_llm_completion_result(result)
+
+    assert "MarcBot LLM completion" in output
+    assert "Profile: local_fast" in output
+    assert "Provider: lmstudio" in output
+    assert "Finish reason: stop" in output
+    assert "Hello" in output
+
 
 def test_run_openai_compatible_health_check() -> None:
     opener = FakeOpener(
