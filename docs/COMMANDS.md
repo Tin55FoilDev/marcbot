@@ -463,6 +463,8 @@ python -m marcbot llm profile local_fast
 python -m marcbot llm models lmstudio
 python -m marcbot llm health local_fast
 python -m marcbot llm ask local_fast "Say OK in one sentence."
+python -m marcbot llm tasks
+python -m marcbot llm task report_summary
 ~~
 
 There are no Telegram LLM prompt commands yet.

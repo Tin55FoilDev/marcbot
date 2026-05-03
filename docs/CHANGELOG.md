@@ -3,6 +3,23 @@
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
 
+## 2026-05-02 — LLM task-to-profile mapping added
+
+Added CLI-only support for loading and inspecting LLM task-to-profile mappings.
+
+New commands:
+
+    python -m marcbot llm tasks
+    python -m marcbot llm task <task>
+
+Behavior:
+
+- loads task mappings from `/srv/marcbot/config/llm-tasks.toml`
+- maps stable task names to already-configured LLM profiles
+- does not allow task mappings to define provider URLs or API keys
+- does not run prompts or expose task execution through Telegram
+
+
 ## 2026-05-02 — LLM ask prompt length guardrail added
 
 Added a prompt length guardrail for one-shot LLM completions.

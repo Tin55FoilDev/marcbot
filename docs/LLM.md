@@ -250,6 +250,34 @@ Observed role:
 - Not a chat-completion model.
 - Do not assign it to chat profiles.
 
+## Task-to-profile mapping
+
+MarcBot supports a separate local task mapping file:
+
+    /srv/marcbot/config/llm-tasks.toml
+
+This file maps stable MarcBot task names to configured LLM profiles. It lets future workflows request a purpose such as `report_summary` instead of hard-coding a provider or model.
+
+Example:
+
+    [tasks.report_summary]
+    profile = "local_fast"
+    description = "Summarize MarcBot reports with a local model"
+
+Current inspection commands:
+
+    python -m marcbot llm tasks
+    python -m marcbot llm task report_summary
+
+Safety boundaries:
+
+- task mappings only point to already-configured LLM profiles
+- task mappings do not define provider URLs
+- task mappings do not define API keys
+- task mappings do not expose prompts through Telegram
+- this milestone only adds config loading and inspection
+
+
 ## Current profile guidance
 
 Recommended current profile meanings:
