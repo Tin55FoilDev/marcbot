@@ -640,3 +640,68 @@ def test_llm_status_reports_missing_task_profiles(capsys, monkeypatch) -> None:
     captured = capsys.readouterr()
     assert result == 0
     assert "Task routes: invalid; missing profiles: missing_profile" in captured.out
+
+
+def test_llm_status_verbose_lists_local_profiles_and_tasks(capsys, monkeypatch) -> None:
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    import marcbot.cli as cli
+
+    llm_config = SimpleNamespace(
+        path=Path("/tmp/llm-providers.toml"),
+        profiles={
+            "local_fast": SimpleNamespace(
+                provider="lmstudio",
+                model="google/gemma-4-e4b",
+                intended_use="low_risk_utility",
+            ),
+        },
+    )
+    task_config = SimpleNamespace(
+        tasks={
+            "source_monitor_analysis": SimpleNamespace(
+                profile="local_fast",
+                description="Analyze allowlisted source monitor output",
+            ),
+        },
+    )
+
+    def fail_if_models_are_listed(*args, **kwargs):
+        raise AssertionError("llm status --verbose must not list provider models")
+
+    def fail_if_health_check_runs(*args, **kwargs):
+        raise AssertionError("llm status --verbose must not run health checks")
+
+    def fail_if_completion_runs(*args, **kwargs):
+        raise AssertionError("llm status --verbose must not run completions")
+
+    monkeypatch.setattr(cli, "load_llm_config", lambda: llm_config)
+    monkeypatch.setattr(cli, "load_llm_task_config", lambda: task_config)
+    monkeypatch.setattr(cli, "list_openai_compatible_models", fail_if_models_are_listed)
+    monkeypatch.setattr(
+        cli,
+        "run_openai_compatible_health_check",
+        fail_if_health_check_runs,
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_openai_compatible_completion",
+        fail_if_completion_runs,
+    )
+
+    result = cli.main(["llm", "status", "--verbose"])
+
+    captured = capsys.readouterr()
+    assert result == 0
+    assert "MarcBot LLM status" in captured.out
+    assert "Profiles:" in captured.out
+    assert (
+        "- local_fast: provider=lmstudio, model=google/gemma-4-e4b, "
+        "intended_use=low_risk_utility"
+    ) in captured.out
+    assert "Tasks:" in captured.out
+    assert (
+        "- source_monitor_analysis -> local_fast — "
+        "Analyze allowlisted source monitor output"
+    ) in captured.out

@@ -110,7 +110,7 @@ def _build_source_monitor_summary_input(
     )
 
 
-def _format_llm_status(llm_config, task_config) -> str:
+def _format_llm_status(llm_config, task_config, *, verbose: bool = False) -> str:
     """Format a read-only summary of local LLM configuration."""
     missing_profiles = sorted(
         {
@@ -141,6 +141,21 @@ def _format_llm_status(llm_config, task_config) -> str:
         )
     else:
         lines.append("Task routes: valid")
+
+    if verbose:
+        lines.append("")
+        lines.append("Profiles:")
+        for name, profile in sorted(llm_config.profiles.items()):
+            lines.append(
+                f"- {name}: provider={profile.provider}, "
+                f"model={profile.model}, "
+                f"intended_use={profile.intended_use}"
+            )
+
+        lines.append("")
+        lines.append("Tasks:")
+        for name, task in sorted(task_config.tasks.items()):
+            lines.append(f"- {name} -> {task.profile} — {task.description}")
 
     return "\n".join(lines)
 
@@ -210,7 +225,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     llm_parser = subparsers.add_parser("llm", help="inspect configured LLM providers and profiles")
     llm_subparsers = llm_parser.add_subparsers(dest="llm_command")
-    llm_subparsers.add_parser("status", help="show read-only LLM configuration status")
+    llm_status_parser = llm_subparsers.add_parser(
+        "status",
+        help="show read-only LLM configuration status",
+    )
+    llm_status_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="include configured profile and task-route details without contacting providers",
+    )
     llm_subparsers.add_parser("profiles", help="list configured LLM profiles")
     llm_profile_parser = llm_subparsers.add_parser(
         "profile",
@@ -515,8 +538,14 @@ def main(argv: list[str] | None = None) -> int:
             if args.llm_command == "status":
                 llm_config = load_llm_config()
                 task_config = load_llm_task_config()
-                print(_format_llm_status(llm_config, task_config))
-                LOGGER.info("LLM status shown")
+                print(
+                    _format_llm_status(
+                        llm_config,
+                        task_config,
+                        verbose=args.verbose,
+                    )
+                )
+                LOGGER.info("LLM status shown: verbose=%s", args.verbose)
                 return 0
             if args.llm_command == "profiles":
                 llm_config = load_llm_config()

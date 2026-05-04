@@ -465,4 +465,9 @@ Command:
     python -m marcbot llm status
 
 This command loads the local provider and task config, reports the number of configured profiles and tasks, and verifies that every task route references an existing profile. It does not list remote models, run health checks, or send prompts.
+ The optional `--verbose` flag adds local profile names, provider/model assignments, intended-use labels, and task routes. It still does not contact providers.
+
+Command:
+
+    python -m marcbot llm status --verbose
 \n
