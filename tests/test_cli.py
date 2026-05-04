@@ -560,3 +560,83 @@ def test_source_monitor_status_cli_uses_read_only_formatter(
     captured = capsys.readouterr()
     assert result == 0
     assert "read-only source monitor status" in captured.out
+
+
+def test_llm_status_cli_is_read_only(capsys, monkeypatch) -> None:
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    import marcbot.cli as cli
+
+    llm_config = SimpleNamespace(
+        path=Path("/tmp/llm-providers.toml"),
+        profiles={"local_fast": object()},
+    )
+    task_config = SimpleNamespace(
+        path=Path("/tmp/llm-tasks.toml"),
+        tasks={
+            "source_monitor_analysis": SimpleNamespace(profile="local_fast"),
+            "report_summary": SimpleNamespace(profile="local_fast"),
+        },
+    )
+
+    def fail_if_models_are_listed(*args, **kwargs):
+        raise AssertionError("llm status must not list provider models")
+
+    def fail_if_health_check_runs(*args, **kwargs):
+        raise AssertionError("llm status must not run health checks")
+
+    def fail_if_completion_runs(*args, **kwargs):
+        raise AssertionError("llm status must not run completions")
+
+    monkeypatch.setattr(cli, "load_llm_config", lambda: llm_config)
+    monkeypatch.setattr(cli, "load_llm_task_config", lambda: task_config)
+    monkeypatch.setattr(cli, "list_openai_compatible_models", fail_if_models_are_listed)
+    monkeypatch.setattr(
+        cli,
+        "run_openai_compatible_health_check",
+        fail_if_health_check_runs,
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_openai_compatible_completion",
+        fail_if_completion_runs,
+    )
+
+    result = cli.main(["llm", "status"])
+
+    captured = capsys.readouterr()
+    assert result == 0
+    assert "MarcBot LLM status" in captured.out
+    assert "Provider config: valid (/tmp/llm-providers.toml)" in captured.out
+    assert "Task config: valid (/tmp/llm-tasks.toml)" in captured.out
+    assert "Profiles: 1 configured" in captured.out
+    assert "Tasks: 2 configured" in captured.out
+    assert "Task routes: valid" in captured.out
+
+
+def test_llm_status_reports_missing_task_profiles(capsys, monkeypatch) -> None:
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    import marcbot.cli as cli
+
+    llm_config = SimpleNamespace(
+        path=Path("/tmp/llm-providers.toml"),
+        profiles={"local_fast": object()},
+    )
+    task_config = SimpleNamespace(
+        path=Path("/tmp/llm-tasks.toml"),
+        tasks={
+            "source_monitor_analysis": SimpleNamespace(profile="missing_profile"),
+        },
+    )
+
+    monkeypatch.setattr(cli, "load_llm_config", lambda: llm_config)
+    monkeypatch.setattr(cli, "load_llm_task_config", lambda: task_config)
+
+    result = cli.main(["llm", "status"])
+
+    captured = capsys.readouterr()
+    assert result == 0
+    assert "Task routes: invalid; missing profiles: missing_profile" in captured.out

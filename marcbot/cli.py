@@ -110,6 +110,41 @@ def _build_source_monitor_summary_input(
     )
 
 
+def _format_llm_status(llm_config, task_config) -> str:
+    """Format a read-only summary of local LLM configuration."""
+    missing_profiles = sorted(
+        {
+            task.profile
+            for task in task_config.tasks.values()
+            if task.profile not in llm_config.profiles
+        }
+    )
+
+    task_config_path = getattr(task_config, "path", None)
+
+    lines = [
+        "MarcBot LLM status",
+        f"Provider config: valid ({llm_config.path})",
+        (
+            f"Task config: valid ({task_config_path})"
+            if task_config_path is not None
+            else "Task config: valid"
+        ),
+        f"Profiles: {len(llm_config.profiles)} configured",
+        f"Tasks: {len(task_config.tasks)} configured",
+    ]
+
+    if missing_profiles:
+        lines.append(
+            "Task routes: invalid; missing profiles: "
+            + ", ".join(missing_profiles)
+        )
+    else:
+        lines.append("Task routes: valid")
+
+    return "\n".join(lines)
+
+
 def _run_summary_completion_with_retry(
     *,
     provider,
@@ -175,6 +210,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     llm_parser = subparsers.add_parser("llm", help="inspect configured LLM providers and profiles")
     llm_subparsers = llm_parser.add_subparsers(dest="llm_command")
+    llm_subparsers.add_parser("status", help="show read-only LLM configuration status")
     llm_subparsers.add_parser("profiles", help="list configured LLM profiles")
     llm_profile_parser = llm_subparsers.add_parser(
         "profile",
@@ -476,6 +512,12 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "llm":
+            if args.llm_command == "status":
+                llm_config = load_llm_config()
+                task_config = load_llm_task_config()
+                print(_format_llm_status(llm_config, task_config))
+                LOGGER.info("LLM status shown")
+                return 0
             if args.llm_command == "profiles":
                 llm_config = load_llm_config()
                 print(format_llm_profiles(llm_config))

@@ -456,4 +456,13 @@ Provider: lmstudio
 Model: google/gemma-4-e4b
 Status: ok
 Response: marcbot-ok
-~~
+~~\n\n## Read-only LLM status
+
+Use the combined status command to inspect local LLM provider and task-route configuration without contacting a model server.
+
+Command:
+
+    python -m marcbot llm status
+
+This command loads the local provider and task config, reports the number of configured profiles and tasks, and verifies that every task route references an existing profile. It does not list remote models, run health checks, or send prompts.
+\n
