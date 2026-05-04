@@ -216,3 +216,4 @@ When in doubt:
 - update docs
 - run `./scripts/check.sh`
 - inspect diff before commit
+- Review `docs/WORKFLOW_MODEL.md` before designing new project workflows or Telegram exposure.

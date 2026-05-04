@@ -618,3 +618,6 @@ The service runs as `marc` and executes:
 Telegram does not trigger source fetching. Telegram report access reads the latest local report summary through:
 
     /report_status source ai
+## Workflow model
+
+MarcBot capabilities should be developed CLI-first as narrow, tested commands that can later be orchestrated through approved workflows. Telegram should expose safe workflow handles, not arbitrary shell or file access. See `WORKFLOW_MODEL.md` for the project-level workflow and orchestration model.

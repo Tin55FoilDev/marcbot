@@ -179,6 +179,7 @@ Primary docs:
 - `docs/COMMANDS.md` — command reference
 - `docs/DEPLOY.md` — deployment/service guidance
 - `docs/LLM.md` — LLM configuration and workflows
+- `docs/WORKFLOW_MODEL.md` — preferred CLI-first workflow and orchestration model for new MarcBot projects.
 - `docs/MEMORY.md` — future memory-system design notes
 - `docs/ROADMAP.md` — near-term project direction
 - `docs/SECURITY.md` — security model and constraints

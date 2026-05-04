@@ -1,5 +1,6 @@
 ## Unreleased\n\n- Added `python -m marcbot llm status --verbose` for read-only profile and task-route inspection without contacting LLM providers.\n- Added `python -m marcbot llm status` as a read-only local configuration and task-route status command.\n\n## Unreleased
 
+- Added `docs/WORKFLOW_MODEL.md` to document MarcBot's CLI-first workflow, orchestration, Telegram exposure, LLM, and future memory design pattern.
 - Refined `source-monitor status` output to include compact report/summary ages and whether the latest saved summary is older than the latest report.
 - Added `python -m marcbot source-monitor status <project>` as a read-only CLI command for inspecting the latest saved source-monitor report and summary without fetching sources or calling an LLM.
 ## 2026-05-03 — Memory design notes added
