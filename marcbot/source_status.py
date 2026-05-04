@@ -140,9 +140,33 @@ def _extract_generated_line(report_text: str) -> str | None:
     return None
 
 
+def _file_modified_datetime(path: Path) -> datetime:
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+
+
 def _format_file_timestamp(path: Path) -> str:
-    modified = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
-    return modified.isoformat(timespec="seconds")
+    return _file_modified_datetime(path).isoformat(timespec="seconds")
+
+
+def _format_elapsed_since(timestamp: datetime, now: datetime) -> str:
+    elapsed_seconds = max(0, int((now - timestamp).total_seconds()))
+
+    if elapsed_seconds < 60:
+        return "less than 1 minute ago"
+
+    elapsed_minutes = elapsed_seconds // 60
+    if elapsed_minutes < 60:
+        unit = "minute" if elapsed_minutes == 1 else "minutes"
+        return f"{elapsed_minutes} {unit} ago"
+
+    elapsed_hours = elapsed_minutes // 60
+    if elapsed_hours < 48:
+        unit = "hour" if elapsed_hours == 1 else "hours"
+        return f"{elapsed_hours} {unit} ago"
+
+    elapsed_days = elapsed_hours // 24
+    unit = "day" if elapsed_days == 1 else "days"
+    return f"{elapsed_days} {unit} ago"
 
 
 def _has_meaningful_value(value: str | None) -> bool:
@@ -212,6 +236,9 @@ def format_source_monitor_cli_status(
         project_name=project_name,
         summaries_dir=target_summaries_dir,
     )
+    now = datetime.now(tz=UTC)
+    report_modified: datetime | None = None
+    summary_modified: datetime | None = None
 
     lines = [
         "MarcBot source monitor status",
@@ -232,7 +259,9 @@ def format_source_monitor_cli_status(
     else:
         lines.append(f"Latest report: {latest_report}")
         try:
-            lines.append(f"Report modified: {_format_file_timestamp(latest_report)}")
+            report_modified = _file_modified_datetime(latest_report)
+            lines.append(f"Report modified: {report_modified.isoformat(timespec='seconds')}")
+            lines.append(f"Report age: {_format_elapsed_since(report_modified, now)}")
             report_text = latest_report.read_text(encoding="utf-8")
         except OSError as exc:
             lines.append(
@@ -250,12 +279,20 @@ def format_source_monitor_cli_status(
     else:
         lines.append(f"Latest summary: {latest_summary}")
         try:
-            lines.append(f"Summary modified: {_format_file_timestamp(latest_summary)}")
+            summary_modified = _file_modified_datetime(latest_summary)
+            lines.append(f"Summary modified: {summary_modified.isoformat(timespec='seconds')}")
+            lines.append(f"Summary age: {_format_elapsed_since(summary_modified, now)}")
         except OSError as exc:
             lines.append(
                 "Summary read status: error: "
                 f"{exc.strerror or exc.__class__.__name__}"
             )
+
+    if report_modified is not None and summary_modified is not None:
+        if summary_modified < report_modified:
+            lines.append("Summary freshness: older than latest report")
+        else:
+            lines.append("Summary freshness: current with latest report")
 
     return "\n".join(lines)
 

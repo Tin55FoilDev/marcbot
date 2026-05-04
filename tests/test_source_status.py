@@ -263,4 +263,24 @@ Generated: 2026-05-02T12:00:00+00:00
     assert f"Latest report: {report_path}" in output
     assert f"Latest summary: {summary_path}" in output
     assert "Generated: 2026-05-02T12:00:00+00:00" in output
+    assert "Report age:" in output
+    assert "Summary age:" in output
+    assert "Summary freshness:" in output
     assert "Report state: changed sources: 1; errors: 1" in output
+
+
+def test_format_elapsed_since_uses_compact_human_units() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from marcbot.source_status import _format_elapsed_since
+
+    now = datetime(2026, 5, 3, 12, 0, 0, tzinfo=UTC)
+
+    assert _format_elapsed_since(now - timedelta(seconds=20), now) == (
+        "less than 1 minute ago"
+    )
+    assert _format_elapsed_since(now - timedelta(minutes=1), now) == "1 minute ago"
+    assert _format_elapsed_since(now - timedelta(minutes=15), now) == "15 minutes ago"
+    assert _format_elapsed_since(now - timedelta(hours=1), now) == "1 hour ago"
+    assert _format_elapsed_since(now - timedelta(hours=7), now) == "7 hours ago"
+    assert _format_elapsed_since(now - timedelta(days=3), now) == "3 days ago"
