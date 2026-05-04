@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Added `python -m marcbot source-monitor status <project>` as a read-only CLI command for inspecting the latest saved source-monitor report and summary without fetching sources or calling an LLM.
 ## 2026-05-03 — Memory design notes added
 
 Documented the intended future MarcBot memory architecture.

@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 from marcbot.errors import MarcBotError
-from marcbot.source_config import DEFAULT_SOURCE_PROJECT_NAME, source_reports_dir
+from marcbot.source_config import (
+    DEFAULT_SOURCE_PROJECT_NAME,
+    load_source_config,
+    source_reports_dir,
+    source_summaries_dir,
+)
 
 SOURCE_REPORT_GLOB = "source-monitor-*.md"
+SOURCE_SUMMARY_GLOB = "source-monitor-*.summary.md"
 MAX_SOURCE_STATUS_CHARS = 3500
 
 
@@ -23,6 +30,22 @@ def find_latest_source_monitor_report(
     if not reports:
         return None
     return reports[-1]
+
+
+def find_latest_source_monitor_summary(
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
+    summaries_dir: Path | None = None,
+) -> Path | None:
+    """Return the latest local source monitor summary path for a project."""
+    target_summaries_dir = (
+        summaries_dir
+        if summaries_dir is not None
+        else source_summaries_dir(project_name)
+    )
+    summaries = sorted(target_summaries_dir.glob(SOURCE_SUMMARY_GLOB))
+    if not summaries:
+        return None
+    return summaries[-1]
 
 
 def extract_source_report_summary(report_text: str) -> str | None:
@@ -115,6 +138,126 @@ def _extract_generated_line(report_text: str) -> str | None:
         if line.startswith("Generated: "):
             return line
     return None
+
+
+def _format_file_timestamp(path: Path) -> str:
+    modified = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+    return modified.isoformat(timespec="seconds")
+
+
+def _has_meaningful_value(value: str | None) -> bool:
+    return value not in {None, "", "n/a", "none", "None"}
+
+
+def _summarize_report_state(report_text: str) -> str:
+    blocks = _parse_fetch_result_blocks(report_text)
+    if not blocks:
+        return "Report state: no fetch-result entries found"
+
+    changed_sources: list[str] = []
+    error_sources: list[str] = []
+
+    for block in blocks:
+        name = block.get("name", "unknown-source")
+        change = block.get("change", "")
+        status = block.get("status", "")
+        error = block.get("error")
+
+        if change not in {"", "n/a", "unchanged"}:
+            changed_sources.append(name)
+
+        if status == "error" or _has_meaningful_value(error):
+            error_sources.append(name)
+
+    parts: list[str] = []
+    if changed_sources:
+        parts.append(f"changed sources: {len(changed_sources)}")
+    if error_sources:
+        parts.append(f"errors: {len(error_sources)}")
+    if not parts:
+        parts.append("no changes or errors detected")
+
+    return "Report state: " + "; ".join(parts)
+
+
+def format_source_monitor_cli_status(
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
+    reports_dir: Path | None = None,
+    summaries_dir: Path | None = None,
+) -> str:
+    """Format a read-only CLI status for saved source monitor artifacts."""
+    try:
+        config = load_source_config(project_name=project_name)
+        target_reports_dir = (
+            reports_dir if reports_dir is not None else source_reports_dir(project_name)
+        )
+        target_summaries_dir = (
+            summaries_dir
+            if summaries_dir is not None
+            else source_summaries_dir(project_name)
+        )
+    except MarcBotError as exc:
+        return (
+            "MarcBot source monitor status\n"
+            f"Project: {project_name}\n"
+            "Config: invalid\n"
+            f"Error: {exc.code}: {exc.message}"
+        )
+
+    latest_report = find_latest_source_monitor_report(
+        project_name=project_name,
+        reports_dir=target_reports_dir,
+    )
+    latest_summary = find_latest_source_monitor_summary(
+        project_name=project_name,
+        summaries_dir=target_summaries_dir,
+    )
+
+    lines = [
+        "MarcBot source monitor status",
+        f"Project: {config.project_name}",
+        "Config: valid",
+        f"Config path: {config.path}",
+        f"Reports dir: {target_reports_dir}",
+        f"Summaries dir: {target_summaries_dir}",
+    ]
+
+    if latest_report is None:
+        lines.extend(
+            [
+                "Latest report: none found",
+                f"Run: python -m marcbot source-monitor run {project_name}",
+            ]
+        )
+    else:
+        lines.append(f"Latest report: {latest_report}")
+        try:
+            lines.append(f"Report modified: {_format_file_timestamp(latest_report)}")
+            report_text = latest_report.read_text(encoding="utf-8")
+        except OSError as exc:
+            lines.append(
+                "Report read status: error: "
+                f"{exc.strerror or exc.__class__.__name__}"
+            )
+        else:
+            generated_line = _extract_generated_line(report_text)
+            if generated_line is not None:
+                lines.append(generated_line)
+            lines.append(_summarize_report_state(report_text))
+
+    if latest_summary is None:
+        lines.append("Latest summary: none found")
+    else:
+        lines.append(f"Latest summary: {latest_summary}")
+        try:
+            lines.append(f"Summary modified: {_format_file_timestamp(latest_summary)}")
+        except OSError as exc:
+            lines.append(
+                "Summary read status: error: "
+                f"{exc.strerror or exc.__class__.__name__}"
+            )
+
+    return "\n".join(lines)
 
 
 def format_source_status_message(

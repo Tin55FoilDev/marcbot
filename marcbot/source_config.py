@@ -75,6 +75,12 @@ def source_reports_dir(project_name: str = DEFAULT_SOURCE_PROJECT_NAME) -> Path:
     return Path("/srv/marcbot/workspace/source-projects") / safe_project / "reports"
 
 
+def source_summaries_dir(project_name: str = DEFAULT_SOURCE_PROJECT_NAME) -> Path:
+    """Return the summaries directory for a validated source project name."""
+    safe_project = validate_source_project_name(project_name)
+    return Path("/srv/marcbot/workspace/source-projects") / safe_project / "summaries"
+
+
 def _validate_source_name(name: Any) -> str:
     if not isinstance(name, str) or not _SOURCE_NAME_RE.fullmatch(name):
         raise _source_error(

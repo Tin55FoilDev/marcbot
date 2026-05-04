@@ -177,3 +177,90 @@ def test_format_source_status_message_handles_invalid_project_name() -> None:
 
     assert "Status: invalid project name" in message
     assert "MBOT-SOURCE-" in message
+
+
+def test_find_latest_source_monitor_summary_returns_newest_file(tmp_path) -> None:
+    from marcbot.source_status import find_latest_source_monitor_summary
+
+    older = tmp_path / "source-monitor-2026-05-01-120000.summary.md"
+    newer = tmp_path / "source-monitor-2026-05-01-130000.summary.md"
+    unrelated = tmp_path / "source-monitor-2026-05-01-140000.md"
+
+    older.write_text("older", encoding="utf-8")
+    newer.write_text("newer", encoding="utf-8")
+    unrelated.write_text("not a summary", encoding="utf-8")
+
+    assert find_latest_source_monitor_summary(summaries_dir=tmp_path) == newer
+
+
+def test_format_source_monitor_cli_status_reports_saved_artifacts(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    import marcbot.source_status as source_status
+    from marcbot.source_config import SourceConfig
+
+    config_path = tmp_path / "config" / "sources.toml"
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    report_path = reports_dir / "source-monitor-2026-05-02-120000.md"
+    summary_path = summaries_dir / "source-monitor-2026-05-02-120000.summary.md"
+
+    reports_dir.mkdir(parents=True)
+    summaries_dir.mkdir(parents=True)
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text("[[sources]]\n", encoding="utf-8")
+
+    report_path.write_text(
+        """# Source Monitor Report
+
+Generated: 2026-05-02T12:00:00+00:00
+
+## Summary
+
+- Checked 2 sources.
+
+## Fetch results
+
+- example
+  - kind: rss_feed
+  - status: ok
+  - change: changed
+  - error: n/a
+- second
+  - kind: rss_feed
+  - status: error
+  - change: n/a
+  - error: timeout
+""",
+        encoding="utf-8",
+    )
+    summary_path.write_text("# Summary\n\nSaved LLM summary.\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        source_status,
+        "load_source_config",
+        lambda project_name: SourceConfig(
+            path=config_path,
+            exists=True,
+            sources=(),
+            project_name=project_name,
+        ),
+    )
+
+    output = source_status.format_source_monitor_cli_status(
+        "ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert "MarcBot source monitor status" in output
+    assert "Project: ai" in output
+    assert "Config: valid" in output
+    assert f"Config path: {config_path}" in output
+    assert f"Reports dir: {reports_dir}" in output
+    assert f"Summaries dir: {summaries_dir}" in output
+    assert f"Latest report: {report_path}" in output
+    assert f"Latest summary: {summary_path}" in output
+    assert "Generated: 2026-05-02T12:00:00+00:00" in output
+    assert "Report state: changed sources: 1; errors: 1" in output

@@ -533,3 +533,30 @@ def test_source_monitor_run_summary_writes_report_and_summary(
     assert "Source monitor report written:" in captured.out
     assert "Source monitor summary written:" in captured.out
     assert summary_path.read_text(encoding="utf-8") == "Saved source monitor summary\n"
+
+
+def test_source_monitor_status_cli_uses_read_only_formatter(
+    capsys,
+    monkeypatch,
+) -> None:
+    import marcbot.cli as cli
+
+    def fake_status(project_name: str) -> str:
+        assert project_name == "ai"
+        return "read-only source monitor status"
+
+    def fail_if_report_generation_runs(*args, **kwargs):
+        raise AssertionError("status command must not generate reports")
+
+    def fail_if_llm_config_loads(*args, **kwargs):
+        raise AssertionError("status command must not load LLM config")
+
+    monkeypatch.setattr(cli, "format_source_monitor_cli_status", fake_status)
+    monkeypatch.setattr(cli, "write_source_monitor_report", fail_if_report_generation_runs)
+    monkeypatch.setattr(cli, "load_llm_config", fail_if_llm_config_loads)
+
+    result = cli.main(["source-monitor", "status", "ai"])
+
+    captured = capsys.readouterr()
+    assert result == 0
+    assert "read-only source monitor status" in captured.out

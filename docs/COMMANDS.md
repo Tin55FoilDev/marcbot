@@ -393,7 +393,9 @@ These commands are currently CLI-only and are not Telegram commands:
     python -m marcbot source-monitor config-check ai
     python -m marcbot source-monitor run ai
     python -m marcbot source-monitor run-summary ai
-    python -m marcbot source-monitor run-summary ai
+    python -m marcbot source-monitor status ai
+
+The status command is read-only. It validates the source project config, shows the newest saved report and summary paths, prints local file timestamps, and summarizes whether the newest saved report contains changed sources, errors, or no detected changes. It does not fetch sources or call an LLM.
 
 `config-check` validates `/srv/marcbot/config/source-projects/<project>/sources.toml` and reports the configured sources.
 

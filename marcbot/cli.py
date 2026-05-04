@@ -35,6 +35,7 @@ from marcbot.report_sender import send_latest_report
 from marcbot.reports import write_daily_status_report
 from marcbot.source_config import format_source_config_summary, load_source_config
 from marcbot.source_monitor import write_source_monitor_report
+from marcbot.source_status import format_source_monitor_cli_status
 from marcbot.telegram_bot import run_foreground_bot
 
 LOGGER = logging.getLogger(__name__)
@@ -270,6 +271,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--task",
         default="source_monitor_analysis",
         help="configured LLM task name (default: source_monitor_analysis)",
+    )
+    source_monitor_status_parser = source_monitor_subparsers.add_parser(
+        "status", help="show latest saved source monitor artifacts",
+    )
+    source_monitor_status_parser.add_argument(
+        "project",
+        nargs="?",
+        default="ai",
+        help="source project name (default: ai)",
     )
     source_monitor_config_parser = source_monitor_subparsers.add_parser(
         "config-check",
@@ -681,6 +691,10 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
         if args.command == "source-monitor":
+            if args.source_monitor_command == "status":
+                print(format_source_monitor_cli_status(project_name=args.project))
+                LOGGER.info("Source monitor status shown: project=%s", args.project)
+                return 0
             if args.source_monitor_command == "config-check":
                 config = load_source_config(project_name=args.project)
                 print(format_source_config_summary(config))
