@@ -1,5 +1,17 @@
 ## Unreleased
 
+## 2026-05-03 — Memory design notes added
+
+Documented the intended future MarcBot memory architecture.
+
+Highlights:
+
+- captured hybrid memory design direction
+- documented automatic memory-update expectations
+- documented guardrails for low-, medium-, and high-risk memory updates
+- noted SQLite as the likely first database backend to evaluate
+- emphasized correction, auditability, review, and source-linked memory
+
 ## 2026-05-03 — Public-readiness hygiene added
 
 Prepared the repository for possible public visibility.
