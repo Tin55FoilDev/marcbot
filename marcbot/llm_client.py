@@ -337,11 +337,11 @@ def format_llm_health_result(result: LlmHealthResult) -> str:
     """Format an LLM health check result for operator output."""
     return "\n".join(
         [
-            "MarcBot LLM health",
+            "MarcBot LLM health check",
             f"Profile: {result.profile_name}",
             f"Provider: {result.provider_name}",
             f"Model: {result.model}",
-            "Status: ok",
+            "Result: OK",
             f"Response: {result.response_text}",
         ]
     )

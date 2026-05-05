@@ -138,6 +138,8 @@ models.
 
 ### `python -m marcbot llm health local_fast`
 
+Runs an explicit health check for one named profile. This command contacts only the requested profile; it does not test every configured profile.
+
 Calls the LM Studio OpenAI-compatible endpoint:
 
 ~~text
@@ -153,11 +155,11 @@ Reply exactly: marcbot-ok
 Expected output:
 
 ~~text
-MarcBot LLM health
+MarcBot LLM health check
 Profile: local_fast
 Provider: lmstudio
 Model: google/gemma-4-e4b
-Status: ok
+Result: OK
 Response: marcbot-ok
 ~~
 
@@ -431,13 +433,14 @@ Check:
 
 ### `/llm_status`
 
-`/llm_status` is the first Telegram-facing LLM command.
+`/llm_status` is a Telegram-facing read-only LLM status command.
 
 It is read-only and bounded:
 
 - Lists configured profiles.
-- Runs the tiny health check for `local_fast`.
-- Reads `/srv/marcbot/config/llm.env` from code.
+- Does not contact providers.
+- Does not run health checks.
+- Does not load provider secrets.
 - Does not accept arbitrary prompts.
 - Does not expose secrets.
 - Does not allow arbitrary provider/model selection.
@@ -450,13 +453,11 @@ Expected output includes:
 Profiles: 3
 - local_fast: google/gemma-4-e4b via lmstudio
 
-Health check:
-Profile: local_fast
-Provider: lmstudio
-Model: google/gemma-4-e4b
-Status: ok
-Response: marcbot-ok
-~~\n\n## Read-only LLM status
+Provider contact: not performed
+Health checks: CLI-only via python -m marcbot llm health <profile>
+~~
+
+## Read-only LLM status
 
 Use the combined status command to inspect local LLM provider and task-route configuration without contacting a model server.
 

@@ -541,7 +541,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/timer_status - show MarcBot scheduled timer status\n"
         "/report_status - show latest daily status report status\n"
         "/report_status source <project> - show latest source monitor summary\n"
-        "/llm_status - show read-only LLM profile and health status\n"
+        "/llm_status - show read-only LLM profile status\n"
         "/logs - show recent MarcBot application logs\n"
         "/tail <app|service> - show approved diagnostic log tails\n"
         "/help - show this help message"

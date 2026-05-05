@@ -384,8 +384,8 @@ def test_format_llm_health_result() -> None:
 
     output = format_llm_health_result(result)
 
-    assert "MarcBot LLM health" in output
+    assert "MarcBot LLM health check" in output
     assert "Profile: local_fast" in output
     assert "Provider: lmstudio" in output
-    assert "Status: ok" in output
+    assert "Result: OK" in output
     assert "Response: marcbot-ok" in output

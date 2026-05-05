@@ -486,9 +486,10 @@ Shows read-only LLM provider/profile status.
 
 Current behavior:
 
-- Lists configured LLM profiles.
-- Runs the tiny `local_fast` health check.
-- Reads the local LLM env file from `/srv/marcbot/config/llm.env`.
+- Lists configured LLM profile and task-route status.
+- Does not contact providers.
+- Does not run health checks.
+- Does not load provider secrets.
 - Does not accept arbitrary prompts.
 - Does not expose tokens.
 - Does not allow arbitrary provider or model selection.
