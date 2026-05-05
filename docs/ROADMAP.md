@@ -484,6 +484,16 @@ Possible future use cases:
 
 Web-enabled commands should clearly distinguish between local state and internet-derived state.
 
+## Current LLM status boundary
+
+MarcBot now separates read-only status from explicit provider contact:
+
+- `python -m marcbot llm profiles` is read-only and local-config-only.
+- `python -m marcbot llm status` is read-only and local-config-only.
+- `/llm_status` is read-only and local-config-only.
+- `python -m marcbot llm models <provider>` contacts the configured provider.
+- `python -m marcbot llm health <profile>` contacts only the named configured profile.
+- Arbitrary Telegram prompt relay remains out of scope.
 ## Development rules
 
 For each new feature:
@@ -571,7 +581,7 @@ Planned sequence:
 4. Support profile validation and tiny completion health checks from the CLI.
 5. Add OpenAI/frontier provider structure for future GPT-5.5-style profiles.
 6. Allow capabilities to assign work to named profiles instead of hardcoded models.
-7. Expose read-only LLM profile/model/health status through Telegram.
+7. Expose read-only LLM profile/model status through Telegram without running health checks.
 8. Later, add explicit controlled chat sessions, such as `/chat_start <profile>`, rather than an unrestricted prompt interface.
 
 Initial profile categories:
@@ -586,16 +596,27 @@ Local models are expected to be useful for heartbeat functions, backups, simple 
 
 ### LLM provider/profile operational baseline
 
-The LLM foundation now supports CLI-only provider/profile operations:
+The LLM foundation now supports CLI-only provider/profile operations and read-only Telegram profile/status visibility:
 
 ~~bash
 python -m marcbot llm profiles
+python -m marcbot llm profile local_fast
 python -m marcbot llm models lmstudio
 python -m marcbot llm health local_fast
+python -m marcbot llm status
+python -m marcbot llm status --verbose
 ~~
+
+Current Telegram LLM visibility:
+
+- `/llm_status` lists configured profiles only.
+- `/llm_status` does not contact providers.
+- `/llm_status` does not run health checks.
+- `/llm_status` does not load provider secrets.
 
 Next likely steps:
 
-1. Add read-only Telegram LLM status/profile visibility.
-2. Keep arbitrary prompt relay out of Telegram until a separate safety design exists.
-3. Add task-to-profile routing only after profile health checks are stable.
+1. Harden LLM summary reliability for file/report workflows.
+2. Integrate LLM summaries into the source monitor workflow.
+3. Add broader model/profile testing with fixed prompts.
+4. Keep arbitrary prompt relay out of Telegram until a separate safety design exists.
