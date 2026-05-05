@@ -4,7 +4,7 @@ MarcBot is Marc's personal-only Telegram bot and automation project.
 
 It is intended to replace the reliable subset of OpenClaw workflows with a smaller, safer, more testable system that Marc can maintain over time.
 
-Current baseline: **MarcBot 0.3.1**.
+Current baseline: **MarcBot 0.3.2**.
 
 ## Design goals
 
@@ -63,7 +63,7 @@ MarcBot currently includes:
 
 ## Session restart support
 
-MarcBot 0.3.1 adds explicit support for starting a fresh AI-assisted development/debugging session.
+MarcBot 0.3.2 hardens LLM status behavior so Telegram status remains read-only while explicit health checks stay CLI-only.
 
 Important files/commands:
 

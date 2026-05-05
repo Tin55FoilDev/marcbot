@@ -32,6 +32,17 @@ Changes:
 
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
+## 0.3.2 — Read-only LLM status hardening
+
+MarcBot 0.3.2 hardens LLM status behavior.
+
+Highlights:
+
+- kept `/llm_status` read-only
+- removed automatic Telegram-side LLM health checks
+- avoided loading provider secrets during Telegram LLM status checks
+- kept explicit model contact limited to `python -m marcbot llm health <profile>`
+- clarified LLM status and health-check documentation
 ## 0.3.1 — Session restart support
 
 MarcBot 0.3.1 adds session restart support for future AI-assisted development.
