@@ -6,6 +6,8 @@ It is intended to replace the reliable subset of OpenClaw workflows with a small
 
 Current baseline: **MarcBot 0.3.2**.
 
+Project direction: see `docs/PROJECT_DIRECTION.md` for the long-term target: a personal Telegram-facing OpenClaw replacement for chat, commands, workflows, local models, and frontier model profiles.
+
 ## Design goals
 
 MarcBot favors:
