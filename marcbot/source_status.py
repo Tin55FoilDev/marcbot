@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -15,6 +16,8 @@ from marcbot.source_config import (
 
 SOURCE_REPORT_GLOB = "source-monitor-*.md"
 SOURCE_SUMMARY_GLOB = "source-monitor-*.summary.md"
+SOURCE_REPORT_NAME_PATTERN = re.compile(r"^source-monitor-(\d{4}-\d{2}-\d{2}-\d{6})\.md$")
+SOURCE_SUMMARY_NAME_PATTERN = re.compile(r"^source-monitor-(\d{4}-\d{2}-\d{2}-\d{6})\.summary\.md$")
 MAX_SOURCE_STATUS_CHARS = 3500
 RECENT_SOURCE_ARTIFACT_LIMIT = 3
 
@@ -47,6 +50,19 @@ def find_latest_source_monitor_summary(
     if not summaries:
         return None
     return summaries[-1]
+
+
+def source_monitor_artifact_id(path: Path) -> str | None:
+    """Return a safe source-monitor artifact ID for a report or summary path."""
+    summary_match = SOURCE_SUMMARY_NAME_PATTERN.match(path.name)
+    if summary_match is not None:
+        return f"summary:{summary_match.group(1)}"
+
+    report_match = SOURCE_REPORT_NAME_PATTERN.match(path.name)
+    if report_match is not None:
+        return f"report:{report_match.group(1)}"
+
+    return None
 
 
 def find_recent_source_monitor_reports(
@@ -84,7 +100,11 @@ def _format_recent_artifact_lines(label: str, paths: list[Path]) -> list[str]:
         return lines
 
     for path in paths:
-        lines.append(f"- {path.name}")
+        artifact_id = source_monitor_artifact_id(path)
+        if artifact_id is None:
+            lines.append(f"- {path.name}")
+        else:
+            lines.append(f"- {artifact_id} — {path.name}")
 
     return lines
 

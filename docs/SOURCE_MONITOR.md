@@ -319,8 +319,8 @@ The status output includes:
 - config path
 - reports directory
 - summaries directory
-- recent report filenames
-- recent summary filenames
+- recent report artifact IDs and filenames
+- recent summary artifact IDs and filenames
 - latest report path
 - latest report modified time and age
 - generated timestamp from the report
@@ -328,3 +328,10 @@ The status output includes:
 - latest summary path
 - latest summary modified time and age
 - summary freshness relative to the latest report
+
+Recent artifacts use safe IDs derived from source-monitor filenames, such as:
+
+    report:2026-05-08-113613
+    summary:2026-05-03-021129
+
+These IDs are intended to support future bounded artifact retrieval without accepting arbitrary host paths from Telegram.

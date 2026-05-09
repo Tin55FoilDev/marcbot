@@ -7,6 +7,7 @@ from marcbot.source_status import (
     find_recent_source_monitor_reports,
     find_recent_source_monitor_summaries,
     format_source_status_message,
+    source_monitor_artifact_id,
 )
 
 
@@ -23,6 +24,16 @@ def test_find_latest_source_monitor_report_returns_none_when_missing(
     tmp_path: Path,
 ) -> None:
     assert find_latest_source_monitor_report(reports_dir=tmp_path) is None
+
+
+def test_source_monitor_artifact_id_formats_report_and_summary_ids() -> None:
+    report = Path("source-monitor-2026-05-08-113613.md")
+    summary = Path("source-monitor-2026-05-03-021129.summary.md")
+    unrelated = Path("notes.md")
+
+    assert source_monitor_artifact_id(report) == "report:2026-05-08-113613"
+    assert source_monitor_artifact_id(summary) == "summary:2026-05-03-021129"
+    assert source_monitor_artifact_id(unrelated) is None
 
 
 def test_find_recent_source_monitor_reports_returns_newest_names_first(
@@ -299,11 +310,17 @@ Generated: 2026-05-02T12:00:00+00:00
     assert "Config: valid" in output
     assert f"Config path: {config_path}" in output
     assert "Recent reports:" in output
-    assert "- source-monitor-2026-05-02-120000.md" in output
-    assert "- source-monitor-2026-05-01-120000.md" in output
+    assert "- report:2026-05-02-120000 — source-monitor-2026-05-02-120000.md" in output
+    assert "- report:2026-05-01-120000 — source-monitor-2026-05-01-120000.md" in output
     assert "Recent summaries:" in output
-    assert "- source-monitor-2026-05-02-120000.summary.md" in output
-    assert "- source-monitor-2026-05-01-120000.summary.md" in output
+    assert (
+        "- summary:2026-05-02-120000 — "
+        "source-monitor-2026-05-02-120000.summary.md"
+    ) in output
+    assert (
+        "- summary:2026-05-01-120000 — "
+        "source-monitor-2026-05-01-120000.summary.md"
+    ) in output
     assert f"Reports dir: {reports_dir}" in output
     assert f"Summaries dir: {summaries_dir}" in output
     assert f"Latest report: {report_path}" in output

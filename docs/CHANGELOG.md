@@ -6,6 +6,7 @@
 
 ### Changed
 
+- Added safe source-monitor artifact IDs to recent report and summary status output.
 - Improved `python -m marcbot source-monitor status <project>` to show recent report and summary artifact filenames.
 
 
