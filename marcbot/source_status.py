@@ -22,6 +22,46 @@ MAX_SOURCE_STATUS_CHARS = 3500
 RECENT_SOURCE_ARTIFACT_LIMIT = 3
 
 
+SOURCE_ARTIFACT_ID_PATTERN = re.compile(
+    r"^(report|summary):(\d{4}-\d{2}-\d{2}-\d{6})$"
+)
+
+
+def resolve_source_monitor_artifact(
+    artifact_id: str,
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
+    reports_dir: Path | None = None,
+    summaries_dir: Path | None = None,
+) -> Path | None:
+    """Resolve a safe source-monitor artifact ID to an approved local path."""
+    match = SOURCE_ARTIFACT_ID_PATTERN.match(artifact_id.strip())
+    if match is None:
+        return None
+
+    artifact_kind, timestamp = match.groups()
+
+    if artifact_kind == "report":
+        target_reports_dir = (
+            reports_dir if reports_dir is not None else source_reports_dir(project_name)
+        )
+        candidate = target_reports_dir / f"source-monitor-{timestamp}.md"
+    else:
+        target_summaries_dir = (
+            summaries_dir
+            if summaries_dir is not None
+            else source_summaries_dir(project_name)
+        )
+        candidate = target_summaries_dir / f"source-monitor-{timestamp}.summary.md"
+
+    try:
+        if not candidate.is_file():
+            return None
+    except OSError:
+        return None
+
+    return candidate
+
+
 def find_latest_source_monitor_report(
     project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
     reports_dir: Path | None = None,

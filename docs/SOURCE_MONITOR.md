@@ -337,3 +337,7 @@ Recent artifacts use safe IDs derived from source-monitor filenames, such as:
     summary:2026-05-03-021129
 
 These IDs are intended to support future bounded artifact retrieval without accepting arbitrary host paths from Telegram.
+
+MarcBot also has internal source-monitor artifact resolver support for these IDs. The resolver maps only valid source-monitor artifact IDs to approved report or summary paths. Invalid IDs, missing files, and path traversal-like values are rejected.
+
+This resolver is groundwork for future bounded artifact retrieval. It does not by itself add Telegram file sending.

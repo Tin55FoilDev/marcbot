@@ -7,6 +7,7 @@ from marcbot.source_status import (
     find_recent_source_monitor_reports,
     find_recent_source_monitor_summaries,
     format_source_status_message,
+    resolve_source_monitor_artifact,
     source_monitor_artifact_id,
 )
 
@@ -36,6 +37,71 @@ def test_source_monitor_artifact_id_formats_report_and_summary_ids() -> None:
     assert source_monitor_artifact_id(report) == "report:2026-05-08-113613"
     assert source_monitor_artifact_id(summary) == "summary:2026-05-03-021129"
     assert source_monitor_artifact_id(unrelated) is None
+
+
+def test_resolve_source_monitor_artifact_resolves_report_and_summary(
+    tmp_path: Path,
+) -> None:
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    report = reports_dir / "source-monitor-2026-05-08-113613.md"
+    summary = summaries_dir / "source-monitor-2026-05-03-021129.summary.md"
+
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+    report.write_text("report", encoding="utf-8")
+    summary.write_text("summary", encoding="utf-8")
+
+    assert (
+        resolve_source_monitor_artifact(
+            "report:2026-05-08-113613",
+            reports_dir=reports_dir,
+            summaries_dir=summaries_dir,
+        )
+        == report
+    )
+    assert (
+        resolve_source_monitor_artifact(
+            "summary:2026-05-03-021129",
+            reports_dir=reports_dir,
+            summaries_dir=summaries_dir,
+        )
+        == summary
+    )
+
+
+def test_resolve_source_monitor_artifact_rejects_invalid_or_missing_ids(
+    tmp_path: Path,
+) -> None:
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    assert (
+        resolve_source_monitor_artifact(
+            "bad:2026-05-08-113613",
+            reports_dir=reports_dir,
+            summaries_dir=summaries_dir,
+        )
+        is None
+    )
+    assert (
+        resolve_source_monitor_artifact(
+            "report:../../etc/passwd",
+            reports_dir=reports_dir,
+            summaries_dir=summaries_dir,
+        )
+        is None
+    )
+    assert (
+        resolve_source_monitor_artifact(
+            "report:2026-05-08-113613",
+            reports_dir=reports_dir,
+            summaries_dir=summaries_dir,
+        )
+        is None
+    )
 
 
 def test_find_recent_source_monitor_reports_returns_newest_names_first(
