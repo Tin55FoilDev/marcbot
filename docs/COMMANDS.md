@@ -9,6 +9,7 @@ See also:
 - `docs/PROJECT_DIRECTION.md`
 - `docs/ROADMAP.md`
 - `docs/WORKFLOW_MODEL.md`
+- `docs/INTERACTION_MODEL.md`
 - `docs/LLM.md`
 - `docs/SECURITY.md`
 

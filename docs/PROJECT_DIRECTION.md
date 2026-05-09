@@ -58,6 +58,9 @@ Every capability should be narrow, reviewed, documented, testable, and useful to
 
 ## Interaction model
 
+Detailed interaction-mode rules live in `docs/INTERACTION_MODEL.md`.
+
+
 MarcBot should develop toward four distinct interaction modes.
 
 ### 1. Command mode

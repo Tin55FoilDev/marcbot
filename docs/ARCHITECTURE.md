@@ -10,6 +10,7 @@ See also:
 - `docs/ROADMAP.md`
 - `docs/WORKFLOW_MODEL.md`
 - `docs/COMMANDS.md`
+- `docs/INTERACTION_MODEL.md`
 - `docs/LLM.md`
 - `docs/MEMORY.md`
 - `docs/SECURITY.md`

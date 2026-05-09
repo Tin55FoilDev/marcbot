@@ -208,6 +208,7 @@ MarcBot has several design and operations documents. To avoid duplicate or confl
 - `docs/ROADMAP.md` owns current sequencing, near-term priorities, and future milestones.
 - `docs/ARCHITECTURE.md` owns system structure, runtime planes, and major technical boundaries.
 - `docs/COMMANDS.md` owns Telegram and CLI command behavior, command boundaries, and future command surfaces.
+- `docs/INTERACTION_MODEL.md` owns how command mode, workflow mode, chat mode, development mode, approvals, file access, artifacts, and future memory interact.
 - `docs/LLM.md` owns providers, profiles, task routes, LM Studio behavior, model health checks, and frontier-model research boundaries.
 - `docs/WORKFLOW_MODEL.md` owns the design model for approved workflows and deterministic-plus-LLM orchestration.
 - `docs/MEMORY.md` owns future durable memory design, auditability, correction, and memory safety rules.

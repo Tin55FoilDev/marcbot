@@ -12,6 +12,7 @@
 - Clarified that MarcBot should not depend on OpenClaw as a backend worker, though OpenClaw may be studied as a reference point.
 - Updated command documentation for `/llm_status` as read-only and provider-contact-free.
 - Updated architecture documentation around runtime planes, Telegram boundaries, file boundaries, LLM boundaries, artifacts, and future memory.
+- Added `docs/INTERACTION_MODEL.md` to define command mode, workflow mode, chat mode, development mode, approvals, file access, artifacts, and future memory boundaries.
 
 ## Unreleased
 
