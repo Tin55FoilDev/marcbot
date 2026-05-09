@@ -16,7 +16,7 @@ See also:
 
 ## Current baseline
 
-Current baseline: MarcBot 0.3.2.
+Current baseline: MarcBot 0.3.3.
 
 MarcBot currently has:
 

@@ -60,6 +60,25 @@ Changes:
 
 - Documented the planned multi-provider LLM architecture, including local LM Studio profiles, future OpenAI/frontier profiles, model discovery/testing, task-to-profile assignment, and Telegram safety boundaries.
 
+## 0.3.3 — Source monitor artifact workflow
+
+MarcBot 0.3.3 improves the source-monitor workflow with safer artifact visibility and retrieval.
+
+### Added
+
+- Added recent source-monitor report and summary artifact visibility to CLI status.
+- Added safe source-monitor artifact IDs for reports and summaries.
+- Added artifact IDs to `/report_status source <project>`.
+- Added internal artifact ID resolution for source-monitor reports and summaries.
+- Added CLI-only `python -m marcbot source-monitor artifact-path <project> <artifact-id>`.
+- Added Telegram `/send_source_artifact <project> <artifact-id>` for bounded artifact retrieval.
+- Added CLI-only `python -m marcbot source-monitor summarize-latest <project>`.
+
+### Changed
+
+- Source-monitor report discovery now excludes `.summary.md` files from report selection.
+- Source-monitor summaries can now be refreshed for the latest existing report without generating a new report first.
+
 ## 0.3.2 — Read-only LLM status hardening
 
 MarcBot 0.3.2 hardens LLM status behavior.
