@@ -13,6 +13,7 @@ See also:
 - `docs/ARCHITECTURE.md`
 - `docs/COMMANDS.md`
 - `docs/WORKFLOW_MODEL.md`
+- `docs/PROJECT_WORKFLOW_LIFECYCLE.md`
 - `docs/LLM.md`
 - `docs/MEMORY.md`
 - `docs/SECURITY.md`

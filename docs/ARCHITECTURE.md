@@ -11,6 +11,7 @@ See also:
 - `docs/WORKFLOW_MODEL.md`
 - `docs/COMMANDS.md`
 - `docs/INTERACTION_MODEL.md`
+- `docs/PROJECT_WORKFLOW_LIFECYCLE.md`
 - `docs/LLM.md`
 - `docs/MEMORY.md`
 - `docs/SECURITY.md`

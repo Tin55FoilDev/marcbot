@@ -128,6 +128,9 @@ Development mode may eventually be assisted by MarcBot, but it should remain con
 
 ## Project development model
 
+Detailed project lifecycle rules live in `docs/PROJECT_WORKFLOW_LIFECYCLE.md`.
+
+
 New MarcBot projects should be developed in small, testable layers.
 
 Preferred sequence:

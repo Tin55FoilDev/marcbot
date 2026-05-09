@@ -9,6 +9,7 @@ See also:
 - `docs/PROJECT_DIRECTION.md`
 - `docs/WORKFLOW_MODEL.md`
 - `docs/INTERACTION_MODEL.md`
+- `docs/PROJECT_WORKFLOW_LIFECYCLE.md`
 - `docs/LLM.md`
 - `docs/MEMORY.md`
 - `docs/COMMANDS.md`

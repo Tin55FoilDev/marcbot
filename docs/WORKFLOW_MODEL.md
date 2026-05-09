@@ -1,5 +1,7 @@
 # MarcBot Workflow Model
 
+For the staged lifecycle used to add new MarcBot projects and workflows, see `docs/PROJECT_WORKFLOW_LIFECYCLE.md`.
+
 MarcBot should be developed as a small, stable, personal-only automation system built from narrow, testable capabilities. The project should avoid becoming a general-purpose shell bot or an unconstrained agent.
 
 This document describes the preferred development model for new MarcBot capabilities and projects.
