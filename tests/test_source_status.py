@@ -4,6 +4,8 @@ from marcbot.source_status import (
     extract_source_report_rss_highlights,
     extract_source_report_summary,
     find_latest_source_monitor_report,
+    find_recent_source_monitor_reports,
+    find_recent_source_monitor_summaries,
     format_source_status_message,
 )
 
@@ -21,6 +23,40 @@ def test_find_latest_source_monitor_report_returns_none_when_missing(
     tmp_path: Path,
 ) -> None:
     assert find_latest_source_monitor_report(reports_dir=tmp_path) is None
+
+
+def test_find_recent_source_monitor_reports_returns_newest_names_first(
+    tmp_path: Path,
+) -> None:
+    oldest = tmp_path / "source-monitor-2026-05-01-120000.md"
+    middle = tmp_path / "source-monitor-2026-05-01-130000.md"
+    newest = tmp_path / "source-monitor-2026-05-01-140000.md"
+
+    oldest.write_text("oldest", encoding="utf-8")
+    middle.write_text("middle", encoding="utf-8")
+    newest.write_text("newest", encoding="utf-8")
+
+    assert find_recent_source_monitor_reports(reports_dir=tmp_path, limit=2) == [
+        newest,
+        middle,
+    ]
+
+
+def test_find_recent_source_monitor_summaries_returns_newest_names_first(
+    tmp_path: Path,
+) -> None:
+    oldest = tmp_path / "source-monitor-2026-05-01-120000.summary.md"
+    newest = tmp_path / "source-monitor-2026-05-01-130000.summary.md"
+    unrelated = tmp_path / "source-monitor-2026-05-01-140000.md"
+
+    oldest.write_text("oldest", encoding="utf-8")
+    newest.write_text("newest", encoding="utf-8")
+    unrelated.write_text("not a summary", encoding="utf-8")
+
+    assert find_recent_source_monitor_summaries(summaries_dir=tmp_path, limit=2) == [
+        newest,
+        oldest,
+    ]
 
 
 def test_extract_source_report_summary_returns_summary_and_observations() -> None:
@@ -204,7 +240,9 @@ def test_format_source_monitor_cli_status_reports_saved_artifacts(
     reports_dir = tmp_path / "reports"
     summaries_dir = tmp_path / "summaries"
     report_path = reports_dir / "source-monitor-2026-05-02-120000.md"
+    old_report_path = reports_dir / "source-monitor-2026-05-01-120000.md"
     summary_path = summaries_dir / "source-monitor-2026-05-02-120000.summary.md"
+    old_summary_path = summaries_dir / "source-monitor-2026-05-01-120000.summary.md"
 
     reports_dir.mkdir(parents=True)
     summaries_dir.mkdir(parents=True)
@@ -235,7 +273,9 @@ Generated: 2026-05-02T12:00:00+00:00
 """,
         encoding="utf-8",
     )
+    old_report_path.write_text("older report", encoding="utf-8")
     summary_path.write_text("# Summary\n\nSaved LLM summary.\n", encoding="utf-8")
+    old_summary_path.write_text("older summary", encoding="utf-8")
 
     monkeypatch.setattr(
         source_status,
@@ -258,6 +298,12 @@ Generated: 2026-05-02T12:00:00+00:00
     assert "Project: ai" in output
     assert "Config: valid" in output
     assert f"Config path: {config_path}" in output
+    assert "Recent reports:" in output
+    assert "- source-monitor-2026-05-02-120000.md" in output
+    assert "- source-monitor-2026-05-01-120000.md" in output
+    assert "Recent summaries:" in output
+    assert "- source-monitor-2026-05-02-120000.summary.md" in output
+    assert "- source-monitor-2026-05-01-120000.summary.md" in output
     assert f"Reports dir: {reports_dir}" in output
     assert f"Summaries dir: {summaries_dir}" in output
     assert f"Latest report: {report_path}" in output

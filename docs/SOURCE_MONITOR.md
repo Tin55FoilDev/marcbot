@@ -307,3 +307,24 @@ The live installed unit files are:
     /etc/systemd/system/marcbot-source-monitor-ai.timer
 
 Keep the tracked templates synchronized with the installed units. See `docs/DEPLOY.md` and `docs/RESTORE.md` for install and recovery commands.
+
+
+## Source monitor status
+
+`python -m marcbot source-monitor status ai` shows the latest saved source-monitor artifacts.
+
+The status output includes:
+
+- configuration validity
+- config path
+- reports directory
+- summaries directory
+- recent report filenames
+- recent summary filenames
+- latest report path
+- latest report modified time and age
+- generated timestamp from the report
+- compact report state
+- latest summary path
+- latest summary modified time and age
+- summary freshness relative to the latest report

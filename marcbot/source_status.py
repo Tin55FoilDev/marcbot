@@ -16,6 +16,7 @@ from marcbot.source_config import (
 SOURCE_REPORT_GLOB = "source-monitor-*.md"
 SOURCE_SUMMARY_GLOB = "source-monitor-*.summary.md"
 MAX_SOURCE_STATUS_CHARS = 3500
+RECENT_SOURCE_ARTIFACT_LIMIT = 3
 
 
 def find_latest_source_monitor_report(
@@ -46,6 +47,46 @@ def find_latest_source_monitor_summary(
     if not summaries:
         return None
     return summaries[-1]
+
+
+def find_recent_source_monitor_reports(
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
+    reports_dir: Path | None = None,
+    limit: int = RECENT_SOURCE_ARTIFACT_LIMIT,
+) -> list[Path]:
+    """Return recent local source monitor report paths for a project."""
+    target_reports_dir = (
+        reports_dir if reports_dir is not None else source_reports_dir(project_name)
+    )
+    reports = sorted(target_reports_dir.glob(SOURCE_REPORT_GLOB), reverse=True)
+    return reports[:limit]
+
+
+def find_recent_source_monitor_summaries(
+    project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
+    summaries_dir: Path | None = None,
+    limit: int = RECENT_SOURCE_ARTIFACT_LIMIT,
+) -> list[Path]:
+    """Return recent local source monitor summary paths for a project."""
+    target_summaries_dir = (
+        summaries_dir
+        if summaries_dir is not None
+        else source_summaries_dir(project_name)
+    )
+    summaries = sorted(target_summaries_dir.glob(SOURCE_SUMMARY_GLOB), reverse=True)
+    return summaries[:limit]
+
+
+def _format_recent_artifact_lines(label: str, paths: list[Path]) -> list[str]:
+    lines = [f"{label}:"]
+    if not paths:
+        lines.append("- none found")
+        return lines
+
+    for path in paths:
+        lines.append(f"- {path.name}")
+
+    return lines
 
 
 def extract_source_report_summary(report_text: str) -> str | None:
@@ -236,6 +277,14 @@ def format_source_monitor_cli_status(
         project_name=project_name,
         summaries_dir=target_summaries_dir,
     )
+    recent_reports = find_recent_source_monitor_reports(
+        project_name=project_name,
+        reports_dir=target_reports_dir,
+    )
+    recent_summaries = find_recent_source_monitor_summaries(
+        project_name=project_name,
+        summaries_dir=target_summaries_dir,
+    )
     now = datetime.now(tz=UTC)
     report_modified: datetime | None = None
     summary_modified: datetime | None = None
@@ -247,6 +296,10 @@ def format_source_monitor_cli_status(
         f"Config path: {config.path}",
         f"Reports dir: {target_reports_dir}",
         f"Summaries dir: {target_summaries_dir}",
+        "",
+        *_format_recent_artifact_lines("Recent reports", recent_reports),
+        "",
+        *_format_recent_artifact_lines("Recent summaries", recent_summaries),
     ]
 
     if latest_report is None:

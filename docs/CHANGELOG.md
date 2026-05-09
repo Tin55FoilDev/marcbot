@@ -4,6 +4,11 @@
 
 ### Documentation
 
+### Changed
+
+- Improved `python -m marcbot source-monitor status <project>` to show recent report and summary artifact filenames.
+
+
 - Clarified MarcBot's long-term project direction as a personal-only Telegram-facing agent shell and workflow system, not just a cron/report wrapper.
 - Added explicit interaction-mode language covering command mode, workflow mode, chat mode, and development mode.
 - Clarified that Telegram chat is a long-term goal, but must be designed before implementation.
