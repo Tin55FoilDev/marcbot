@@ -535,6 +535,58 @@ def test_source_monitor_run_summary_writes_report_and_summary(
     assert summary_path.read_text(encoding="utf-8") == "Saved source monitor summary\n"
 
 
+def test_source_monitor_artifact_path_command_prints_resolved_path(
+    monkeypatch,
+    capsys,
+) -> None:
+    from pathlib import Path
+
+    import marcbot.cli as cli
+
+    expected_path = Path("/srv/marcbot/workspace/source-projects/ai/reports/example.md")
+
+    monkeypatch.setattr(
+        cli,
+        "resolve_source_monitor_artifact",
+        lambda artifact_id, project_name: expected_path,
+    )
+
+    result = cli.main(
+        ["source-monitor", "artifact-path", "ai", "report:2026-05-08-113613"]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 0
+    assert "MarcBot source monitor artifact" in captured.out
+    assert "Project: ai" in captured.out
+    assert "Artifact ID: report:2026-05-08-113613" in captured.out
+    assert f"Path: {expected_path}" in captured.out
+
+
+def test_source_monitor_artifact_path_command_returns_error_when_missing(
+    monkeypatch,
+    capsys,
+) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "resolve_source_monitor_artifact",
+        lambda artifact_id, project_name: None,
+    )
+
+    result = cli.main(
+        ["source-monitor", "artifact-path", "ai", "report:2026-05-08-113613"]
+    )
+
+    captured = capsys.readouterr()
+    assert result == 1
+    assert "MarcBot source monitor artifact" in captured.out
+    assert "Project: ai" in captured.out
+    assert "Artifact ID: report:2026-05-08-113613" in captured.out
+    assert "Status: not found" in captured.out
+
+
 def test_source_monitor_status_cli_uses_read_only_formatter(
     capsys,
     monkeypatch,

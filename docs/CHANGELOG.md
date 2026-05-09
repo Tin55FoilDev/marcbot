@@ -6,6 +6,7 @@
 
 ### Changed
 
+- Added CLI-only `python -m marcbot source-monitor artifact-path <project> <artifact-id>` for manual source-monitor artifact ID resolution.
 - Added internal source-monitor artifact ID resolution groundwork for future bounded artifact retrieval.
 - Updated `/report_status source <project>` to include compact recent source-monitor artifact IDs.
 - Added safe source-monitor artifact IDs to recent report and summary status output.

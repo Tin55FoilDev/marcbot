@@ -99,6 +99,13 @@ The exact command list may evolve, but the current MarcBot surface is intended t
 | `/send <path>` | Send an approved workspace-relative file. | Read-only, bounded path handling. |
 | `/send_latest_report` | Send the latest approved report artifact. | Read-only, bounded report selection. |
 
+
+### Source-monitor CLI artifact commands
+
+| Command | Purpose | Notes |
+| --- | --- | --- |
+| `python -m marcbot source-monitor artifact-path <project> <artifact-id>` | Resolve a source-monitor artifact ID to an approved local path. | CLI-only, read-only, provider-contact-free. |
+
 ## `/llm_status` boundary
 
 `/llm_status` is intentionally read-only.

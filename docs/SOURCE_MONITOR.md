@@ -341,3 +341,10 @@ These IDs are intended to support future bounded artifact retrieval without acce
 MarcBot also has internal source-monitor artifact resolver support for these IDs. The resolver maps only valid source-monitor artifact IDs to approved report or summary paths. Invalid IDs, missing files, and path traversal-like values are rejected.
 
 This resolver is groundwork for future bounded artifact retrieval. It does not by itself add Telegram file sending.
+
+CLI-only artifact resolver command:
+
+    python -m marcbot source-monitor artifact-path ai report:2026-05-08-113613
+    python -m marcbot source-monitor artifact-path ai summary:2026-05-03-021129
+
+This command resolves a safe source-monitor artifact ID to an approved local path. It is intended for manual verification and as groundwork for future bounded Telegram artifact retrieval.

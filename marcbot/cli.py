@@ -35,7 +35,10 @@ from marcbot.report_sender import send_latest_report
 from marcbot.reports import write_daily_status_report
 from marcbot.source_config import format_source_config_summary, load_source_config
 from marcbot.source_monitor import write_source_monitor_report
-from marcbot.source_status import format_source_monitor_cli_status
+from marcbot.source_status import (
+    format_source_monitor_cli_status,
+    resolve_source_monitor_artifact,
+)
 from marcbot.telegram_bot import run_foreground_bot
 
 LOGGER = logging.getLogger(__name__)
@@ -339,6 +342,18 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default="ai",
         help="source project name (default: ai)",
+    )
+    source_monitor_artifact_path_parser = source_monitor_subparsers.add_parser(
+        "artifact-path",
+        help="resolve a source monitor artifact ID to an approved local path",
+    )
+    source_monitor_artifact_path_parser.add_argument(
+        "project",
+        help="source project name",
+    )
+    source_monitor_artifact_path_parser.add_argument(
+        "artifact_id",
+        help="artifact ID such as report:2026-05-08-113613",
     )
     source_monitor_config_parser = source_monitor_subparsers.add_parser(
         "config-check",
@@ -766,6 +781,39 @@ def main(argv: list[str] | None = None) -> int:
                 print(format_source_monitor_cli_status(project_name=args.project))
                 LOGGER.info("Source monitor status shown: project=%s", args.project)
                 return 0
+            if args.source_monitor_command == "artifact-path":
+                artifact_path = resolve_source_monitor_artifact(
+                    args.artifact_id,
+                    project_name=args.project,
+                )
+                if artifact_path is None:
+                    print(
+                        "MarcBot source monitor artifact\n"
+                        f"Project: {args.project}\n"
+                        f"Artifact ID: {args.artifact_id}\n"
+                        "Status: not found"
+                    )
+                    LOGGER.info(
+                        "Source monitor artifact not found: project=%s artifact_id=%s",
+                        args.project,
+                        args.artifact_id,
+                    )
+                    return 1
+
+                print(
+                    "MarcBot source monitor artifact\n"
+                    f"Project: {args.project}\n"
+                    f"Artifact ID: {args.artifact_id}\n"
+                    f"Path: {artifact_path}"
+                )
+                LOGGER.info(
+                    "Source monitor artifact resolved: project=%s artifact_id=%s path=%s",
+                    args.project,
+                    args.artifact_id,
+                    artifact_path,
+                )
+                return 0
+
             if args.source_monitor_command == "config-check":
                 config = load_source_config(project_name=args.project)
                 print(format_source_config_summary(config))
