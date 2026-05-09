@@ -72,6 +72,7 @@ The exact command list may evolve, but the current MarcBot surface is intended t
 | `/timer_status` | Show approved systemd timer status. | Read-only. |
 | `/report_status` | Show report status. | Read-only. |
 | `/report_status source ai` | Show source-monitor AI report status and recent artifact IDs. | Read-only and provider-contact-free. |
+| `/send_source_artifact <project> <artifact-id>` | Send an approved source-monitor report or summary by safe artifact ID. | Telegram-facing, bounded artifact retrieval, provider-contact-free. |
 | `/llm_status` | Show configured LLM profile/task-route status without contacting providers. | Read-only and provider-contact-free. |
 
 ### Git and service inspection commands

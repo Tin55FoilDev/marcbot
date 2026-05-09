@@ -348,3 +348,10 @@ CLI-only artifact resolver command:
     python -m marcbot source-monitor artifact-path ai summary:2026-05-03-021129
 
 This command resolves a safe source-monitor artifact ID to an approved local path. It is intended for manual verification and as groundwork for future bounded Telegram artifact retrieval.
+
+Telegram bounded artifact retrieval:
+
+    /send_source_artifact ai report:2026-05-08-113613
+    /send_source_artifact ai summary:2026-05-03-021129
+
+This command sends only source-monitor artifacts that resolve from valid artifact IDs. It does not accept arbitrary host paths, does not contact model providers, and does not generate new reports or summaries.

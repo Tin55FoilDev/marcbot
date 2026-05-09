@@ -80,4 +80,93 @@ def test_build_application_does_not_register_source_status_command() -> None:
 
     assert "source_status" not in command_names
     assert "report_status" in command_names
+    assert "send_source_artifact" in command_names
     assert "llm_status" in command_names
+
+
+def test_send_source_artifact_sends_resolved_document(monkeypatch, tmp_path) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    artifact = tmp_path / "source-monitor-2026-05-08-113613.md"
+    artifact.write_text("report", encoding="utf-8")
+
+    sent_documents = []
+
+    class FakeMessage:
+        async def reply_document(self, **kwargs):
+            sent_documents.append(kwargs)
+
+        async def reply_text(self, text):
+            raise AssertionError(f"unexpected reply_text: {text}")
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        args=["ai", "report:2026-05-08-113613"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "resolve_source_monitor_artifact",
+        lambda artifact_id, project_name: artifact,
+    )
+
+    asyncio.run(telegram_bot.send_source_artifact_command(update, context))
+
+    assert sent_documents == [
+        {
+            "document": artifact,
+            "filename": artifact.name,
+            "caption": (
+                "🤖 MarcBot source monitor artifact\n"
+                "Project: ai\n"
+                "Artifact ID: report:2026-05-08-113613"
+            ),
+        }
+    ]
+
+
+def test_send_source_artifact_reports_missing_artifact(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    replies = []
+
+    class FakeMessage:
+        async def reply_document(self, **kwargs):
+            raise AssertionError(f"unexpected reply_document: {kwargs}")
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        args=["ai", "report:1999-01-01-000000"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "resolve_source_monitor_artifact",
+        lambda artifact_id, project_name: None,
+    )
+
+    asyncio.run(telegram_bot.send_source_artifact_command(update, context))
+
+    assert replies == [
+        "🤖 MarcBot source monitor artifact\n"
+        "Project: ai\n"
+        "Artifact ID: report:1999-01-01-000000\n"
+        "Status: not found"
+    ]

@@ -25,7 +25,10 @@ from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.report_status import format_report_status_message
 from marcbot.service_status import format_service_report
-from marcbot.source_status import format_source_status_message
+from marcbot.source_status import (
+    format_source_status_message,
+    resolve_source_monitor_artifact,
+)
 from marcbot.tail_reader import format_tail_message
 from marcbot.timer_status import format_timer_status_message
 from marcbot.uptime import format_uptime_report
@@ -473,6 +476,60 @@ async def report_status_command(update: Update, context: ContextTypes.DEFAULT_TY
         await update.message.reply_text(message)
 
 
+async def send_source_artifact_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /send_source_artifact <project> <artifact-id>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /send_source_artifact from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    args = tuple(context.args or ())
+    LOGGER.info("Handled /send_source_artifact for chat_id=%s args=%s", chat_id, args)
+
+    if update.message is None:
+        return
+
+    if len(args) != 2:
+        await update.message.reply_text(
+            "Usage:\n"
+            "/send_source_artifact <project> <artifact-id>\n"
+            "Example:\n"
+            "/send_source_artifact ai report:2026-05-08-113613"
+        )
+        return
+
+    project_name, artifact_id = args
+    artifact_path = resolve_source_monitor_artifact(
+        artifact_id,
+        project_name=project_name,
+    )
+
+    if artifact_path is None:
+        await update.message.reply_text(
+            "🤖 MarcBot source monitor artifact\n"
+            f"Project: {project_name}\n"
+            f"Artifact ID: {artifact_id}\n"
+            "Status: not found"
+        )
+        return
+
+    await update.message.reply_document(
+        document=artifact_path,
+        filename=artifact_path.name,
+        caption=(
+            "🤖 MarcBot source monitor artifact\n"
+            f"Project: {project_name}\n"
+            f"Artifact ID: {artifact_id}"
+        ),
+    )
+
+
 async def llm_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /llm_status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -613,6 +670,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("backup_status", backup_status_command))
     application.add_handler(CommandHandler("timer_status", timer_status_command))
     application.add_handler(CommandHandler("report_status", report_status_command))
+    application.add_handler(CommandHandler("send_source_artifact", send_source_artifact_command))
     application.add_handler(CommandHandler("llm_status", llm_status_command))
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("tail", tail_command))
