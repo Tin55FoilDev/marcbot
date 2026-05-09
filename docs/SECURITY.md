@@ -349,7 +349,7 @@ Guidelines:
 
 ## Model/backend safety
 
-Model integrations are not part of the current baseline.
+Broad Telegram-facing model integrations are not part of the current baseline. MarcBot now has CLI-only LLM provider/profile commands and a read-only `/llm_status` command, but provider-contacting LLM behavior remains bounded and explicit.
 
 Future model integrations should:
 
@@ -463,7 +463,7 @@ For each new feature:
 
 MarcBot should support LLM use through controlled providers and named profiles, not through arbitrary model calls scattered through the codebase.
 
-Initial LLM access should be CLI-only. Telegram LLM exposure should start with constrained commands such as profile listing, provider model listing, and profile health checks.
+Provider-contacting LLM access should remain CLI-only by default. Telegram LLM exposure should start with provider-contact-free status commands such as `/llm_status`. Any future Telegram provider model listing or health check must be separate, explicit, documented, and intentionally exposed.
 
 MarcBot should not expose an unrestricted Telegram prompt interface by default. Future chat support should use explicit chat sessions, such as `/chat_start <profile>`, with clear model/profile selection and a clear stop/reset path.
 

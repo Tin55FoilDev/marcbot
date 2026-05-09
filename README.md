@@ -199,3 +199,23 @@ When changing MarcBot:
 5. inspect the diff
 6. commit and push after validation
 7. restart/test services for deployed Telegram-facing changes
+
+## Documentation map
+
+MarcBot has several design and operations documents. To avoid duplicate or conflicting information, each document should own a specific subject.
+
+- `docs/PROJECT_DIRECTION.md` owns the long-term project goal, non-goals, and overall direction.
+- `docs/ROADMAP.md` owns current sequencing, near-term priorities, and future milestones.
+- `docs/ARCHITECTURE.md` owns system structure, runtime planes, and major technical boundaries.
+- `docs/COMMANDS.md` owns Telegram and CLI command behavior, command boundaries, and future command surfaces.
+- `docs/LLM.md` owns providers, profiles, task routes, LM Studio behavior, model health checks, and frontier-model research boundaries.
+- `docs/WORKFLOW_MODEL.md` owns the design model for approved workflows and deterministic-plus-LLM orchestration.
+- `docs/MEMORY.md` owns future durable memory design, auditability, correction, and memory safety rules.
+- `docs/SECURITY.md` owns security boundaries, threat controls, secrets handling, and Telegram safety rules.
+- `docs/CONFIG.md` owns local runtime configuration files and non-secret versus secret config separation.
+- `docs/DEPLOY.md` owns deployment and service setup procedures.
+- `docs/RESTORE.md` owns restore and disaster-recovery procedures.
+- `docs/SOURCE_MONITOR.md` owns source-monitor workflow details.
+- `docs/CHANGELOG.md` owns historical changes.
+
+When updating docs, prefer linking to the authoritative document instead of duplicating detailed command lists, configuration inventories, or roadmap text in multiple places.

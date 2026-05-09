@@ -1,495 +1,208 @@
-# MarcBot Telegram Commands
+# MarcBot Commands
 
-This document lists the currently supported MarcBot Telegram commands.
+This document describes the intended MarcBot command surface.
 
-MarcBot is personal-only. All commands are intended for Marc's approved Telegram chat only.
+MarcBot commands should remain narrow, explicit, documented, and safe. Telegram commands are for approved status checks, approved artifact retrieval, and approved workflows. They are not arbitrary shell access.
 
-## Current command set
+See also:
 
-### `/ping`
+- `docs/PROJECT_DIRECTION.md`
+- `docs/ROADMAP.md`
+- `docs/WORKFLOW_MODEL.md`
+- `docs/LLM.md`
+- `docs/SECURITY.md`
 
-Checks whether MarcBot is responding.
+## Command categories
 
-Expected output:
+MarcBot commands should be understood in categories.
 
-    🤖 MarcBot pong
+### Telegram-facing commands
 
-### `/version`
+Telegram-facing commands are available through the MarcBot Telegram bot.
 
-Shows the MarcBot version, Python version, and Python executable path.
+They must be:
 
-Useful for confirming which runtime is serving Telegram.
+- allowlist-protected
+- bounded in behavior
+- documented
+- careful with file paths
+- careful with secrets
+- careful with logs
+- tested before release
 
-### `/uptime`
+### CLI-only commands
 
-Shows host uptime and MarcBot process uptime.
+CLI-only commands are available on the server through `python -m marcbot ...` or project scripts.
 
-Useful after server reboots, service restarts, or maintenance.
+They may be used for operations that should not be exposed through Telegram, including explicit model-provider contact, diagnostics, maintenance, or development workflows.
 
-Data sources:
+### Read-only commands
 
-- Host uptime: `/proc/uptime`
-- Process uptime: MarcBot process start timestamp
+Read-only commands inspect local state and return status. They should not contact external providers unless explicitly documented.
 
-### `/disk`
+### Provider-contacting commands
 
-Shows disk usage for:
+Provider-contacting commands call an LLM provider, local model server, or other external service.
 
-- Root filesystem
-- `/srv/marcbot`
+Provider-contacting commands should normally be CLI-only until the behavior is stable, safe, and intentionally exposed.
 
-This command uses Python standard-library disk usage helpers. It does not execute shell commands.
+## Current Telegram commands
 
-### `/service`
+The exact command list may evolve, but the current MarcBot surface is intended to include commands like the following.
 
-Shows read-only systemd state for:
+### Basic service commands
 
-- `marcbot-telegram.service`
+| Command | Purpose | Notes |
+| --- | --- | --- |
+| `/ping` | Check whether MarcBot is responding. | Read-only. |
+| `/version` | Show MarcBot version. | Read-only. |
+| `/about` | Show MarcBot baseline information. | Read-only. |
+| `/uptime` | Show service or host uptime information. | Read-only. |
+| `/help` | Show available bot commands. | Read-only. |
 
-Current checks:
+### Status and health commands
 
-- `systemctl is-active marcbot-telegram.service`
-- `systemctl is-enabled marcbot-telegram.service`
+| Command | Purpose | Notes |
+| --- | --- | --- |
+| `/status` | Show general MarcBot status. | Read-only. |
+| `/health` | Show health summary. | Read-only. |
+| `/backup_status` | Show backup-related status. | Read-only. |
+| `/backup_list` | List known backup-related artifacts or status records. | Read-only. |
+| `/timer_status` | Show approved systemd timer status. | Read-only. |
+| `/report_status` | Show report status. | Read-only. |
+| `/report_status source ai` | Show source-monitor AI report status. | Read-only. |
+| `/llm_status` | Show configured LLM profile/task-route status without contacting providers. | Read-only and provider-contact-free. |
 
-This command is intentionally read-only. It does not start, stop, restart, enable, or disable services.
+### Git and service inspection commands
 
-### `/git`
+| Command | Purpose | Notes |
+| --- | --- | --- |
+| `/git` | Show repository status summary. | Read-only. |
+| `/service` | Show MarcBot service status summary. | Read-only. |
+| `/logs` | Show a bounded log summary. | Read-only. |
+| `/tail <app|service>` | Show bounded recent log lines for approved log targets. | Read-only, bounded target list. |
 
-Shows the Git state of the MarcBot application repository.
+### Documentation commands
 
-Current checks:
+| Command | Purpose | Notes |
+| --- | --- | --- |
+| `/docs` | List approved project documents. | Read-only. |
+| `/doc <name>` | Show an approved project document. | Read-only, allowlisted names only. |
+| `/senddoc <name>` | Send an approved project document. | Read-only, allowlisted names only. |
 
-- Repository path
-- Current branch
-- Current short commit hash
-- Clean or dirty working tree state
+### Workspace and artifact commands
 
-The command is fixed to `/srv/marcbot/app`. It does not accept arbitrary repository paths or arbitrary Git arguments.
+| Command | Purpose | Notes |
+| --- | --- | --- |
+| `/ls [path]` | List an approved workspace-relative path. | Read-only, bounded path handling. |
+| `/send <path>` | Send an approved workspace-relative file. | Read-only, bounded path handling. |
+| `/send_latest_report` | Send the latest approved report artifact. | Read-only, bounded report selection. |
 
-Restore drill access:
+## `/llm_status` boundary
 
-    /doc restore
-    /senddoc restore
+`/llm_status` is intentionally read-only.
 
-### `/docs`
+It should:
 
-Lists approved MarcBot documentation names.
+- read local MarcBot configuration only
+- show configured LLM profiles and task routes
+- not contact LM Studio
+- not contact OpenAI
+- not contact other model providers
+- not run model health checks
+- not list live provider models
+- not load provider secrets from `llm.env`
 
-The list is generated from MarcBot's documentation allowlist.
-
-### `/doc <name>`
-
-Shows one approved MarcBot Markdown document through Telegram.
-
-Current approved names:
-
-- `deploy`
-- `roadmap`
-- `security`
-- `architecture`
-- `changelog`
-- `commands`
-
-Safety properties:
-
-- Approved document names only
-- No arbitrary paths
-- No shell execution
-- Bounded Telegram output
-- Friendly error for unknown names
-
-### `/senddoc <name>`
-
-Sends one approved MarcBot Markdown document as a Telegram file attachment.
-
-Current approved names:
-
-- `deploy`
-- `roadmap`
-- `security`
-- `architecture`
-- `changelog`
-- `commands`
-
-This is the full-file counterpart to `/doc <name>`.
-
-Safety properties:
-
-- Approved document names only
-- No arbitrary paths
-- No shell execution
-- File must remain under the approved docs directory
-- File must be a regular file
-- File size limit enforced
-- Request is logged
-
-### `/ls [workspace-relative-directory]`
-
-Lists visible entries under the MarcBot workspace.
+Explicit provider contact remains CLI-only.
 
 Examples:
 
-    /ls
-    /ls reports
-    /ls reports/health
+    python -m marcbot llm models <provider>
+    python -m marcbot llm health <profile>
 
-Workspace root:
+This boundary prevents a harmless Telegram status command from unexpectedly loading credentials, waking local models, contacting external services, or causing slow provider calls.
 
-    /srv/marcbot/workspace
+## `/timer_status` boundary
 
-Reports:
+`/timer_status` should inspect only approved MarcBot-related timers.
 
-- directories
-- files
-- basic file sizes
-
-Safety properties:
-
-- Read-only
-- Workspace-relative directories only
-- Absolute paths are rejected
-- Parent traversal is rejected
-- Resolved paths must stay under the workspace
-- Hidden dotfiles are omitted
-- Output is bounded for Telegram
-- No shell execution
-
-Use `/send <workspace-relative-path>` to send one of the listed files.
-
-### `/send <workspace-relative-path>`
-
-Sends a file from the MarcBot workspace as a Telegram file attachment.
-
-Workspace root:
-
-    /srv/marcbot/workspace
-
-Example:
-
-    /send reports/send-test.txt
-
-This resolves internally to:
-
-    /srv/marcbot/workspace/reports/send-test.txt
-
-Safety properties:
-
-- Workspace-relative paths only
-- Absolute paths rejected
-- Parent-directory traversal rejected
-- Resolved path must remain under `/srv/marcbot/workspace`
-- Non-regular files rejected
-- File size limit enforced
-- Request is logged
-
-Rejected examples:
-
-    /send /etc/passwd
-    /send ../config/marcbot.toml
-    /send ../../home/marc/.ssh/id_ed25519
-    /send /srv/marcbot/config/marcbot.toml
-
-### `/status`
-
-
-Shows basic MarcBot service status from the bot's perspective.
-
-This is a lightweight status command and is separate from `/service`.
-
-### `/backup_list`
-
-Lists recent MarcBot app-level backup archives.
-
-Reports:
-
-- newest retained backup archives
-- archive size
-- modified time
-- backup age
-- whether the matching `.sha256` file is present
-- overall health or warning state
-
-This command is read-only. It does not create, delete, rotate, restore, or verify backups.
-
-### `/backup_status`
-
-Shows read-only status for the latest MarcBot app-level backup.
-
-Reads:
-
-    /srv/marcbot/backups/latest-backup.txt
-
-Reports:
-
-- latest backup name
-- created time
-- backup size
-- retention setting
-- archive path
-- checksum path
-- archive presence
-- checksum presence
-- backup age
-- overall health
-
-This command does not create, delete, or modify backups.
-
-Backup creation is handled separately by `marcbot-backup.timer`.
-
-Safety properties:
-
-- Read-only
-- Fixed marker file
-- No arbitrary paths from Telegram
-- No backup creation from Telegram
-- No backup deletion from Telegram
-
-### `/health`
-
-Runs local MarcBot health checks.
-
-Current checks include:
-
-- Required runtime directories exist
-- Logs directory is writable
-- Config file loads
-
-### `/tail <app|service>`
-
-Shows a bounded diagnostic tail from an approved log source.
-
-Approved names:
-
-- `app`
-- `service`
-
-Examples:
-
-    /tail app
-    /tail service
-
-Current behavior:
-
-- `/tail app` reads the last 40 lines from `/srv/marcbot/logs/marcbot.log`
-- `/tail service` reads the last 40 journal lines for `marcbot-telegram.service`
-
-Safety properties:
-
-- Approved tail names only
-- No arbitrary file paths
-- No arbitrary service names
-- Bounded Telegram output
-- Telegram token redaction
-- Fixed `journalctl` command for service logs
-
-### `/timer_status`
-
-Shows read-only status for MarcBot's approved scheduled timers.
-
-Current approved timers:
+Approved timers may include:
 
 - `marcbot-backup.timer`
 - `marcbot-daily-status-report.timer`
+- `marcbot-source-monitor-ai.timer`
 
-Reports:
+The command should not expose arbitrary systemd unit inspection from Telegram.
 
-- timer enablement state
-- timer active/substate
-- next scheduled run
-- last timer trigger
-- paired service result
-- paired service exit status
-- overall health or warning state
+If new MarcBot timers are added, this document and the implementation allowlist should be updated together.
 
-This command is read-only. It does not enable, disable, start, stop, or modify any timer.
+## File and document boundaries
 
-### `/report_status source <project>`
+Telegram file access must remain bounded.
 
-Shows the newest local source monitor report summary for a validated source-monitor project.
+MarcBot should not expose arbitrary host file access through Telegram.
 
-For RSS sources, the output includes a compact `RSS latest items` section when RSS metadata is available in the newest local report.
+Allowed file behavior should be based on:
 
-This command is read-only:
+- known workspace directories
+- known report directories
+- known documentation allowlists
+- explicit artifact allowlists or registries
+- safe path normalization
+- size limits
+- clear error messages
 
-- it reads only local report files;
-- it does not fetch network sources;
-- it does not fetch linked articles;
-- it does not call an LLM;
-- it remains bounded by the source-status character cap.
+Secrets must not be sent through Telegram.
 
-### `/report_status`
+Sensitive paths must not be exposed through logs, reports, command output, or memory.
 
-Shows the status of the latest local daily status report.
+## Future command surfaces
 
-Reports:
+The following command groups are design targets, not necessarily implemented.
 
-- latest daily status report filename
-- report path
-- file size
-- modified time
-- report age
-- `marcbot-daily-status-report.timer` enablement state
-- overall health or warning state
+### Future workflow commands
 
-This command is read-only. It does not generate a report, send a report, call an AI model, or modify systemd.
+Possible future workflow commands:
 
-The report status command also supports source-monitor project summaries:
+- `/workflow_list`
+- `/workflow_status <name>`
+- `/workflow_run <name>`
+- `/workflow_result <name>`
+- `/workflow_send <artifact-id>`
 
-    /report_status source <project>
+Workflow commands should expose only approved workflows with bounded arguments.
 
-For the current AI source-monitor project:
+### Future chat commands
 
-    /report_status source ai
+Possible future chat commands:
 
-This reads the newest local source-monitor report and returns the compact summary section plus deterministic observations. It does not fetch sources, run web requests, parse articles, or call an LLM.
+- `/chat_start <profile>`
+- `/chat_stop`
+- `/chat_status`
+- `/chat_profile`
+- `/chat_clear`
+- `/chat_context`
 
-The generic report-status pattern should be preferred over one-off report commands.
+Chat commands should be designed before implementation.
 
-### `/logs`
+Initial chat mode should not have automatic shell execution, unrestricted file access, unrestricted internet access, or hidden persistent memory writes.
 
-Shows recent MarcBot application logs from:
+## Command documentation requirements
 
-    /srv/marcbot/logs/marcbot.log
+When adding or changing a command, update this document with:
 
-Safety properties:
+- command name
+- purpose
+- Telegram-facing or CLI-only status
+- read-only or state-changing status
+- whether it contacts a model provider
+- whether it loads provider secrets
+- file access boundaries
+- relevant safety notes
 
-- Fixed log file only
-- Bounded output
-- Telegram token redaction
+If behavior changes, also update:
 
-### `/help`
-
-Shows the Telegram command help text.
-
-## Unknown commands
-
-Unknown slash commands return a short help response instead of failing silently.
-
-Example:
-
-    /sendoc
-
-Expected response:
-
-    🤖 MarcBot
-    Unknown command: /sendoc
-    Use /help to see available commands.
-
-## Safety model
-
-MarcBot command design favors:
-
-- Read-only commands first
-- Fixed paths over user-supplied paths
-- Allowlists over arbitrary access
-- Bounded output
-- Explicit error handling
-- Tests for helper logic
-
-## CLI-only source monitor commands
-
-These commands are currently CLI-only and are not Telegram commands:
-
-    python -m marcbot source-monitor config-check ai
-    python -m marcbot source-monitor run ai
-    python -m marcbot source-monitor run-summary ai
-    python -m marcbot source-monitor status ai
-
-The status command is read-only. It validates the source project config, shows the newest saved report and summary paths, prints local file timestamps and compact ages, notes whether the saved summary is older than the latest report, and summarizes whether the newest saved report contains changed sources, errors, or no detected changes. It does not fetch sources or call an LLM.
-
-`config-check` validates `/srv/marcbot/config/source-projects/<project>/sources.toml` and reports the configured sources.
-
-`run` writes a local source monitor Markdown report under `/srv/marcbot/workspace/source-projects/<project>/reports`.
-
-`run-summary` writes a local source monitor Markdown report, summarizes that generated report through the configured `source_monitor_analysis` LLM task, and saves the summary under `/srv/marcbot/workspace/source-projects/<project>/summaries`.
-
-`run-summary` writes a local source monitor Markdown report, summarizes that generated report through the configured `source_monitor_analysis` LLM task, and saves the summary under `/srv/marcbot/workspace/source-projects/<project>/summaries`.
-
-The real source config is local operational config and should not be committed to Git. A safe example may live under `docs/examples/`.
-
-Do not add one-off Telegram commands for each source monitor project. Use the generic report command pattern instead, for example `/report_status source ai`.
-
-## Future command candidates
-
-Possible future commands:
-
-- `/senddoc <name>` — send an approved doc as a Telegram file attachment
-- `/send <workspace-relative-path>` — send a file from `/srv/marcbot/workspace`
-- `/tail <approved-log-name>` — read from an allowlisted log file
-- `/backup_status` — show last backup status
-- `/update-check` — check for safe/manual update candidates
-
-General `/send` should not accept arbitrary absolute paths.
-
-## Scheduled daily status report
-
-The report is local-only at this stage. It does not call an AI model or send Telegram messages.
-
-The daily status report is scheduled by systemd:
-
-    marcbot-daily-status-report.timer
-
-Schedule:
-
-    11:45 PM America/New_York
-
-Manual run:
-
-    sudo systemctl start marcbot-daily-status-report.service
-
-Timer check:
-
-    sudo systemctl status marcbot-daily-status-report.timer --no-pager
-    sudo systemctl list-timers --all | grep -E 'marcbot-daily-status-report|NEXT'
-
-## Source monitor scheduled report generation
-
-The AI source monitor is designed to run from a systemd timer:
-
-    marcbot-source-monitor-ai.timer
-    marcbot-source-monitor-ai.service
-
-The timer runs local report generation only:
-
-    python -m marcbot source-monitor run ai
-
-Telegram access remains read-only through:
-
-    /report_status source ai
-
-The timer is visible through:
-
-    /timer_status
-
-## CLI-only LLM commands
-
-Current LLM commands are CLI-only and are documented in `docs/LLM.md`.
-
-~~bash
-python -m marcbot llm profiles
-python -m marcbot llm profile local_fast
-python -m marcbot llm models lmstudio
-python -m marcbot llm health local_fast
-python -m marcbot llm ask local_fast "Say OK in one sentence."
-python -m marcbot llm tasks
-python -m marcbot llm task report_summary
-python -m marcbot llm ask-task report_summary "Summarize this in one sentence: MarcBot is online."
-python -m marcbot llm summarize-file report_summary reports/example.md
-python -m marcbot llm summarize-file-save report_summary reports/example.md summaries/example.summary.md
-~~
-
-There are no Telegram LLM prompt commands yet.
-
-### `/llm_status`
-
-Shows read-only LLM provider/profile status.
-
-Current behavior:
-
-- Lists configured LLM profile and task-route status.
-- Does not contact providers.
-- Does not run health checks.
-- Does not load provider secrets.
-- Does not accept arbitrary prompts.
-- Does not expose tokens.
-- Does not allow arbitrary provider or model selection.
+- `docs/CHANGELOG.md`
+- `docs/ARCHITECTURE.md` if architecture changes
+- `docs/LLM.md` if model behavior changes
+- `docs/SECURITY.md` if security boundaries change

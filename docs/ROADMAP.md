@@ -1,622 +1,271 @@
 # MarcBot Roadmap
 
-MarcBot is Marc's personal-only Telegram automation bot.
+This roadmap tracks the intended development path for MarcBot.
 
-The project goal is to build a stable, simple, secure replacement for OpenClaw-style personal operations. Development favors careful incremental progress over speed.
+MarcBot is not intended to be only a cron/report wrapper. The long-term target is a personal-only Telegram-facing agent shell with approved commands, approved workflows, model-selectable execution, controlled artifact handling, and future auditable memory.
 
-## Short-term development path
+See also:
 
-This section is a practical session-restart anchor. Keep it current at the end of each work session so a new session can quickly identify the next safe step.
-
-Current near-term order:
-
-1. Harden LLM file summary reliability.
-   - Add retry-on-empty behavior for safe summary tasks.
-   - Improve diagnostics when a provider returns empty content.
-   - Preserve the rule that failed provider responses must not create partial output files.
-
-2. Integrate LLM summaries into the source monitor workflow.
-   - Generate the source monitor report.
-   - Summarize it through the configured `source_monitor_analysis` task.
-   - Save the summary as a workspace artifact.
-
-3. Add status/listing commands for generated report and summary artifacts.
-   - Show latest reports.
-   - Show latest summaries.
-   - Include file paths, timestamps, and basic health/failure details.
-
-4. Schedule the stable source-monitor summary workflow.
-   - Add automation only after the manual CLI workflow is reliable.
-   - Prefer one narrow daily workflow before adding more scheduled tasks.
-
-5. Add Telegram delivery for saved artifacts only.
-   - Start with commands that send already-generated summaries.
-   - Do not expose arbitrary LLM prompts, arbitrary file paths, or arbitrary output paths through Telegram.
-
-6. Add broader model/profile testing.
-   - Support Marc's workflow of adding models in LM Studio.
-   - Compare profiles on fixed prompts.
-   - Document known-good models and task fit.
-
-Current design principle: CLI first, deterministic boundaries, saved artifacts, then Telegram delivery.
-
-## Design priorities
-
-MarcBot should be:
-
-- Personal-only
-- Stable across server reboots
-- Easy to inspect from Telegram
-- Easy to back up and restore
-- Small in dependency footprint
-- Explicit in error handling
-- Safe by default
-- Well documented
-- Testable before each deployment step
+- `docs/PROJECT_DIRECTION.md`
+- `docs/WORKFLOW_MODEL.md`
+- `docs/LLM.md`
+- `docs/MEMORY.md`
+- `docs/COMMANDS.md`
 
 ## Current baseline
 
-MarcBot currently runs as a systemd service:
+Current baseline: MarcBot 0.3.2.
 
-    marcbot-telegram.service
+MarcBot currently has:
 
-Application root:
+- a personal-only Telegram bot service
+- allowlisted Telegram chat IDs
+- bounded Telegram commands
+- health/status/version/help commands
+- git/status/report/doc/file helper commands
+- backup and timer status commands
+- source-monitor CLI and scheduled report support
+- LLM profile/config plumbing
+- CLI-only LLM provider contact commands
+- read-only `/llm_status`
+- docs covering security, deployment, architecture, commands, LLMs, memory, and workflow model
 
-    /srv/marcbot/app
+## Current direction
 
-Runtime root:
+The immediate direction is documentation and architecture clarification before further feature coding.
 
-    /srv/marcbot
+Near-term priority:
 
-Git repository:
+1. clarify the project direction
+2. clarify interaction modes
+3. clarify project development workflow
+4. clarify command/workflow/model boundaries
+5. clarify frontier-model research assumptions
+6. remove stale or contradictory documentation
+7. then resume small, tested feature increments
 
-    /srv/marcbot/app
+## Interaction modes
 
-Current Telegram command set:
+MarcBot should develop toward four distinct interaction modes.
 
-- `/ping`
-- `/version`
-- `/uptime`
-- `/disk`
-- `/service`
-- `/git`
-- `/docs`
-- `/doc <name>`
-- `/status`
-- `/health`
-- `/logs`
-- `/help`
+### Command mode
 
-## Completed phases
+Command mode is the current mature surface.
 
-### Phase 1 — Foundation
+It means Marc invokes a specific Telegram slash command or CLI command with bounded behavior.
 
-Completed:
+Command mode should stay narrow and explicit. Each command should be documentable as:
 
-- Project directory layout under `/srv/marcbot`
-- Python package structure
-- Virtual environment
-- CLI entry point
-- Runtime path helpers
-- Configuration loader
-- Explicit MarcBot error type
-- Basic validation script
-- Initial unit tests
-- GitHub repository setup
+- read-only or state-changing
+- Telegram-facing or CLI-only
+- model-contacting or non-model-contacting
+- provider-secret-loading or provider-secret-free
+- artifact-producing or status-only
 
-### Phase 2 — Telegram service
+### Workflow mode
 
-Completed:
+Workflow mode is the next major operating model.
 
-- Telegram bot integration
-- Approved chat ID allowlist
-- Foreground polling mode
-- systemd service
-- systemd hardening
-- Service enable/start validation
+A workflow is a named, approved multi-step process built from tested components.
 
-### Phase 3 — Operator visibility
+A workflow may:
 
-Completed:
+- read approved configuration
+- read approved source data
+- generate reports
+- call an approved LLM task route
+- save artifacts
+- report status
+- deliver selected artifacts through Telegram
 
-- `/ping`
-- `/version`
-- `/status`
-- `/health`
-- `/logs`
-- rotating application log file
-- token redaction for log output
+A workflow is not arbitrary shell access or arbitrary tool use.
 
-### Phase 4 — Read-only operations commands
+### Chat mode
 
-Completed:
+Chat mode is a long-term goal.
 
-- `/uptime`
-- `/disk`
-- `/service`
-- `/git`
+Chat mode means a controlled Telegram conversation with a selected approved model profile. Chat should be able to discuss project state, explain artifacts, help plan workflows, and eventually assist with controlled operations.
 
-These commands provide quick remote visibility into runtime, disk, service, and repository state.
+Initial chat design should assume:
 
-### Phase 5 — Documentation from Telegram
+- no automatic shell execution
+- no unrestricted file access
+- no unrestricted internet access
+- no automatic persistent memory writes
+- no direct secret exposure
+- no implicit workflow execution
+- explicit start/stop/status behavior
+- explicit model/profile selection
 
-Completed:
+Chat mode must be designed before implementation.
 
-- `/docs`
-- `/doc <name>`
-- `COMMANDS.md`
-- approved documentation allowlist
+### Development mode
 
-Current approved documentation names:
+Development mode is the current human-supervised process where Marc and an AI assistant modify MarcBot over SSH/Git.
 
-- `deploy`
-- `roadmap`
-- `security`
-- `architecture`
-- `changelog`
-- `commands`
+Development mode should remain:
+
+- Git-backed
+- reviewable
+- test-gated
+- commit/push based
+- service-validated for Telegram-facing changes
+
+Future MarcBot features may assist development, but runtime Telegram autonomy should not be confused with the current development process.
 
 ## Near-term roadmap
 
-### 1. `/senddoc <name>`
+### 1. Documentation cleanup
 
-Send an approved documentation file as a Telegram attachment.
+Status: current priority.
 
-Safety model:
+Tasks:
 
-- approved docs only
-- no arbitrary paths
-- no shell execution
-- bounded file size
-- log every send request
+- make `docs/PROJECT_DIRECTION.md` the project north-star document
+- align `docs/ROADMAP.md` with the direction document
+- update `docs/ARCHITECTURE.md` to avoid stale duplicated command lists
+- update `docs/COMMANDS.md` with the current command surface
+- update `docs/LLM.md` with frontier-model research boundaries
+- update `docs/CHANGELOG.md` with the docs-direction milestone
+- keep `docs/WORKFLOW_MODEL.md` and `docs/MEMORY.md` aligned with the direction document
 
-### 2. `/send <workspace-relative-path>`
+### 2. Interaction-model design
 
-Status: implemented.
+Status: next design discussion after docs cleanup.
 
-Send a file from `/srv/marcbot/workspace`.
+Questions to answer:
 
-Safety model:
+- What should Telegram chat be allowed to do?
+- How should chat start, stop, and select a model?
+- How should chat refer to saved artifacts?
+- Can chat propose workflows?
+- How does Marc approve a workflow proposed by chat?
+- What state is retained between chat sessions?
+- What state is explicitly not retained?
+- What should be logged?
+- What must never be logged?
 
-- workspace-relative paths only
-- reject absolute paths
-- reject `..`
-- resolve real path and verify it remains under `/srv/marcbot/workspace`
-- reject non-regular files
-- reject oversized files
-- log every send request
+Expected output:
 
-### 3. `/tail <approved-log-name>`
+- update `docs/PROJECT_DIRECTION.md`
+- possibly add `docs/INTERACTION_MODEL.md`
+- update `docs/ARCHITECTURE.md`
+- update `docs/COMMANDS.md`
 
-Status: implemented.
+### 3. Model routing and task routes
 
-Show recent lines from approved logs.
+Status: partially implemented for CLI LLM use; needs design refinement.
 
-Possible approved names:
+Current principle:
 
-- `app`
-- `service`
+- `/llm_status` is read-only
+- `/llm_status` does not contact providers
+- `/llm_status` does not load provider secrets
+- explicit provider contact remains CLI-only through commands such as:
+  - `python -m marcbot llm models <provider>`
+  - `python -m marcbot llm health <profile>`
 
-Safety model:
+Future design should clarify:
 
-- approved names only
-- fixed file or command mapping
-- bounded output
-- redaction where appropriate
+- profile categories
+- task-route names
+- which task uses which profile
+- which commands contact models
+- which workflows contact models
+- whether a task route is local-only, frontier-capable, or experimental
+- how failed model access is reported
 
-### 4. Backup visibility
+### 4. Frontier-model access research
 
-Possible future command:
+Status: research track only.
 
-    /backup_status
+Marc does not plan to use per-call OpenAI API billing for MarcBot.
 
-Goal:
+MarcBot should investigate whether a safe, stable, supportable subscription/OAuth-style frontier model path is available, similar in purpose to OpenClaw's current `openai-codex/gpt-5.5` usage.
 
-- show latest backup marker or report
-- no backup execution at first
-- read-only status only
+Research boundaries:
 
-### 5. Safe update helpers
+- do not store secrets in Git
+- do not paste secrets into chat
+- do not expose secrets through Telegram
+- do not expose secrets through logs, reports, or memory
+- prefer CLI-only explicit experiments first
+- do not make MarcBot depend on OpenClaw as a backend worker
+- document findings before implementation
+
+### 5. Source-monitor artifact improvements
+
+Status: later, after docs cleanup.
+
+Useful next increments may include:
+
+- list latest source-monitor reports
+- list latest source-monitor summaries
+- improve `/report_status source ai`
+- deliver specific recent source-monitor artifacts through Telegram
+- compare local and frontier summary profiles once frontier access is resolved
+- keep scheduled jobs separate from interactive workflow design
+
+### 6. Controlled Telegram workflow execution
+
+Status: future.
 
 Possible future commands:
 
-- `/update-check`
-- `/version-check`
+- `/workflow_list`
+- `/workflow_status <name>`
+- `/workflow_run <name>`
+- `/workflow_result <name>`
+- `/workflow_send <artifact-id>`
 
-Goal:
+These should only expose approved workflows with bounded arguments.
 
-- check for update candidates
-- report but do not auto-install
-- keep operator in control
+### 7. Controlled Telegram chat
 
-### Backup visibility
+Status: future, design first.
 
-Status: implemented.
+Possible future commands:
 
-Current command:
+- `/chat_start <profile>`
+- `/chat_stop`
+- `/chat_status`
+- `/chat_profile`
+- `/chat_clear`
+- `/chat_context`
 
-    /backup_status
+Chat should be useful, but should not become hidden arbitrary command execution.
 
-Purpose:
+### 8. Durable memory
 
-- report latest app-level backup metadata
-- verify archive and checksum presence
-- warn if backup is stale
-- keep Telegram read-only for backup operations
+Status: future.
 
-### Workspace discovery
+Memory should reduce Marc's burden, but only with strong guardrails.
 
-Status: expanded implementation.
+The memory design should include:
 
-Current command:
+- auditability
+- correction
+- deletion
+- reviewable updates
+- clear difference between transient chat context and durable memory
+- no secrets
+- no unreviewed sensitive data capture
+- no hidden permanent writes
 
-    /ls [workspace-relative-directory]
+See `docs/MEMORY.md`.
 
-Purpose:
+## Development discipline
 
-- list workspace entries
-- make `/send <workspace-relative-path>` easier to use
-- keep workspace browsing read-only and bounded
+For every milestone:
 
-Future expansion:
+1. make a small change
+2. update docs if behavior or direction changes
+3. run `./scripts/check.sh`
+4. review diffs
+5. restart and validate service behavior when Telegram-facing
+6. inspect logs when Telegram-facing
+7. commit
+8. push
+9. keep the repo clean
 
-- `/tree <workspace-relative-directory>`
-
-## 0.2.0 baseline
-
-Status: complete.
-
-MarcBot 0.2.0 is the first stable operational baseline.
-
-Completed baseline capabilities:
-
-- Telegram command interface
-- allowlisted chat authorization
-- health and service diagnostics
-- Git status visibility
-- log and journal tails
-- allowlisted documentation access
-- safe workspace listing and file retrieval
-- manual app-level backups
-- daily systemd app-level backup timer
-- read-only backup status reporting
-- GitHub-backed source workflow
-
-Recommended next phase:
-
-- small read-only operator conveniences
-- restore drill documentation
-- scheduled report framework
-- update-check visibility
-
-
-## Restore readiness
-
-Status: complete.
-
-MarcBot includes a restore drill document:
-
-    docs/RESTORE.md
-
-Telegram access:
-
-    /doc restore
-    /senddoc restore
-
-The document covers recovery from:
-
-- Proxmox VM backup
-- MarcBot app-level backup tarball
-- GitHub repository
-
-It also includes post-restore validation commands and success criteria.
-
-
-## Report status command
-
-Status: complete.
-
-MarcBot includes a read-only Telegram report status command:
-
-    /report_status
-
-The command summarizes:
-
-- latest local daily status report
-- report size and age
-- daily status report timer enablement
-- overall health or warning state
-
-It does not generate reports, send Telegram files, call AI models, or modify systemd.
-
-
-## Timer status command
-
-Status: complete.
-
-MarcBot includes a read-only Telegram timer status command:
-
-    /timer_status
-
-The command summarizes approved MarcBot timers:
-
-- `marcbot-backup.timer`
-- `marcbot-daily-status-report.timer`
-- `marcbot-source-monitor-ai.timer`
-
-It reports enablement, active state, next run, last trigger, paired service result, and overall health.
-
-It does not enable, disable, start, stop, or modify timers.
-
-
-## Backup list command
-
-Status: complete.
-
-MarcBot includes a read-only Telegram backup list command:
-
-    /backup_list
-
-The command summarizes recent retained app-level backup archives under:
-
-    /srv/marcbot/backups
-
-It reports filename, size, modified time, age, checksum-file presence, and overall health.
-
-It does not create, delete, rotate, restore, or verify backups.
-
-
-## Send latest report command
-
-Status: complete.
-
-MarcBot includes a user-triggered Telegram command:
-
-    /send_latest_report
-
-The command sends the newest generated daily status report from:
-
-    /srv/marcbot/workspace/reports
-
-It does not generate reports, call AI models, install timers, or automatically send reports.
-
-This is a bridge step before optional automatic Telegram delivery.
-
-
-## CLI send latest report command
-
-Status: complete.
-
-MarcBot includes a manual CLI delivery command:
-
-    python -m marcbot report send-latest
-
-The command sends the newest generated daily status report through Telegram using configured `allowed_chat_ids`.
-
-It does not generate reports, call AI models, install timers, or change Telegram configuration.
-
-This prepares the project for a future scheduled report-delivery service.
-
-
-## Scheduled daily report Telegram delivery
-
-Status: complete.
-
-MarcBot includes a dedicated systemd timer to send the newest generated daily status report through Telegram.
-
-Units:
-
-    marcbot-daily-status-report-send.service
-    marcbot-daily-status-report-send.timer
-
-Schedule:
-
-    23:50 America/New_York
-
-The delivery step is intentionally separate from report generation:
-
-- backup runs first
-- report generation runs second
-- report delivery runs third
-
-This keeps each operation isolated, observable, and independently testable.
-
-
-## Longer-term roadmap
-
-### Source monitor / AI awareness
-
-Build a narrow allowlisted source monitor for Marc's AI information workflow. The first goal is controlled source checking and local Markdown reports, not autonomous browsing or LLM-driven decision-making.
-
-Planned sequence:
-
-1. Source monitor report scaffold.
-2. Local source config validation.
-3. Documentation and example config.
-4. Safe fetch implementation for allowlisted HTTPS sources.
-5. Bounded local Markdown reports.
-6. Optional Telegram report delivery after the local path is stable.
-7. Optional higher-level AI summaries after deterministic source collection is reliable.
-
-
-### Workspace file workflow
-
-MarcBot should eventually help Marc move useful files off the Ubuntu server to his MacBook without broad SSH/SCP friction.
-
-Preferred path:
-
-- generate or store files under `/srv/marcbot/workspace`
-- retrieve via safe Telegram file send
-- avoid arbitrary absolute path access
-
-### Scheduled reports
-
-Potential scheduled report categories:
-
-- system health summary
-- disk warning
-- backup summary
-- AI/news/source checks
-- project status report
-
-Cron or systemd timers should be preferred over complex internal schedulers unless there is a strong reason otherwise.
-
-### Local memory and notes
-
-Possible future direction:
-
-- daily notes
-- project memory files
-- curated summaries
-- searchable local notes
-
-This should be added slowly and with clear file ownership and backup behavior.
-
-### Web access
-
-Web access should be added only when there is a clear use case.
-
-Possible future use cases:
-
-- update checks
-- release note summaries
-- source monitoring
-
-Web-enabled commands should clearly distinguish between local state and internet-derived state.
-
-## Current LLM status boundary
-
-MarcBot now separates read-only status from explicit provider contact:
-
-- `python -m marcbot llm profiles` is read-only and local-config-only.
-- `python -m marcbot llm status` is read-only and local-config-only.
-- `/llm_status` is read-only and local-config-only.
-- `python -m marcbot llm models <provider>` contacts the configured provider.
-- `python -m marcbot llm health <profile>` contacts only the named configured profile.
-- Arbitrary Telegram prompt relay remains out of scope.
-## Development rules
-
-For each new feature:
-
-1. Add helper module when practical.
-2. Add tests for helper logic.
-3. Wire Telegram command separately.
-4. Update `/help` if user-visible.
-5. Update docs when behavior changes.
-6. Run `./scripts/check.sh`.
-7. Restart service.
-8. Test in Telegram.
-9. Check logs.
-10. Commit and push.
-11. Verify `/git` returns clean.
-
-## Current preferred next steps
-
-Recommended order:
-
-1. systemd timer for app-level backups
-2. update-check visibility
-3. scheduled reports
-4. backup visibility
-5. update-check visibility
-
-## Non-goals for now
-
-MarcBot should not yet:
-
-- run arbitrary shell commands from Telegram
-- send arbitrary absolute server paths
-- modify systemd state from Telegram
-- edit files from Telegram
-- auto-update itself
-- expose config secrets
-- expose SSH keys or private credentials
-- provide multi-user behavior
-    
-## Daily status report timer
-
-Status: complete.
-
-The local daily status report is scheduled with:
-
-    marcbot-daily-status-report.timer
-
-Schedule:
-
-    11:45 PM America/New_York
-
-The timer runs after the daily app-level backup timer so the report can include recent backup status.
-
-## AI source monitor timer
-
-MarcBot now includes scheduled local AI source monitor report generation.
-
-Systemd units:
-
-    marcbot-source-monitor-ai.service
-    marcbot-source-monitor-ai.timer
-
-The service runs:
-
-    python -m marcbot source-monitor run ai
-
-The timer writes local reports only. Telegram access is read-only through:
-
-    /report_status source ai
-
-The timer is visible in:
-
-    /timer_status
-
-
-## LLM provider/profile foundation
-
-MarcBot should grow from deterministic command and report workflows into a controlled, multi-provider LLM system.
-
-Planned sequence:
-
-1. Add a reusable LLM provider/profile configuration layer.
-2. Support OpenAI-compatible local providers, starting with LM Studio.
-3. Support model discovery for LM Studio through `/v1/models`.
-4. Support profile validation and tiny completion health checks from the CLI.
-5. Add OpenAI/frontier provider structure for future GPT-5.5-style profiles.
-6. Allow capabilities to assign work to named profiles instead of hardcoded models.
-7. Expose read-only LLM profile/model status through Telegram without running health checks.
-8. Later, add explicit controlled chat sessions, such as `/chat_start <profile>`, rather than an unrestricted prompt interface.
-
-Initial profile categories:
-
-- `frontier_chat` for chat, research, planning, and discussion.
-- `frontier_analysis` for higher-confidence analysis.
-- `local_fast` for low-risk utility tasks.
-- `local_careful` for bounded local analysis.
-- `local_experimental` for testing newly added local models.
-
-Local models are expected to be useful for heartbeat functions, backups, simple analysis, deterministic reports, and model experimentation. Frontier models are expected to be preferred for open-ended chat, research, discussion, planning, and adversarial or ambiguous reasoning.
-
-### LLM provider/profile operational baseline
-
-The LLM foundation now supports CLI-only provider/profile operations and read-only Telegram profile/status visibility:
-
-~~bash
-python -m marcbot llm profiles
-python -m marcbot llm profile local_fast
-python -m marcbot llm models lmstudio
-python -m marcbot llm health local_fast
-python -m marcbot llm status
-python -m marcbot llm status --verbose
-~~
-
-Current Telegram LLM visibility:
-
-- `/llm_status` lists configured profiles only.
-- `/llm_status` does not contact providers.
-- `/llm_status` does not run health checks.
-- `/llm_status` does not load provider secrets.
-
-Next likely steps:
-
-1. Harden LLM summary reliability for file/report workflows.
-2. Integrate LLM summaries into the source monitor workflow.
-3. Add broader model/profile testing with fixed prompts.
-4. Keep arbitrary prompt relay out of Telegram until a separate safety design exists.
+MarcBot should grow slowly, with reliability and inspectability ahead of feature count.

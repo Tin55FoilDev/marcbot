@@ -1,623 +1,357 @@
 # MarcBot Architecture
 
-MarcBot is a personal-only Telegram automation bot running on Ubuntu Server.
+MarcBot is a personal-only Telegram-facing agent shell and workflow system.
 
-The architecture is intentionally simple. MarcBot should be easy to reason about, easy to back up, easy to restore, and difficult to misuse accidentally.
+The architecture target is intentionally smaller and more inspectable than OpenClaw. MarcBot should grow through narrow, tested, documented capabilities rather than broad autonomous behavior.
 
-## High-level layout
+See also:
 
-Project root:
+- `docs/PROJECT_DIRECTION.md`
+- `docs/ROADMAP.md`
+- `docs/WORKFLOW_MODEL.md`
+- `docs/COMMANDS.md`
+- `docs/LLM.md`
+- `docs/MEMORY.md`
+- `docs/SECURITY.md`
+- `docs/DEPLOY.md`
 
-    /srv/marcbot
+## Current operating model
 
-Application repository:
+MarcBot currently runs as a Python application on the Ubuntu server.
 
-    /srv/marcbot/app
+Current baseline assumptions:
 
-Local configuration:
+- repository path: `/srv/marcbot/app`
+- runtime user: `marc`
+- administrative user: `adminuser`
+- Telegram service: `marcbot-telegram.service`
+- project configuration under `/srv/marcbot/config`
+- project logs under `/srv/marcbot/logs`
+- project workspace and generated artifacts under the MarcBot-controlled `/srv/marcbot` structure
 
-    /srv/marcbot/config/marcbot.toml
+App and repo operations should run as `marc`, not directly as `adminuser`.
 
-Logs:
+The normal command pattern from an `adminuser` shell is:
 
-    /srv/marcbot/logs/marcbot.log
+    sudo -u marc env HOME=/home/marc GIT_PAGER=cat PATH="/srv/marcbot/app/.venv/bin:/usr/local/bin:/usr/bin:/bin" bash -lc 'cd /srv/marcbot/app && <command>'
 
-Workspace:
+Do not assume `adminuser` can directly access or operate inside `/srv/marcbot/app`.
 
-    /srv/marcbot/workspace
+## Architecture goals
 
-Service:
+MarcBot should be:
 
-    marcbot-telegram.service
+- personal-only
+- Telegram-facing
+- allowlist-protected
+- inspectable
+- testable
+- Git-backed
+- secure by default
+- explicit about model use
+- explicit about file access
+- explicit about workflow boundaries
+- conservative about secrets
+- conservative about autonomous behavior
 
-## Runtime model
+MarcBot should not become an unrestricted remote shell, unrestricted file browser, unrestricted web agent, or hidden automation layer.
 
-MarcBot runs as a Python process under systemd.
+## Runtime planes
 
-The Telegram bot uses foreground polling mode.
+MarcBot should be understood as four separate runtime planes.
 
-The systemd service runs as the non-root user:
+### 1. Telegram command plane
 
-    marc
+The Telegram command plane exposes approved slash commands.
 
-The service is intentionally narrow:
+Characteristics:
 
-- no root execution
-- no general shell access
-- fixed application directory
-- systemd hardening
-- local config outside Git
+- allowlisted Telegram chat IDs
+- bounded command arguments
+- read-only status commands by default
+- explicit allowlists for file/doc/log access
+- no arbitrary shell access
+- no arbitrary filesystem access
+- no unrestricted provider contact
+- no secret output
 
-## Main modules
+Command details belong in `docs/COMMANDS.md`.
 
-### `marcbot.cli`
+Architecture rule: if a command's behavior changes, update `docs/COMMANDS.md` and any affected architecture, security, or LLM docs in the same milestone.
 
-Command-line entry point.
+### 2. Workflow plane
 
-Responsibilities:
+The workflow plane runs named, approved multi-step processes.
 
-- parse CLI arguments
-- configure logging
-- run doctor checks
-- run config checks
-- start Telegram foreground bot
+A workflow may combine:
 
-### `marcbot.config`
+- deterministic Python code
+- local configuration
+- local source data
+- scheduled execution
+- report generation
+- bounded LLM analysis
+- artifact storage
+- Telegram status or delivery commands
 
-Configuration loading and validation.
+A workflow should not be arbitrary tool use.
 
-Responsibilities:
+Workflow design should specify:
 
-- read `/srv/marcbot/config/marcbot.toml`
-- validate app settings
-- validate Telegram settings
-- require token when Telegram is enabled
-- require explicit approved Telegram chat IDs
+- workflow name
+- allowed inputs
+- configuration location
+- state location
+- output/artifact location
+- logs
+- model task route, if any
+- whether it is CLI-only or Telegram-facing
+- whether it is read-only or state-changing
+- failure behavior
+- tests
+- documentation
 
-### `marcbot.errors`
+### 3. Model/provider plane
 
-Operator-facing MarcBot error type.
+The model/provider plane handles local and future frontier model access.
 
-Expected MarcBot errors use codes like:
+Current model principles:
 
-    ERROR [MBOT-CONFIG-001]: Missing config file: ...
+- model access should use named providers and named profiles
+- routine status commands should not unexpectedly contact providers
+- provider-contacting commands should remain CLI-only until deliberately exposed
+- provider secrets must not enter Git, Telegram, logs, reports, or memory
+- local model access should be testable independently of Telegram
+- frontier model access is a research track until a safe path is documented
 
-The intent is to avoid raw tracebacks for expected operator errors.
+`/llm_status` is part of the Telegram command plane, but it must remain provider-contact-free.
 
-### `marcbot.paths`
+Explicit provider contact belongs in CLI-only commands such as:
 
-Central path definitions.
+    python -m marcbot llm models <provider>
+    python -m marcbot llm health <profile>
 
-Important paths:
+LLM details belong in `docs/LLM.md`.
 
-- `/srv/marcbot`
-- `/srv/marcbot/app`
-- `/srv/marcbot/state`
-- `/srv/marcbot/workspace`
-- `/srv/marcbot/logs`
-- `/srv/marcbot/config`
-- `/srv/marcbot/backups`
-- `/srv/marcbot/tmp`
+### 4. Memory and artifact plane
 
-### `marcbot.logging_setup`
+The memory and artifact plane covers generated outputs, saved reports, summaries, future transcripts, and future durable memory.
 
-Rotating log configuration.
+Artifacts should be:
 
-Current log file:
+- stored under approved MarcBot-controlled paths
+- retrievable through bounded commands
+- identifiable by safe names or artifact IDs
+- separated from secrets
+- bounded by size and path controls
+- documented when exposed through Telegram
 
-    /srv/marcbot/logs/marcbot.log
+Durable memory is a future feature.
 
-Current policy:
+Future memory must support:
 
-- rotate at 1 MB
-- keep 5 backups
+- auditability
+- correction
+- deletion
+- review
+- clear distinction between transient context and durable memory
+- no secrets
+- no hidden sensitive data capture
 
-### `marcbot.backup_status`
+Memory details belong in `docs/MEMORY.md`.
 
-Read-only app-level backup status helper.
+## Interaction modes
 
-Reads:
+The architecture supports four interaction modes.
 
-    /srv/marcbot/backups/latest-backup.txt
+### Command mode
 
-Validates:
+Command mode is narrow slash-command or CLI-command execution.
 
-- marker file exists
-- required fields are present
-- archive exists
-- archive is non-empty
-- checksum file exists
-- backup age is within threshold
+This is the current mature surface.
 
-Safety properties:
+### Workflow mode
 
-- read-only
-- fixed marker file
-- no arbitrary paths from Telegram
-- no backup creation from Telegram
-- no deletion or rotation from Telegram
+Workflow mode is named approved multi-step execution.
 
-### `marcbot.health`
+This is the next major operating model.
 
-Local health checks.
+### Chat mode
 
-Current checks:
+Chat mode is a future controlled Telegram conversation with a selected approved model profile.
 
-- required runtime directories exist
-- log directory is writable
-- config file loads
+Chat mode should not automatically execute shell commands, browse arbitrary URLs, read arbitrary files, write files, or modify system state.
 
-### `marcbot.log_reader`
+Chat may eventually discuss project state, explain artifacts, draft plans, and propose workflows. Execution should remain routed through approved commands or approved workflows.
 
-Safe reader for recent MarcBot application logs.
+### Development mode
 
-Safety properties:
+Development mode is Marc plus an AI assistant modifying MarcBot through SSH/Git.
 
-- fixed log file
-- bounded output
-- Telegram token redaction
+Development mode is human-supervised and Git-backed. It is not the same as runtime Telegram autonomy.
 
-### `marcbot.uptime`
+Development changes should remain:
 
-Host and process uptime helpers.
+- small
+- reviewed
+- test-gated
+- documented
+- committed
+- pushed
+- validated after Telegram-facing changes
 
-Data sources:
+## Project structure
 
-- host uptime from `/proc/uptime`
-- process uptime from bot startup timestamp
+The repository should remain organized around narrow modules and clear responsibilities.
 
-### `marcbot.disk`
+Expected high-level areas:
 
-Disk usage helpers.
+- Telegram handlers
+- command helpers
+- configuration loaders
+- report generation
+- source monitor logic
+- LLM provider/profile logic
+- workflow orchestration
+- artifact helpers
+- tests
+- documentation
 
-Data sources:
+Implementation should avoid hidden cross-module behavior. A status command should not unexpectedly trigger provider access, long-running analysis, or secret loading.
 
-- Python standard-library disk usage calls
+## Configuration boundaries
 
-No shell execution is used.
+Configuration should be explicit.
 
-### `marcbot.service_status`
+Recommended separation:
 
-Read-only systemd status helper.
+- non-secret project configuration under `/srv/marcbot/config`
+- provider secrets in local secret files outside Git
+- generated reports and summaries under approved workspace/report directories
+- logs under `/srv/marcbot/logs`
+- documentation in the repository under `docs/`
 
-Current fixed commands:
+Configuration readers should fail clearly when required configuration is missing or invalid.
 
-    systemctl is-active marcbot-telegram.service
-    systemctl is-enabled marcbot-telegram.service
+Provider-secret loading should be isolated to commands or workflows that explicitly need provider access.
 
-No start, stop, restart, enable, or disable action is exposed.
+## Telegram boundary
 
-### `marcbot.git_status`
+Telegram is a user interface, not a trust boundary.
 
-Read-only Git status helper.
+Telegram-facing functionality must remain restricted by:
 
-Fixed repository:
+- allowed chat IDs
+- bounded commands
+- bounded arguments
+- approved file paths
+- approved document names
+- approved log targets
+- size limits
+- clear user-facing errors
+- careful logging
+- no secret output
 
-    /srv/marcbot/app
+Telegram should not expose arbitrary shell commands or arbitrary host file access.
 
-Current fixed checks:
+## File boundary
 
-- branch
-- short commit hash
-- clean or dirty working tree
+MarcBot may generate and retrieve files, but only through approved paths and workflows.
 
-No arbitrary repository paths or arbitrary Git arguments are accepted from Telegram.
+Telegram-facing file access should be limited to:
 
-### `marcbot.docs_index`
-
-Approved documentation allowlist and documentation reader.
-
-Current approved docs:
-
-- `deploy`
-- `roadmap`
-- `security`
-- `architecture`
-- `changelog`
-- `commands`
-
-Safety properties:
-
-- approved names only
-- no arbitrary paths
-- bounded Telegram output
-- friendly unknown-name response
-
-### `marcbot.workspace_list`
-
-Read-only workspace listing helper.
-
-Current scope:
-
-- lists `/srv/marcbot/workspace` or a validated workspace-relative directory
-- omits hidden dotfiles
-- sorts directories before files
-- reports file sizes
-- bounds Telegram output
-
-Safety properties:
-
-- read-only
-- no shell execution
-- workspace-relative directories only
-- absolute paths rejected
-- parent traversal rejected
-- resolved paths must stay under `/srv/marcbot/workspace`
-
-### `marcbot.workspace_sender`
-
-Safe workspace file-send validator.
-
-Workspace root:
-
-    /srv/marcbot/workspace
-
-Safety properties:
-
-- workspace-relative paths only
-- rejects absolute paths
-- rejects parent-directory traversal
-- resolves the real path before sending
-- verifies resolved path stays inside workspace
-- rejects non-regular files
-- enforces a file size limit
-
-### `marcbot.tail_reader`
-
-Approved diagnostic tail reader.
-
-Current approved names:
-
-- `app`
-- `service`
-
-Sources:
-
-- `app`: `/srv/marcbot/logs/marcbot.log`
-- `service`: fixed `journalctl` query for `marcbot-telegram.service`
-
-Safety properties:
-
-- approved names only
-- no arbitrary paths
-- no arbitrary service names
-- bounded output
-- token redaction
-- fixed subprocess command for journal access
-
-### `marcbot.telegram_bot`
-
-Telegram command wiring.
-
-Responsibilities:
-
-- build Telegram application
-- enforce approved chat IDs
-- register command handlers
-- route commands to helper modules
-- reply with bounded operator-facing messages
-
-## Telegram authorization model
-
-MarcBot is personal-only.
-
-Telegram access is controlled by:
-
-    telegram.allowed_chat_ids
-
-If the incoming chat ID is not approved, MarcBot returns:
-
-    Unauthorized chat.
-
-An empty allowlist authorizes no chats.
-
-## Current Telegram commands
-
-Current commands:
-
-- `/ping`
-- `/version`
-- `/uptime`
-- `/disk`
-- `/service`
-- `/git`
-- `/docs`
-- `/doc <name>`
-- `/status`
-- `/health`
-- `/backup_status`
-- `/logs`
-- `/tail <app|service>`
-- `/help`
-
-Command categories:
-
-### Basic runtime
-
-- `/ping`
-- `/version`
-- `/uptime`
-
-### Operational state
-
-- `/disk`
-- `/service`
-- `/git`
-- `/status`
-- `/health`
-
-### Documentation
-
-- `/docs`
-- `/doc <name>`
-
-### Diagnostics
-
-- `/logs`
-- `/tail <app|service>`
-- `/help`
-
-## Command safety pattern
-
-MarcBot commands should follow this pattern:
-
-1. Authenticate Telegram chat ID.
-2. Accept no arguments unless necessary.
-3. If arguments are needed, validate strictly.
-4. Prefer allowlists over free-form input.
-5. Prefer fixed paths over user-provided paths.
-6. Bound Telegram output size.
-7. Avoid shell execution.
-8. If subprocess is needed, use fixed command arrays only.
-9. Log the request at a useful but non-sensitive level.
-10. Add tests for formatting and validation logic.
-
-## File access model
-
-MarcBot currently reads only:
-
-- local config file
-- fixed app log file
 - approved docs
-- fixed runtime paths for health checks
-- Git repo state under `/srv/marcbot/app`
+- approved reports
+- approved workspace-relative files
+- future artifact registry entries
 
-Future file sending should use one of two models:
+File handling should use safe path normalization and reject traversal attempts.
 
-### Approved-name file send
+Secrets, environment files, tokens, private keys, and raw provider credential caches must never be sent through Telegram.
 
-Example:
+## Logging boundary
 
-    /senddoc deploy
+Logs should support diagnosis without leaking secrets.
 
-Maps an approved name to an exact file.
+Logs should avoid:
 
-### Workspace-relative file send
+- provider tokens
+- environment secret values
+- Telegram bot tokens
+- full secret file paths when avoidable
+- sensitive report contents unless explicitly intended
+- unbounded user input
 
-Example:
+Telegram-facing failures should return concise user-facing errors and write enough diagnostic detail to logs for Marc to inspect safely.
 
-    /send reports/latest.txt
+## LLM boundary
 
-Resolves internally under:
+LLM-backed behavior should be explicit.
 
-    /srv/marcbot/workspace
+A command or workflow should document:
 
-Safety requirements:
+- whether it contacts a model
+- which task route it uses
+- which profile category it expects
+- whether it loads provider secrets
+- whether it is CLI-only or Telegram-facing
+- timeout/failure behavior
+- output destination
 
-- reject absolute paths
-- reject `..`
-- resolve real path
-- verify resolved path stays under `/srv/marcbot/workspace`
-- reject non-regular files
-- enforce max file size
-- log every request
+Local models and frontier models should be routed through named profiles.
 
-## systemd service design
+MarcBot should support testing model access from the CLI before any Telegram exposure.
 
-Service file:
+## Frontier model boundary
 
-    /etc/systemd/system/marcbot-telegram.service
+Frontier model support is a research track.
 
-Expected service characteristics:
+Marc currently does not plan to use per-call OpenAI API billing for MarcBot. The preferred future direction is to investigate whether a stable subscription/OAuth-style path is available, similar in purpose to OpenClaw's current frontier model usage.
 
-- runs as user `marc`
-- working directory `/srv/marcbot/app`
-- starts `python -m marcbot telegram`
-- restarts on failure
-- uses local venv Python
-- includes systemd hardening
+Until that research is complete:
 
-The service should remain simple and inspectable.
+- do not implement frontier runtime assumptions
+- do not depend on OpenClaw as a backend worker
+- do not place provider secrets in Git
+- do not expose provider tokens through Telegram
+- keep experiments CLI-only
+- document findings before implementation
 
-## Testing model
+## Scheduled jobs
 
-Primary validation command:
+Scheduled jobs are useful but should not define the whole architecture.
 
-    ./scripts/check.sh
+Cron or systemd timers may run approved workflows, but those workflows should also be manually runnable and inspectable.
 
-Current validation includes:
+Scheduled jobs should have:
 
-- MarcBot version check
-- doctor check
-- pytest
-- Ruff
+- clear unit/timer names
+- clear logs
+- clear output locations
+- clear failure behavior
+- status visibility
+- docs
 
-Feature development should not be considered complete until:
+Telegram status commands may report on approved timers, but should not expose arbitrary systemd inspection.
 
-- checks pass
-- service restarts cleanly
-- Telegram command works
-- logs are clean
-- Git commit is pushed
-- `/git` returns clean
+## Testing and validation
 
-## Documentation model
+Every architecture change should preserve the standard discipline:
 
-MarcBot documentation is part of the product.
+1. make a small change
+2. run `./scripts/check.sh`
+3. review diffs
+4. restart the Telegram service if Telegram-facing behavior changed
+5. validate Telegram behavior if Telegram-facing behavior changed
+6. inspect logs if Telegram-facing behavior changed
+7. commit
+8. push
+9. keep the repo clean
 
-Important docs:
+Tests should favor narrow deterministic behavior and clear failure messages.
 
-- `DEPLOY.md`
-- `ROADMAP.md`
-- `SECURITY.md`
-- `ARCHITECTURE.md`
-- `CHANGELOG.md`
-- `COMMANDS.md`
+## Architecture decision rule
 
-Docs are readable through Telegram using:
+When choosing between a powerful broad feature and a smaller inspectable feature, choose the smaller inspectable feature first.
 
-    /docs
-    /doc <name>
-
-This means docs should stay accurate when commands or operational procedures change.
-
-## Future architecture notes
-
-Likely future helper modules:
-
-- `marcbot.file_sender`
-- `marcbot.tail_reader`
-- `marcbot.backup_status`
-- `marcbot.update_check`
-
-Each should follow the same pattern:
-
-- narrow responsibility
-- fixed roots or allowlists
-- no arbitrary shell
-- explicit errors
-- tests before Telegram wiring
-
-## App-level backup architecture
-
-MarcBot uses a split backup design:
-
-- backup creation is handled by a fixed shell script and systemd timer
-- backup visibility is handled by the read-only `/backup_status` Telegram command
-
-Backup creation path:
-
-    marcbot-backup.timer
-        -> marcbot-backup.service
-            -> /srv/marcbot/app/scripts/backup_marcbot.sh
-                -> /srv/marcbot/backups/*.tar.gz
-                -> /srv/marcbot/backups/*.sha256
-                -> /srv/marcbot/backups/latest-backup.txt
-
-Safety model:
-
-- Telegram cannot trigger backup creation
-- Telegram cannot delete backups
-- `/backup_status` only reads fixed marker/artifact paths
-- service runs as user `marc`
-- service has systemd hardening enabled
-- `/srv/marcbot` is the only writable tree exposed to the service
-
-
-## User and privilege model
-
-MarcBot uses a split-user operating model.
-
-### `adminuser`
-
-`adminuser` is the administrative server user.
-
-Responsibilities:
-
-- perform package installs and OS maintenance
-- manage systemd units
-- edit files that require elevated privileges
-- create or adjust directories under `/srv/marcbot` when sudo is required
-- run deployment and recovery commands that require root privileges
-
-`adminuser` has sudo capability.
-
-### `marc`
-
-`marc` is the MarcBot runtime user.
-
-Responsibilities:
-
-- run the MarcBot Telegram service
-- own and execute the MarcBot application process
-- write MarcBot logs, state, reports, backups, and workspace files where permitted
-- run non-privileged app validation commands when appropriate
-
-`marc` does not have sudo capability.
-
-### Design rule
-
-MarcBot must not depend on the runtime user `marc` having sudo access.
-
-Commands, scripts, systemd units, and documentation should clearly distinguish between:
-
-- administrative commands run by `adminuser` with `sudo`
-- runtime/app commands run as `marc`
-- systemd-managed execution of MarcBot services
-
-This mirrors the established OpenClaw operating pattern and is intentional.
-
-
-## LLM provider and profile architecture
-
-MarcBot is intended to support multiple LLM providers through a controlled provider/profile layer.
-
-A provider is where a model is served. Initial expected providers include:
-
-- `lmstudio`: a local OpenAI-compatible endpoint served from the Mac mini.
-- `openai`: online frontier model access, such as GPT-5.5, when configured.
-
-A model is the concrete model identifier exposed by a provider.
-
-A profile is MarcBot's named usage configuration for a model. Capabilities should depend on profiles, not hardcoded model names. This allows MarcBot to add, test, and use new models without changing application code.
-
-Example profile categories:
-
-- `frontier_chat`: online frontier model for chat, research, planning, and discussion.
-- `frontier_analysis`: online frontier model for high-confidence analysis.
-- `local_fast`: local LM Studio model for low-risk utility tasks.
-- `local_careful`: local LM Studio model for bounded local analysis.
-- `local_experimental`: local model testing profile.
-
-Capabilities should assign work to named profiles rather than directly to providers or model IDs. For example, a future source-analysis capability may use `frontier_analysis`, while heartbeat or backup summaries may use `local_fast`.
-
-Model discovery and model testing are first-class requirements. As Marc adds models to LM Studio, MarcBot should be able to list available provider models, validate configured profiles, and test a profile before assigning it to a task.
-
-The initial LLM foundation should be CLI-only. Telegram access should begin with controlled status and health commands, not a general unrestricted prompt interface.
-
-## Source monitor architecture
-
-MarcBot includes a narrow, allowlisted source monitor for local report generation.
-
-The source monitor is project-scoped. Each project has local configuration outside Git and local workspace output under MarcBot-controlled directories.
-
-Configuration layout:
-
-    /srv/marcbot/config/source-projects/<project>/sources.toml
-
-Current AI project configuration:
-
-    /srv/marcbot/config/source-projects/ai/sources.toml
-
-Workspace layout:
-
-    /srv/marcbot/workspace/source-projects/<project>/reports/
-    /srv/marcbot/workspace/source-projects/<project>/state/source-monitor-state.json
-
-The source monitor performs bounded HTTPS fetches only for configured allowlisted sources. It records metadata such as HTTP status, bytes read, page title, and clean error information. It does not store fetched page bodies in state.
-
-The AI source monitor is scheduled by systemd:
-
-    marcbot-source-monitor-ai.service
-    marcbot-source-monitor-ai.timer
-
-The service runs as `marc` and executes:
-
-    python -m marcbot source-monitor run ai
-
-Telegram does not trigger source fetching. Telegram report access reads the latest local report summary through:
-
-    /report_status source ai
-## Workflow model
-
-MarcBot capabilities should be developed CLI-first as narrow, tested commands that can later be orchestrated through approved workflows. Telegram should expose safe workflow handles, not arbitrary shell or file access. See `WORKFLOW_MODEL.md` for the project-level workflow and orchestration model.
+MarcBot should grow by composing narrow trusted capabilities, not by granting broad hidden authority.

@@ -1,3 +1,18 @@
+# Changelog
+
+## Unreleased
+
+### Documentation
+
+- Clarified MarcBot's long-term project direction as a personal-only Telegram-facing agent shell and workflow system, not just a cron/report wrapper.
+- Added explicit interaction-mode language covering command mode, workflow mode, chat mode, and development mode.
+- Clarified that Telegram chat is a long-term goal, but must be designed before implementation.
+- Clarified that commands and workflows should use explicit model/profile/task-route boundaries.
+- Clarified that frontier subscription/OAuth-style model access is a research track, not current implementation.
+- Clarified that MarcBot should not depend on OpenClaw as a backend worker, though OpenClaw may be studied as a reference point.
+- Updated command documentation for `/llm_status` as read-only and provider-contact-free.
+- Updated architecture documentation around runtime planes, Telegram boundaries, file boundaries, LLM boundaries, artifacts, and future memory.
+
 ## Unreleased
 
 - Refined CLI LLM health-check wording to make explicit health checks easier to read.
@@ -1099,7 +1114,9 @@ Added a read-only Telegram LLM status command.
 Current behavior:
 
 - lists configured LLM profiles
-- runs the tiny `local_fast` profile health check
-- reads `/srv/marcbot/config/llm.env` locally
+- is read-only and provider-contact-free
+- does not run health checks
+- does not read `/srv/marcbot/config/llm.env`
+- does not load provider secrets
 - does not accept arbitrary prompts
 - does not expose provider tokens

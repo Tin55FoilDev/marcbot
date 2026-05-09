@@ -353,6 +353,54 @@ frontier_analysis
 
 Those should be added only after there is a safe provider/auth design.
 
+## Frontier model research boundary
+
+MarcBot should eventually support frontier models if a stable, supportable path is found.
+
+Marc currently does not plan to use per-call OpenAI API billing for MarcBot. The desired future path is subscription/OAuth-style access similar in purpose to the way OpenClaw currently uses `openai-codex/gpt-5.5`.
+
+This is a research track, not current implementation.
+
+Before implementation, MarcBot should document:
+
+- what client or protocol would be used
+- whether the path is stable enough for MarcBot
+- whether the path is supported or likely to break
+- where credentials are stored
+- what files contain tokens or session material
+- how credentials are protected
+- how logout or revocation works
+- how logs avoid credential leakage
+- whether the path is consistent with the relevant service terms
+- how MarcBot avoids becoming dependent on OpenClaw as a backend worker
+
+Research rules:
+
+- do not store frontier credentials in Git
+- do not paste credentials into chat
+- do not expose credentials through Telegram
+- do not expose credentials through logs
+- do not expose credentials through reports
+- do not expose credentials through memory
+- do not build Telegram-facing frontier chat until the provider boundary is understood
+- start with CLI-only experiments
+- document findings before implementation
+
+OpenClaw may be studied as a reference point because it currently provides functionality Marc values. MarcBot should not simply call OpenClaw as a backend worker.
+
+Reasons:
+
+- MarcBot exists partly to avoid OpenClaw runtime churn
+- depending on OpenClaw would import some of the same instability
+- provider access should be understood and controlled directly where possible
+- MarcBot should remain inspectable and independently testable
+
+Fallback direction:
+
+- keep using local models for bounded MarcBot workflows
+- continue using OpenClaw separately where it remains useful
+- defer direct frontier MarcBot integration until there is a safe path
+
 ## Safety boundary
 
 The LLM foundation currently supports CLI-only inspection and health checks.
