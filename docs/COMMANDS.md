@@ -105,6 +105,7 @@ The exact command list may evolve, but the current MarcBot surface is intended t
 
 | Command | Purpose | Notes |
 | --- | --- | --- |
+| `python -m marcbot source-monitor summarize-latest <project>` | Summarize the newest existing source-monitor report without generating a new report first. | CLI-only, provider-contacting, requires LLM secret env. |
 | `python -m marcbot source-monitor artifact-path <project> <artifact-id>` | Resolve a source-monitor artifact ID to an approved local path. | CLI-only, read-only, provider-contact-free. |
 
 ## `/llm_status` boundary

@@ -6,6 +6,7 @@
 
 ### Changed
 
+- Added CLI-only `python -m marcbot source-monitor summarize-latest <project>` to summarize the newest existing source-monitor report without generating a new report first.
 - Added Telegram `/send_source_artifact <project> <artifact-id>` for bounded source-monitor artifact retrieval.
 - Added CLI-only `python -m marcbot source-monitor artifact-path <project> <artifact-id>` for manual source-monitor artifact ID resolution.
 - Added internal source-monitor artifact ID resolution groundwork for future bounded artifact retrieval.

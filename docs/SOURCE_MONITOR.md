@@ -342,6 +342,24 @@ MarcBot also has internal source-monitor artifact resolver support for these IDs
 
 This resolver is groundwork for future bounded artifact retrieval. It does not by itself add Telegram file sending.
 
+
+CLI-only latest-report summarization from an `adminuser` shell:
+
+    sudo -u marc env HOME=/home/marc GIT_PAGER=cat PATH="/srv/marcbot/app/.venv/bin:/usr/local/bin:/usr/bin:/bin" bash -s <<'SCRIPT'
+    set -e
+    cd /srv/marcbot/app
+
+    set -a
+    . /srv/marcbot/config/llm.env
+    set +a
+
+    python -m marcbot source-monitor summarize-latest ai
+    SCRIPT
+
+This command summarizes the newest existing source-monitor report without generating a new report first. It is useful when `source-monitor status` reports that the latest summary is older than the latest report.
+
+Because this command contacts the configured LLM provider, it requires the provider secret environment to be loaded inside the shell that runs as `marc`. It remains CLI-only.
+
 CLI-only artifact resolver command:
 
     python -m marcbot source-monitor artifact-path ai report:2026-05-08-113613

@@ -410,6 +410,156 @@ def test_build_source_monitor_summary_input_compacts_large_report(tmp_path) -> N
     assert "compacted source-monitor report input" in compact.text
 
 
+def test_source_monitor_summarize_latest_uses_existing_report(
+    tmp_path,
+    monkeypatch,
+    capsys,
+) -> None:
+    import marcbot.cli as cli
+    from marcbot.llm_client import LlmCompletionResult
+    from marcbot.llm_config import LlmConfig, LlmProfileConfig, LlmProviderConfig
+    from marcbot.llm_file_summary import (
+        load_workspace_summary_input,
+        resolve_workspace_summary_output_path,
+        write_workspace_summary_output,
+    )
+    from marcbot.llm_tasks import LlmTaskConfig, LlmTaskProfile
+
+    workspace = tmp_path / "workspace"
+    report_dir = workspace / "source-projects" / "ai" / "reports"
+    report_dir.mkdir(parents=True)
+    older_report = report_dir / "source-monitor-2026-05-01-120000.md"
+    latest_report = report_dir / "source-monitor-2026-05-02-120000.md"
+    older_report.write_text("Older source monitor report", encoding="utf-8")
+    latest_report.write_text("Latest source monitor report", encoding="utf-8")
+
+    monkeypatch.setattr(cli, "WORKSPACE_DIR", workspace)
+    monkeypatch.setattr(
+        cli,
+        "find_latest_source_monitor_report",
+        lambda project_name: latest_report,
+    )
+    monkeypatch.setattr(
+        cli,
+        "load_workspace_summary_input",
+        lambda requested_path: load_workspace_summary_input(
+            requested_path,
+            workspace_dir=workspace,
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "resolve_workspace_summary_output_path",
+        lambda requested_path: resolve_workspace_summary_output_path(
+            requested_path,
+            workspace_dir=workspace,
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "write_workspace_summary_output",
+        lambda requested_path, content: write_workspace_summary_output(
+            requested_path,
+            content,
+            workspace_dir=workspace,
+        ),
+    )
+
+    def fail_if_report_generation_runs(*args, **kwargs):
+        raise AssertionError("summarize-latest must not generate a new report")
+
+    monkeypatch.setattr(cli, "write_source_monitor_report", fail_if_report_generation_runs)
+    monkeypatch.setattr(
+        cli,
+        "load_llm_task_config",
+        lambda: LlmTaskConfig(
+            tasks={
+                "source_monitor_analysis": LlmTaskProfile(
+                    name="source_monitor_analysis",
+                    profile="local_fast",
+                    description="Analyze source monitor output",
+                )
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "load_llm_config",
+        lambda: LlmConfig(
+            path=tmp_path / "llm-providers.toml",
+            providers={
+                "lmstudio": LlmProviderConfig(
+                    name="lmstudio",
+                    enabled=True,
+                    provider_type="openai_compatible",
+                    base_url="http://localhost:1234/v1",
+                    api_key_env="MARCBOT_TEST_KEY",
+                    timeout_seconds=10.0,
+                )
+            },
+            profiles={
+                "local_fast": LlmProfileConfig(
+                    name="local_fast",
+                    provider="lmstudio",
+                    model="test-model",
+                    temperature=0.2,
+                    max_tokens=100,
+                    intended_use="test",
+                )
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "_run_summary_completion_with_retry",
+        lambda **kwargs: LlmCompletionResult(
+            profile_name=kwargs["profile_name"],
+            provider_name=kwargs["provider"].name,
+            model=kwargs["model"],
+            response_text="Saved latest source monitor summary",
+            finish_reason="stop",
+        ),
+    )
+
+    result = cli.main(["source-monitor", "summarize-latest", "ai"])
+    captured = capsys.readouterr()
+
+    summary_path = (
+        workspace
+        / "source-projects"
+        / "ai"
+        / "summaries"
+        / "source-monitor-2026-05-02-120000.summary.md"
+    )
+
+    assert result == 0
+    assert f"Using latest source monitor report: {latest_report}" in captured.out
+    assert f"Source monitor summary written: {summary_path}" in captured.out
+    assert summary_path.read_text(encoding="utf-8") == (
+        "Saved latest source monitor summary\n"
+    )
+
+
+def test_source_monitor_summarize_latest_fails_without_report(
+    monkeypatch,
+    capsys,
+) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "find_latest_source_monitor_report",
+        lambda project_name: None,
+    )
+
+    result = cli.main(["source-monitor", "summarize-latest", "ai"])
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "MBOT-SOURCE-030" in captured.err
+    assert "No source monitor report found for project: ai" in captured.err
+
+
 def test_source_monitor_run_summary_writes_report_and_summary(
     tmp_path,
     monkeypatch,

@@ -36,6 +36,7 @@ from marcbot.reports import write_daily_status_report
 from marcbot.source_config import format_source_config_summary, load_source_config
 from marcbot.source_monitor import write_source_monitor_report
 from marcbot.source_status import (
+    find_latest_source_monitor_report,
     format_source_monitor_cli_status,
     resolve_source_monitor_artifact,
 )
@@ -111,6 +112,59 @@ def _build_source_monitor_summary_input(
         resolved_path=report_path,
         text=compact_text + suffix,
     )
+
+
+def _write_source_monitor_summary_for_report(
+    *,
+    project_name: str,
+    report_path: Path,
+    task_name: str,
+) -> Path:
+    """Summarize an existing source-monitor report and save the summary artifact."""
+    input_path = report_path.relative_to(WORKSPACE_DIR)
+    output_path = input_path.parent.parent / "summaries" / f"{input_path.stem}.summary.md"
+
+    summary_input = _build_source_monitor_summary_input(report_path, input_path)
+    prompt = build_summary_prompt(summary_input)
+    resolve_workspace_summary_output_path(str(output_path))
+
+    task_config = load_llm_task_config()
+    task = task_config.tasks.get(task_name)
+    if task is None:
+        raise MarcBotError(
+            "MBOT-LLM-046",
+            f"Unknown LLM task: {task_name}",
+        )
+
+    llm_config = load_llm_config()
+    profile = llm_config.profiles.get(task.profile)
+    if profile is None:
+        raise MarcBotError(
+            "MBOT-LLM-047",
+            f"Unknown LLM profile for task {task_name}: {task.profile}",
+        )
+
+    provider = llm_config.providers[profile.provider]
+    summary = _run_summary_completion_with_retry(
+        provider=provider,
+        profile_name=profile.name,
+        model=profile.model,
+        prompt=prompt,
+        temperature=profile.temperature,
+        max_tokens=profile.max_tokens,
+    )
+    written_summary_path = write_workspace_summary_output(
+        str(output_path),
+        summary.response_text,
+    )
+    LOGGER.info(
+        "Source monitor report summarized: project=%s report=%s summary=%s task=%s",
+        project_name,
+        report_path,
+        written_summary_path,
+        task_name,
+    )
+    return written_summary_path
 
 
 def _format_llm_status(llm_config, task_config, *, verbose: bool = False) -> str:
@@ -330,6 +384,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="source project name (default: ai)",
     )
     source_monitor_run_summary_parser.add_argument(
+        "--task",
+        default="source_monitor_analysis",
+        help="configured LLM task name (default: source_monitor_analysis)",
+    )
+    source_monitor_summarize_latest_parser = source_monitor_subparsers.add_parser(
+        "summarize-latest",
+        help="summarize the latest existing source monitor report",
+    )
+    source_monitor_summarize_latest_parser.add_argument(
+        "project",
+        nargs="?",
+        default="ai",
+        help="source project name (default: ai)",
+    )
+    source_monitor_summarize_latest_parser.add_argument(
         "--task",
         default="source_monitor_analysis",
         help="configured LLM task name (default: source_monitor_analysis)",
@@ -830,56 +899,35 @@ def main(argv: list[str] | None = None) -> int:
                 LOGGER.info("Source monitor report generated: %s", result.path)
                 return 0
 
+            if args.source_monitor_command == "summarize-latest":
+                latest_report = find_latest_source_monitor_report(
+                    project_name=args.project,
+                )
+                if latest_report is None:
+                    raise MarcBotError(
+                        "MBOT-SOURCE-030",
+                        f"No source monitor report found for project: {args.project}",
+                    )
+
+                print(f"Using latest source monitor report: {latest_report}")
+                written_summary_path = _write_source_monitor_summary_for_report(
+                    project_name=args.project,
+                    report_path=latest_report,
+                    task_name=args.task,
+                )
+                print(f"Source monitor summary written: {written_summary_path}")
+                return 0
+
             if args.source_monitor_command == "run-summary":
                 result = write_source_monitor_report(project_name=args.project)
                 print(result.message)
 
-                input_path = result.path.relative_to(WORKSPACE_DIR)
-                output_path = (
-                    input_path.parent.parent / "summaries" / f"{input_path.stem}.summary.md"
-                )
-
-                summary_input = _build_source_monitor_summary_input(result.path, input_path)
-                prompt = build_summary_prompt(summary_input)
-                resolve_workspace_summary_output_path(str(output_path))
-
-                task_config = load_llm_task_config()
-                task = task_config.tasks.get(args.task)
-                if task is None:
-                    raise MarcBotError(
-                        "MBOT-LLM-046",
-                        f"Unknown LLM task: {args.task}",
-                    )
-
-                llm_config = load_llm_config()
-                profile = llm_config.profiles.get(task.profile)
-                if profile is None:
-                    raise MarcBotError(
-                        "MBOT-LLM-047",
-                        f"Unknown LLM profile for task {args.task}: {task.profile}",
-                    )
-
-                provider = llm_config.providers[profile.provider]
-                summary = _run_summary_completion_with_retry(
-                    provider=provider,
-                    profile_name=profile.name,
-                    model=profile.model,
-                    prompt=prompt,
-                    temperature=profile.temperature,
-                    max_tokens=profile.max_tokens,
-                )
-                written_summary_path = write_workspace_summary_output(
-                    str(output_path),
-                    summary.response_text,
+                written_summary_path = _write_source_monitor_summary_for_report(
+                    project_name=args.project,
+                    report_path=result.path,
+                    task_name=args.task,
                 )
                 print(f"Source monitor summary written: {written_summary_path}")
-                LOGGER.info(
-                    "Source monitor report summarized: project=%s report=%s summary=%s task=%s",
-                    args.project,
-                    result.path,
-                    written_summary_path,
-                    args.task,
-                )
                 return 0
 
             parser.print_help()
