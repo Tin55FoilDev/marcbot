@@ -14,8 +14,10 @@ from marcbot.source_status import (
 def test_find_latest_source_monitor_report_returns_latest_by_name(tmp_path: Path) -> None:
     older = tmp_path / "source-monitor-2026-05-01-120000.md"
     newer = tmp_path / "source-monitor-2026-05-01-130000.md"
+    summary = tmp_path / "source-monitor-2026-05-01-140000.summary.md"
     older.write_text("older", encoding="utf-8")
     newer.write_text("newer", encoding="utf-8")
+    summary.write_text("summary", encoding="utf-8")
 
     assert find_latest_source_monitor_report(reports_dir=tmp_path) == newer
 
@@ -42,10 +44,12 @@ def test_find_recent_source_monitor_reports_returns_newest_names_first(
     oldest = tmp_path / "source-monitor-2026-05-01-120000.md"
     middle = tmp_path / "source-monitor-2026-05-01-130000.md"
     newest = tmp_path / "source-monitor-2026-05-01-140000.md"
+    summary = tmp_path / "source-monitor-2026-05-01-150000.summary.md"
 
     oldest.write_text("oldest", encoding="utf-8")
     middle.write_text("middle", encoding="utf-8")
     newest.write_text("newest", encoding="utf-8")
+    summary.write_text("summary", encoding="utf-8")
 
     assert find_recent_source_monitor_reports(reports_dir=tmp_path, limit=2) == [
         newest,
@@ -162,7 +166,10 @@ def test_extract_source_report_rss_highlights_returns_none_without_rss_items() -
     assert extract_source_report_rss_highlights(report) is None
 
 def test_format_source_status_message_handles_missing_report(tmp_path: Path) -> None:
-    message = format_source_status_message(reports_dir=tmp_path)
+    message = format_source_status_message(
+        reports_dir=tmp_path,
+        summaries_dir=tmp_path,
+    )
 
     assert "🤖 MarcBot source monitor report status" in message
     assert "Status: no local report found" in message
@@ -171,6 +178,12 @@ def test_format_source_status_message_handles_missing_report(tmp_path: Path) -> 
 
 def test_format_source_status_message_includes_latest_summary(tmp_path: Path) -> None:
     report = tmp_path / "source-monitor-2026-05-01-130000.md"
+    older_report = tmp_path / "source-monitor-2026-05-01-120000.md"
+    summary = tmp_path / "source-monitor-2026-05-01-130000.summary.md"
+
+    older_report.write_text("older report", encoding="utf-8")
+    summary.write_text("# Summary\n\nSaved LLM summary.\n", encoding="utf-8")
+
     report.write_text(
         """# MarcBot Source Monitor - ai - 2026-05-01
 
@@ -204,10 +217,17 @@ Attention:
         encoding="utf-8",
     )
 
-    message = format_source_status_message(reports_dir=tmp_path)
+    message = format_source_status_message(
+        reports_dir=tmp_path,
+        summaries_dir=tmp_path,
+    )
 
     assert "Project: ai" in message
     assert f"Report: {report}" in message
+    assert "Recent artifacts:" in message
+    assert "- report:2026-05-01-130000" in message
+    assert "- report:2026-05-01-120000" in message
+    assert "- summary:2026-05-01-130000" in message
     assert "Generated: 2026-05-01T13:00:00+00:00" in message
     assert "## Summary" in message
     assert "Changed: 1" in message

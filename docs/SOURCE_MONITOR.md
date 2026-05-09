@@ -234,6 +234,8 @@ Errored counts include fetch failures such as timeouts, URL errors, HTTP errors,
 
 `/report_status source <project>` includes a compact `RSS latest items` section when the newest local report contains `rss_feed` metadata.
 
+`/report_status source <project>` also includes compact recent artifact IDs when local source-monitor reports or summaries exist. These IDs are read-only status information and are intended to support future bounded artifact retrieval.
+
 The Telegram status view remains read-only:
 
 - it reads only the newest local report;

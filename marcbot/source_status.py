@@ -30,7 +30,12 @@ def find_latest_source_monitor_report(
     target_reports_dir = (
         reports_dir if reports_dir is not None else source_reports_dir(project_name)
     )
-    reports = sorted(target_reports_dir.glob(SOURCE_REPORT_GLOB))
+    reports = sorted(
+        path
+        for path in target_reports_dir.glob(SOURCE_REPORT_GLOB)
+        if source_monitor_artifact_id(path) is not None
+        and source_monitor_artifact_id(path).startswith("report:")
+    )
     if not reports:
         return None
     return reports[-1]
@@ -74,7 +79,15 @@ def find_recent_source_monitor_reports(
     target_reports_dir = (
         reports_dir if reports_dir is not None else source_reports_dir(project_name)
     )
-    reports = sorted(target_reports_dir.glob(SOURCE_REPORT_GLOB), reverse=True)
+    reports = sorted(
+        (
+            path
+            for path in target_reports_dir.glob(SOURCE_REPORT_GLOB)
+            if source_monitor_artifact_id(path) is not None
+            and source_monitor_artifact_id(path).startswith("report:")
+        ),
+        reverse=True,
+    )
     return reports[:limit]
 
 
@@ -105,6 +118,19 @@ def _format_recent_artifact_lines(label: str, paths: list[Path]) -> list[str]:
             lines.append(f"- {path.name}")
         else:
             lines.append(f"- {artifact_id} — {path.name}")
+
+    return lines
+
+
+def _format_recent_artifact_id_lines(paths: list[Path]) -> list[str]:
+    lines: list[str] = []
+    for path in paths:
+        artifact_id = source_monitor_artifact_id(path)
+        if artifact_id is not None:
+            lines.append(f"- {artifact_id}")
+
+    if not lines:
+        return ["- none found"]
 
     return lines
 
@@ -373,11 +399,17 @@ def format_source_monitor_cli_status(
 def format_source_status_message(
     project_name: str = DEFAULT_SOURCE_PROJECT_NAME,
     reports_dir: Path | None = None,
+    summaries_dir: Path | None = None,
 ) -> str:
     """Format latest local source monitor summary for Telegram."""
     try:
         target_reports_dir = (
             reports_dir if reports_dir is not None else source_reports_dir(project_name)
+        )
+        target_summaries_dir = (
+            summaries_dir
+            if summaries_dir is not None
+            else source_summaries_dir(project_name)
         )
     except MarcBotError as exc:
         return (
@@ -390,6 +422,14 @@ def format_source_status_message(
     latest_report = find_latest_source_monitor_report(
         project_name=project_name,
         reports_dir=target_reports_dir,
+    )
+    recent_reports = find_recent_source_monitor_reports(
+        project_name=project_name,
+        reports_dir=target_reports_dir,
+    )
+    recent_summaries = find_recent_source_monitor_summaries(
+        project_name=project_name,
+        summaries_dir=target_summaries_dir,
     )
 
     if latest_report is None:
@@ -428,6 +468,9 @@ def format_source_status_message(
             "🤖 MarcBot source monitor report status",
             f"Project: {project_name}",
             f"Report: {latest_report}",
+            "",
+            "Recent artifacts:",
+            *_format_recent_artifact_id_lines(recent_reports + recent_summaries),
         ]
         if generated_line is not None:
             message_parts.append(generated_line)

@@ -71,7 +71,7 @@ The exact command list may evolve, but the current MarcBot surface is intended t
 | `/backup_list` | List known backup-related artifacts or status records. | Read-only. |
 | `/timer_status` | Show approved systemd timer status. | Read-only. |
 | `/report_status` | Show report status. | Read-only. |
-| `/report_status source ai` | Show source-monitor AI report status. | Read-only. |
+| `/report_status source ai` | Show source-monitor AI report status and recent artifact IDs. | Read-only and provider-contact-free. |
 | `/llm_status` | Show configured LLM profile/task-route status without contacting providers. | Read-only and provider-contact-free. |
 
 ### Git and service inspection commands
