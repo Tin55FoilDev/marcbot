@@ -373,3 +373,14 @@ Telegram bounded artifact retrieval:
     /send_source_artifact ai summary:2026-05-03-021129
 
 This command sends only source-monitor artifacts that resolve from valid artifact IDs. It does not accept arbitrary host paths, does not contact model providers, and does not generate new reports or summaries.
+
+### Stale summary guidance
+
+When `python -m marcbot source-monitor status <project>` detects that the
+latest saved summary is older than the latest saved report, status output prints
+the exact CLI command needed to refresh the summary:
+
+    python -m marcbot source-monitor summarize-latest <project>
+
+This keeps the status command read-only while making the next operator action
+clear.

@@ -433,3 +433,58 @@ def test_format_elapsed_since_uses_compact_human_units() -> None:
     assert _format_elapsed_since(now - timedelta(hours=1), now) == "1 hour ago"
     assert _format_elapsed_since(now - timedelta(hours=7), now) == "7 hours ago"
     assert _format_elapsed_since(now - timedelta(days=3), now) == "3 days ago"
+
+def test_format_source_monitor_cli_status_guides_stale_summary(
+    tmp_path, monkeypatch
+):
+    import os
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    import marcbot.source_status as source_status
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    report_path = reports_dir / "source-monitor-2026-05-15-080000.md"
+    summary_path = summaries_dir / "source-monitor-2026-05-15-070000.summary.md"
+
+    report_lines = [
+        "# Source Monitor Report",
+        "Generated: 2026-05-15T08:00:00+00:00",
+        "",
+        "## Summary",
+        "Current report summary.",
+        "",
+        "## Fetch results",
+    ]
+    report_path.write_text("\n".join(report_lines), encoding="utf-8")
+    summary_path.write_text("# Older summary\n", encoding="utf-8")
+
+    older = datetime(2026, 5, 15, 7, 0, tzinfo=UTC).timestamp()
+    newer = datetime(2026, 5, 15, 8, 0, tzinfo=UTC).timestamp()
+    os.utime(summary_path, (older, older))
+    os.utime(report_path, (newer, newer))
+
+    monkeypatch.setattr(
+        source_status,
+        "load_source_config",
+        lambda project_name: SimpleNamespace(
+            project_name=project_name,
+            path=tmp_path / "sources.txt",
+        ),
+    )
+
+    output = source_status.format_source_monitor_cli_status(
+        project_name="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert "Summary freshness: older than latest report" in output
+    assert (
+        "Run: python -m marcbot source-monitor summarize-latest ai"
+        in output
+    )

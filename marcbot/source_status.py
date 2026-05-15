@@ -430,6 +430,10 @@ def format_source_monitor_cli_status(
     if report_modified is not None and summary_modified is not None:
         if summary_modified < report_modified:
             lines.append("Summary freshness: older than latest report")
+            lines.append(
+                "Run: python -m marcbot source-monitor summarize-latest "
+                f"{project_name}"
+            )
         else:
             lines.append("Summary freshness: current with latest report")
 
