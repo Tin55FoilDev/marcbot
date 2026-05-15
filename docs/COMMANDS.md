@@ -216,3 +216,37 @@ If behavior changes, also update:
 - `docs/ARCHITECTURE.md` if architecture changes
 - `docs/LLM.md` if model behavior changes
 - `docs/SECURITY.md` if security boundaries change
+
+## Provider-contacting Telegram commands
+
+Provider-contacting Telegram commands are not part of the default command
+surface.
+
+A Telegram command is provider-contacting if it may:
+
+- load LLM provider credentials
+- call a local or remote model provider
+- wake or load a local model
+- send prompt text, report text, file text, chat text, or derived context to a model
+- create a model-generated artifact
+
+Provider-contacting Telegram commands may be added only when the command is:
+
+- named explicitly
+- documented in this command reference
+- limited to bounded arguments
+- routed through an approved provider/profile/task configuration
+- clear in user-facing help that it contacts a model provider
+- tested for authorization, argument validation, success, and safe failure behavior
+- logged without prompt text, secret values, provider credentials, or large generated output
+
+Provider-contacting Telegram commands must not accept arbitrary provider names,
+model IDs, URLs, host file paths, shell commands, or free-form tool requests.
+
+Existing provider-contacting workflows should remain CLI-only until the
+Telegram command has a deliberate safety design. For example:
+
+    python -m marcbot source-monitor summarize-latest <project>
+
+is currently CLI-only because it loads LLM provider configuration and sends
+bounded report content to a model provider.

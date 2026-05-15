@@ -493,3 +493,31 @@ Current LLM functionality is CLI-only:
 
 MarcBot does not currently expose arbitrary Telegram prompt relay or arbitrary
 provider/model configuration from Telegram.
+
+### Telegram provider-contacting command gate
+
+MarcBot should not expose provider-contacting Telegram commands by accident.
+
+Before adding any Telegram command that loads LLM credentials, contacts a model
+provider, wakes a local model, sends content to a model, or creates
+model-generated output, the command must have an explicit safety design.
+
+The safety design must define:
+
+1. The exact command name.
+2. The allowed arguments.
+3. The provider/profile/task route used by the command.
+4. Whether the command is enabled by default.
+5. What content may be sent to the model.
+6. What content must never be sent to the model.
+7. What is logged.
+8. What is returned to Telegram.
+9. How failures are reported without tracebacks or secrets.
+10. What tests prove the command remains bounded.
+
+Provider-contacting Telegram commands must not provide arbitrary prompt relay,
+arbitrary host file access, arbitrary URL fetching, arbitrary provider/model
+selection, or arbitrary tool execution.
+
+This gate applies to future source-monitor summarization commands and future
+chat commands.
