@@ -14,6 +14,7 @@ from marcbot import __version__
 from marcbot.about import format_about_message
 from marcbot.backup_list import format_backup_list_message
 from marcbot.backup_status import format_backup_status_message
+from marcbot.chat_context import load_chat_context
 from marcbot.chat_session import ChatSessionStore
 from marcbot.config import MarcBotConfig
 from marcbot.disk import format_disk_report
@@ -663,7 +664,11 @@ async def llm_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 
-def _format_chat_prompt(history: list[object], user_text: str) -> str:
+def _format_chat_prompt(
+    history: list[object],
+    user_text: str,
+    local_context: str = "",
+) -> str:
     """Build a bounded chat prompt from volatile history and new user text."""
 
     lines = [
@@ -678,6 +683,16 @@ def _format_chat_prompt(history: list[object], user_text: str) -> str:
         "",
         "Recent conversation:",
     ]
+
+    cleaned_context = local_context.strip()
+    if cleaned_context:
+        lines.extend([
+            "",
+            "Local configured chat context:",
+            cleaned_context,
+            "",
+            "Recent volatile conversation:",
+        ])
 
     for message in history:
         role = getattr(message, "role", "").strip()
@@ -750,7 +765,31 @@ async def chat_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
 
     provider = llm_config.providers[profile.provider]
-    prompt = _format_chat_prompt(session.history, user_text)
+    try:
+        context_bundle = load_chat_context()
+    except MarcBotError as exc:
+        LOGGER.warning(
+            "Chat context load failed: chat_id=%s profile=%s code=%s",
+            chat_id,
+            profile.name,
+            exc.code,
+        )
+        await update.message.reply_text(f"Chat context error: {exc.message}")
+        return
+
+    local_context = context_bundle.assemble_text()
+    LOGGER.info(
+        "Chat context loaded: chat_id=%s profile=%s files=%s chars=%s",
+        chat_id,
+        profile.name,
+        len(context_bundle.files),
+        context_bundle.total_chars,
+    )
+    prompt = _format_chat_prompt(
+        session.history,
+        user_text,
+        local_context=local_context,
+    )
     if len(prompt) > MAX_CHAT_PROMPT_CHARS:
         await update.message.reply_text(
             "Chat history is too large for the current prompt limit. "

@@ -643,3 +643,232 @@ def test_active_chat_provider_error_is_clean(monkeypatch) -> None:
     session = store.get(chat_id=123)
     assert session is not None
     assert session.history == []
+
+def test_active_chat_includes_local_context_in_prompt(monkeypatch, tmp_path) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+    from marcbot.chat_context import load_chat_context
+    from marcbot.llm_client import LlmCompletionResult
+
+    (tmp_path / "agent.md").write_text(
+        "Name: MarcBot\nHumor: light and occasional",
+        encoding="utf-8",
+    )
+    (tmp_path / "user.md").write_text(
+        "Marc prefers numbered steps.",
+        encoding="utf-8",
+    )
+
+    replies = []
+
+    class FakeMessage:
+        text = "Say hello."
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    provider = SimpleNamespace(name="lmstudio")
+    profile = SimpleNamespace(
+        name="local_fast",
+        provider="lmstudio",
+        model="test-model",
+        temperature=0.2,
+        max_tokens=100,
+        chat_enabled=True,
+    )
+
+    store = telegram_bot.ChatSessionStore()
+    store.start(chat_id=123, profile_name="local_fast")
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_llm_config",
+        lambda: SimpleNamespace(
+            providers={"lmstudio": provider},
+            profiles={"local_fast": profile},
+        ),
+    )
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_chat_context",
+        lambda: load_chat_context(context_dir=tmp_path),
+    )
+
+    calls = []
+
+    def fake_completion(**kwargs):
+        calls.append(kwargs)
+        return LlmCompletionResult(
+            provider_name="lmstudio",
+            profile_name="local_fast",
+            model="test-model",
+            response_text="Hello from MarcBot.",
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "run_openai_compatible_completion",
+        fake_completion,
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert replies == ["Hello from MarcBot."]
+    assert len(calls) == 1
+    prompt = calls[0]["prompt"]
+    assert "Local configured chat context:" in prompt
+    assert "## Local chat context: agent.md" in prompt
+    assert "Name: MarcBot" in prompt
+    assert "Humor: light and occasional" in prompt
+    assert "## Local chat context: user.md" in prompt
+    assert "Marc prefers numbered steps." in prompt
+    assert "Say hello." in prompt
+
+
+def test_active_chat_allows_missing_local_context(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+    from marcbot.chat_context import load_chat_context
+    from marcbot.llm_client import LlmCompletionResult
+
+    replies = []
+
+    class FakeMessage:
+        text = "hello"
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    provider = SimpleNamespace(name="lmstudio")
+    profile = SimpleNamespace(
+        name="local_fast",
+        provider="lmstudio",
+        model="test-model",
+        temperature=0.2,
+        max_tokens=100,
+        chat_enabled=True,
+    )
+
+    store = telegram_bot.ChatSessionStore()
+    store.start(chat_id=123, profile_name="local_fast")
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_llm_config",
+        lambda: SimpleNamespace(
+            providers={"lmstudio": provider},
+            profiles={"local_fast": profile},
+        ),
+    )
+    monkeypatch.setattr(telegram_bot, "load_chat_context", load_chat_context)
+
+    calls = []
+
+    def fake_completion(**kwargs):
+        calls.append(kwargs)
+        return LlmCompletionResult(
+            provider_name="lmstudio",
+            profile_name="local_fast",
+            model="test-model",
+            response_text="hello",
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "run_openai_compatible_completion",
+        fake_completion,
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert replies == ["hello"]
+    assert len(calls) == 1
+
+
+def test_active_chat_context_error_is_clean(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+    from marcbot.errors import MarcBotError
+
+    replies = []
+
+    class FakeMessage:
+        text = "hello"
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    provider = SimpleNamespace(name="lmstudio")
+    profile = SimpleNamespace(
+        name="local_fast",
+        provider="lmstudio",
+        model="test-model",
+        temperature=0.2,
+        max_tokens=100,
+        chat_enabled=True,
+    )
+
+    store = telegram_bot.ChatSessionStore()
+    store.start(chat_id=123, profile_name="local_fast")
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_llm_config",
+        lambda: SimpleNamespace(
+            providers={"lmstudio": provider},
+            profiles={"local_fast": profile},
+        ),
+    )
+
+    def fail_context():
+        raise MarcBotError("MBOT-CHATCTX-TEST", "context too large")
+
+    monkeypatch.setattr(telegram_bot, "load_chat_context", fail_context)
+
+    def fail_completion(**kwargs):
+        raise AssertionError("provider should not be contacted")
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "run_openai_compatible_completion",
+        fail_completion,
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert replies == ["Chat context error: context too large"]
+    session = store.get(chat_id=123)
+    assert session is not None
+    assert session.history == []

@@ -582,3 +582,17 @@ Initial approved filenames are:
     agent.md
     user.md
     project.md
+
+## Live prompt assembly with local context
+
+When wired into live chat, local context should be inserted into the provider
+prompt before volatile conversation history and the current user message.
+
+Live chat must continue to:
+
+- avoid logging full context contents
+- report context loading failures cleanly
+- avoid provider contact when context loading fails
+- keep all file access limited to approved local chat context filenames
+- keep context content out of Telegram status messages unless explicitly sent as
+  part of a model prompt
