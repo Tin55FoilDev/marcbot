@@ -844,6 +844,17 @@ async def chat_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         len(session.history),
     )
 
+    bot = getattr(context, "bot", None)
+    if bot is not None:
+        try:
+            await bot.send_chat_action(chat_id=chat_id, action="typing")
+        except Exception:
+            LOGGER.warning(
+                "Failed to send Telegram typing action: chat_id=%s",
+                chat_id,
+                exc_info=True,
+            )
+
     try:
         result = run_openai_compatible_completion(
             provider=provider,

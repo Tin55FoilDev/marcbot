@@ -986,3 +986,113 @@ def test_chat_context_command_is_registered() -> None:
     }
 
     assert "chat_context" in command_names
+
+def test_active_chat_sends_typing_action_before_provider_call(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+    from marcbot.chat_context import load_chat_context
+    from marcbot.llm_client import LlmCompletionResult
+
+    replies = []
+    actions = []
+
+    class FakeMessage:
+        text = "hello"
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    class FakeBot:
+        async def send_chat_action(self, chat_id, action):
+            actions.append((chat_id, action))
+
+    provider = SimpleNamespace(name="lmstudio")
+    profile = SimpleNamespace(
+        name="local_fast",
+        provider="lmstudio",
+        model="test-model",
+        temperature=0.2,
+        max_tokens=100,
+        chat_enabled=True,
+    )
+
+    store = telegram_bot.ChatSessionStore()
+    store.start(chat_id=123, profile_name="local_fast")
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_llm_config",
+        lambda: SimpleNamespace(
+            providers={"lmstudio": provider},
+            profiles={"local_fast": profile},
+        ),
+    )
+    monkeypatch.setattr(telegram_bot, "load_chat_context", load_chat_context)
+
+    def fake_completion(**kwargs):
+        return LlmCompletionResult(
+            provider_name="lmstudio",
+            profile_name="local_fast",
+            model="test-model",
+            response_text="hello Marc",
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "run_openai_compatible_completion",
+        fake_completion,
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        bot=FakeBot(),
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert actions == [(123, "typing")]
+    assert replies == ["hello Marc"]
+
+
+def test_inactive_chat_does_not_send_typing_action(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    actions = []
+    replies = []
+
+    class FakeMessage:
+        text = "hello"
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    class FakeBot:
+        async def send_chat_action(self, chat_id, action):
+            actions.append((chat_id, action))
+
+    store = telegram_bot.ChatSessionStore()
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        bot=FakeBot(),
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert actions == []
+    assert replies == []

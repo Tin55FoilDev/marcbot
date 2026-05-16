@@ -645,3 +645,21 @@ The command should:
 
 This command helps tune local `system.md`, `agent.md`, `user.md`, and
 `project.md` files safely.
+
+## Telegram typing indicator
+
+Active provider-contacting chat should send a Telegram typing action before the
+model call.
+
+This gives Marc a visible signal that normal text was accepted and MarcBot is
+working.
+
+The typing indicator should be used only after MarcBot confirms:
+
+- the chat is authorized
+- chat mode is active
+- the input is valid
+- the selected profile and context are valid
+
+It should not be sent for inactive chat text, rejected input, or provider-free
+status commands.
