@@ -663,3 +663,21 @@ The typing indicator should be used only after MarcBot confirms:
 
 It should not be sent for inactive chat text, rejected input, or provider-free
 status commands.
+
+## Chat profile status command
+
+`/chat_profiles` should show configured LLM profiles and whether each one is
+approved for Telegram chat.
+
+The command should:
+
+- require an authorized Telegram chat
+- read local LLM profile configuration
+- show profile name, model, intended use, and chat approval status
+- show `Provider contact: no`
+- avoid provider health checks
+- avoid remote model discovery
+- avoid sending prompts to model providers
+
+This helps Marc choose a valid `/chat_start <profile>` target without causing
+provider contact.

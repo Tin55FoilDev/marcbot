@@ -628,6 +628,45 @@ async def chat_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 
+
+async def chat_profiles_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /chat_profiles."""
+
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /chat_profiles from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /chat_profiles for chat_id=%s", chat_id)
+
+    try:
+        llm_config = load_llm_config()
+    except Exception:
+        LOGGER.exception("Failed to load LLM config for /chat_profiles")
+        if update.message is not None:
+            await update.message.reply_text("Chat profiles unavailable: LLM config unavailable.")
+        return
+
+    lines = [
+        "MarcBot chat profiles",
+        "Provider contact: no",
+    ]
+
+    for name in sorted(llm_config.profiles):
+        profile = llm_config.profiles[name]
+        intended_use = profile.intended_use or "(not set)"
+        lines.append(
+            f"- {profile.name}: chat_enabled={profile.chat_enabled}, "
+            f"model={profile.model}, intended_use={intended_use}"
+        )
+
+    if update.message is not None:
+        await update.message.reply_text("\n".join(lines))
+
+
 async def chat_context_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /chat_context."""
 
@@ -953,6 +992,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/chat_status - show chat mode status without contacting providers\n"
         "/chat_clear - clear volatile chat history\n"
         "/chat_context - show loaded local chat context files without contents\n"
+        "/chat_profiles - show chat-approved LLM profiles without contacting providers\n"
         "/chat_stop - stop chat mode\n"
         "/logs - show recent MarcBot application logs\n"
         "/tail <app|service> - show approved diagnostic log tails\n"
@@ -1031,6 +1071,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("chat_status", chat_status_command))
     application.add_handler(CommandHandler("chat_clear", chat_clear_command))
     application.add_handler(CommandHandler("chat_context", chat_context_command))
+    application.add_handler(CommandHandler("chat_profiles", chat_profiles_command))
     application.add_handler(CommandHandler("chat_stop", chat_stop_command))
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("tail", tail_command))

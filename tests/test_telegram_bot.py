@@ -1096,3 +1096,103 @@ def test_inactive_chat_does_not_send_typing_action(monkeypatch) -> None:
 
     assert actions == []
     assert replies == []
+
+def test_chat_profiles_command_reports_profiles_without_provider_contact(
+    monkeypatch,
+) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    replies = []
+
+    class FakeMessage:
+        async def reply_text(self, text):
+            replies.append(text)
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_llm_config",
+        lambda: SimpleNamespace(
+            profiles={
+                "local_fast": SimpleNamespace(
+                    name="local_fast",
+                    model="google/gemma-4-e4b",
+                    intended_use="low_risk_utility",
+                    chat_enabled=True,
+                ),
+                "local_careful": SimpleNamespace(
+                    name="local_careful",
+                    model="qwen3.6-35b-a3b",
+                    intended_use="bounded_local_analysis",
+                    chat_enabled=False,
+                ),
+            }
+        ),
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_profiles_command(update, context))
+
+    assert len(replies) == 1
+    assert "MarcBot chat profiles" in replies[0]
+    assert "Provider contact: no" in replies[0]
+    assert (
+        "- local_fast: chat_enabled=True, model=google/gemma-4-e4b, "
+        "intended_use=low_risk_utility"
+    ) in replies[0]
+    assert (
+        "- local_careful: chat_enabled=False, model=qwen3.6-35b-a3b, "
+        "intended_use=bounded_local_analysis"
+    ) in replies[0]
+
+
+def test_chat_profiles_command_reports_config_error(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    replies = []
+
+    class FakeMessage:
+        async def reply_text(self, text):
+            replies.append(text)
+
+    def fail_config():
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(telegram_bot, "load_llm_config", fail_config)
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_profiles_command(update, context))
+
+    assert replies == ["Chat profiles unavailable: LLM config unavailable."]
+
+
+def test_chat_profiles_command_is_registered() -> None:
+    application = build_application(make_config())
+    command_names = {
+        command
+        for handlers in application.handlers.values()
+        for handler in handlers
+        if hasattr(handler, "commands")
+        for command in handler.commands
+    }
+
+    assert "chat_profiles" in command_names

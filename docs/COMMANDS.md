@@ -292,3 +292,18 @@ Example output:
     - user.md: loaded
     - project.md: missing
     Provider contact: no
+
+### Chat profile status
+
+`/chat_profiles` shows configured LLM profiles and whether each one is approved
+for Telegram chat.
+
+It is provider-contact-free. It reads local LLM configuration but does not call a
+model provider, load remote model lists, run health checks, or send prompts.
+
+Example output:
+
+    MarcBot chat profiles
+    Provider contact: no
+    - local_fast: chat_enabled=True, model=google/gemma-4-e4b, intended_use=low_risk_utility
+    - local_careful: chat_enabled=False, model=qwen3.6-35b-a3b, intended_use=bounded_local_analysis
