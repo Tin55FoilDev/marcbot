@@ -627,6 +627,38 @@ async def chat_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(CHAT_SESSIONS.status_text(chat_id=chat_id))
 
 
+
+async def chat_context_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /chat_context."""
+
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /chat_context from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /chat_context for chat_id=%s", chat_id)
+
+    try:
+        bundle = load_chat_context()
+    except MarcBotError as exc:
+        LOGGER.warning(
+            "Chat context status failed: chat_id=%s code=%s",
+            chat_id,
+            exc.code,
+        )
+        if update.message is not None:
+            await update.message.reply_text(f"Chat context error: {exc.message}")
+        return
+
+    if update.message is not None:
+        await update.message.reply_text(
+            bundle.format_status() + "\nProvider contact: no"
+        )
+
+
 async def chat_clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /chat_clear."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -909,6 +941,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/chat_start <profile> - start bounded chat mode with a chat-approved profile\n"
         "/chat_status - show chat mode status without contacting providers\n"
         "/chat_clear - clear volatile chat history\n"
+        "/chat_context - show loaded local chat context files without contents\n"
         "/chat_stop - stop chat mode\n"
         "/logs - show recent MarcBot application logs\n"
         "/tail <app|service> - show approved diagnostic log tails\n"
@@ -986,6 +1019,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("chat_start", chat_start_command))
     application.add_handler(CommandHandler("chat_status", chat_status_command))
     application.add_handler(CommandHandler("chat_clear", chat_clear_command))
+    application.add_handler(CommandHandler("chat_context", chat_context_command))
     application.add_handler(CommandHandler("chat_stop", chat_stop_command))
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("tail", tail_command))

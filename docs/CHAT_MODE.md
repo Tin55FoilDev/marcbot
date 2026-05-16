@@ -627,3 +627,21 @@ This is local runtime configuration in:
     /srv/marcbot/config/llm-providers.toml
 
 It should not be committed to Git unless represented as a non-secret example.
+
+## Chat context status command
+
+`/chat_context` should show local chat context file status without showing file
+contents.
+
+The command should:
+
+- require an authorized Telegram chat
+- load context metadata through the approved context loader
+- show loaded or missing status for each approved file
+- show total character count
+- show `Provider contact: no`
+- avoid displaying context file contents
+- avoid contacting model providers
+
+This command helps tune local `system.md`, `agent.md`, `user.md`, and
+`project.md` files safely.

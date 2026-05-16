@@ -273,3 +273,22 @@ chat-approved LLM profile.
 This is provider-contacting behavior. It is limited to bounded conversational
 text and volatile in-memory history. It must not read files, browse URLs, run
 commands, trigger workflows, update durable memory, or expose secrets.
+
+### Chat context status
+
+`/chat_context` shows which local chat context files are loaded without showing
+their contents.
+
+It is provider-contact-free and safe for tuning local chat context.
+
+Example output:
+
+    MarcBot chat context
+    Directory: /srv/marcbot/config/chat
+    Loaded files: 3
+    Total chars: 4200
+    - system.md: loaded
+    - agent.md: loaded
+    - user.md: loaded
+    - project.md: missing
+    Provider contact: no

@@ -899,3 +899,90 @@ def test_format_chat_prompt_allows_configured_local_context_size() -> None:
 
     assert len(prompt) < telegram_bot.MAX_CHAT_PROMPT_CHARS
     assert telegram_bot.MAX_CHAT_PROMPT_CHARS == 12000
+
+def test_chat_context_command_reports_loaded_context_without_contents(
+    monkeypatch, tmp_path
+) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+    from marcbot.chat_context import load_chat_context
+
+    (tmp_path / "agent.md").write_text(
+        "Private agent context should not appear",
+        encoding="utf-8",
+    )
+
+    replies = []
+
+    class FakeMessage:
+        async def reply_text(self, text):
+            replies.append(text)
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_chat_context",
+        lambda: load_chat_context(context_dir=tmp_path),
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_context_command(update, context))
+
+    assert len(replies) == 1
+    assert "MarcBot chat context" in replies[0]
+    assert "- agent.md: loaded" in replies[0]
+    assert "- system.md: missing" in replies[0]
+    assert "Provider contact: no" in replies[0]
+    assert "Private agent context should not appear" not in replies[0]
+
+
+def test_chat_context_command_reports_context_error(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+    from marcbot.errors import MarcBotError
+
+    replies = []
+
+    class FakeMessage:
+        async def reply_text(self, text):
+            replies.append(text)
+
+    def fail_context():
+        raise MarcBotError("MBOT-CHATCTX-TEST", "context too large")
+
+    monkeypatch.setattr(telegram_bot, "load_chat_context", fail_context)
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_context_command(update, context))
+
+    assert replies == ["Chat context error: context too large"]
+
+
+def test_chat_context_command_is_registered() -> None:
+    application = build_application(make_config())
+    command_names = {
+        command
+        for handlers in application.handlers.values()
+        for handler in handlers
+        if hasattr(handler, "commands")
+        for command in handler.commands
+    }
+
+    assert "chat_context" in command_names
