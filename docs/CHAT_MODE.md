@@ -559,3 +559,26 @@ A safe implementation sequence is:
 5. Add prompt assembly using built-in safety rules plus local context files.
 6. Keep normal chat behavior unchanged except for richer prompt context.
 7. Add `/chat_status` context-file visibility later.
+
+## Chat context loader helper
+
+MarcBot should load local chat context files through a dedicated helper before
+the files are wired into live prompt assembly.
+
+The helper should:
+
+- load only approved filenames
+- preserve prompt order
+- ignore unrelated files
+- handle missing files cleanly
+- enforce per-file and combined size limits
+- return safe status metadata without exposing file contents
+- assemble context text only for provider prompt construction
+- avoid logging full context contents
+
+Initial approved filenames are:
+
+    system.md
+    agent.md
+    user.md
+    project.md
