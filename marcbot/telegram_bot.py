@@ -701,7 +701,14 @@ def _format_chat_prompt(
             continue
         lines.append(f"{role}: {content}")
 
-    lines.extend(["user: " + user_text.strip(), "assistant:"])
+    lines.extend(
+        [
+            "Current user message:",
+            user_text.strip(),
+            "",
+            "Respond now with the assistant message only. Do not include role labels.",
+        ]
+    )
     return "\n".join(lines).strip()
 
 

@@ -872,3 +872,17 @@ def test_active_chat_context_error_is_clean(monkeypatch) -> None:
     session = store.get(chat_id=123)
     assert session is not None
     assert session.history == []
+
+def test_format_chat_prompt_uses_explicit_final_response_instruction() -> None:
+    import marcbot.telegram_bot as telegram_bot
+
+    prompt = telegram_bot._format_chat_prompt(
+        history=[],
+        user_text="Briefly introduce yourself.",
+        local_context="Name: MarcBot",
+    )
+
+    assert "Current user message:" in prompt
+    assert "Briefly introduce yourself." in prompt
+    assert "Respond now with the assistant message only." in prompt
+    assert not prompt.endswith("assistant:")
