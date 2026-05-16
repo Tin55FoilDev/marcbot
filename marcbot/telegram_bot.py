@@ -22,6 +22,7 @@ from marcbot.errors import MarcBotError
 from marcbot.git_status import format_git_report
 from marcbot.health import format_health_report, run_health_checks
 from marcbot.latest_report import validate_latest_daily_status_report
+from marcbot.llm_client import run_openai_compatible_completion
 from marcbot.llm_config import load_llm_config
 from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
@@ -39,6 +40,9 @@ from marcbot.workspace_sender import validate_workspace_send
 
 LOGGER = logging.getLogger(__name__)
 CHAT_SESSIONS = ChatSessionStore()
+MAX_CHAT_INPUT_CHARS = 2000
+MAX_CHAT_PROMPT_CHARS = 4000
+MAX_CHAT_REPLY_CHARS = 3500
 
 
 def _chat_id_from_update(update: Update) -> int | None:
@@ -658,6 +662,150 @@ async def llm_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(status_text)
 
 
+
+def _format_chat_prompt(history: list[object], user_text: str) -> str:
+    """Build a bounded chat prompt from volatile history and new user text."""
+
+    lines = [
+        "You are MarcBot chat mode.",
+        "You may discuss, explain, plan, draft, compare, and summarize text",
+        "provided directly in this Telegram chat.",
+        "You must not claim that you ran commands, read files, browsed URLs,",
+        "updated memory, contacted tools, inspected secrets, or changed system",
+        "state.",
+        "If Marc asks for an action, suggest the appropriate approved command",
+        "or workflow instead of claiming to perform it.",
+        "",
+        "Recent conversation:",
+    ]
+
+    for message in history:
+        role = getattr(message, "role", "").strip()
+        content = getattr(message, "content", "").strip()
+        if not role or not content:
+            continue
+        lines.append(f"{role}: {content}")
+
+    lines.extend(["user: " + user_text.strip(), "assistant:"])
+    return "\n".join(lines).strip()
+
+
+def _trim_chat_reply(text: str) -> str:
+    """Return a Telegram-bounded chat reply."""
+
+    cleaned = text.strip()
+    if len(cleaned) <= MAX_CHAT_REPLY_CHARS:
+        return cleaned
+    return cleaned[: MAX_CHAT_REPLY_CHARS - 40].rstrip() + "\n\n[truncated]"
+
+
+async def chat_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle normal Telegram text when chat mode is active."""
+
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized chat text from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    if chat_id is None or update.message is None:
+        return
+
+    session = CHAT_SESSIONS.get(chat_id=chat_id)
+    if session is None:
+        LOGGER.info("Ignored normal text for inactive chat_id=%s", chat_id)
+        return
+
+    user_text = (update.message.text or "").strip()
+    if not user_text:
+        return
+
+    if len(user_text) > MAX_CHAT_INPUT_CHARS:
+        await update.message.reply_text(
+            f"Chat message is too long. Limit: {MAX_CHAT_INPUT_CHARS} characters."
+        )
+        return
+
+    try:
+        llm_config = load_llm_config()
+    except Exception:
+        LOGGER.exception("Failed to load LLM config for chat text")
+        await update.message.reply_text("Chat failed: LLM config unavailable.")
+        return
+
+    profile = llm_config.profiles.get(session.profile_name)
+    if profile is None:
+        await update.message.reply_text(
+            f"Chat failed: active profile no longer exists: {session.profile_name}"
+        )
+        return
+
+    if not profile.chat_enabled:
+        CHAT_SESSIONS.stop(chat_id=chat_id)
+        await update.message.reply_text(
+            f"Chat stopped: profile is no longer approved for chat: {profile.name}"
+        )
+        return
+
+    provider = llm_config.providers[profile.provider]
+    prompt = _format_chat_prompt(session.history, user_text)
+    if len(prompt) > MAX_CHAT_PROMPT_CHARS:
+        await update.message.reply_text(
+            "Chat history is too large for the current prompt limit. "
+            "Use /chat_clear and try again."
+        )
+        return
+
+    LOGGER.info(
+        "Handling chat text: chat_id=%s profile=%s input_chars=%s history=%s",
+        chat_id,
+        profile.name,
+        len(user_text),
+        len(session.history),
+    )
+
+    try:
+        result = run_openai_compatible_completion(
+            provider=provider,
+            profile_name=profile.name,
+            model=profile.model,
+            prompt=prompt,
+            temperature=profile.temperature,
+            max_tokens=profile.max_tokens,
+        )
+    except MarcBotError as exc:
+        LOGGER.warning(
+            "Chat provider error: chat_id=%s profile=%s code=%s",
+            chat_id,
+            profile.name,
+            exc.code,
+        )
+        await update.message.reply_text(f"Chat provider error: {exc.message}")
+        return
+    except Exception:
+        LOGGER.exception("Unexpected chat provider failure")
+        await update.message.reply_text("Chat failed: unexpected provider error.")
+        return
+
+    CHAT_SESSIONS.append_message(chat_id=chat_id, role="user", content=user_text)
+    CHAT_SESSIONS.append_message(
+        chat_id=chat_id,
+        role="assistant",
+        content=result.response_text,
+    )
+
+    LOGGER.info(
+        "Chat text handled: chat_id=%s profile=%s output_chars=%s finish=%s",
+        chat_id,
+        profile.name,
+        len(result.response_text),
+        result.finish_reason,
+    )
+    await update.message.reply_text(_trim_chat_reply(result.response_text))
+
+
 async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /logs."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -795,6 +943,10 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("tail", tail_command))
     application.add_handler(CommandHandler("help", help_command))
+
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, chat_text_message)
+    )
 
     # This must remain after all known command handlers.
     application.add_handler(MessageHandler(filters.COMMAND, unknown_command))

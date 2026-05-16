@@ -394,3 +394,252 @@ def test_chat_clear_and_stop(monkeypatch) -> None:
 
     assert stop_replies == ["MarcBot chat stopped."]
     assert store.get(chat_id=123) is None
+
+def test_normal_text_is_ignored_when_chat_inactive(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    replies = []
+
+    class FakeMessage:
+        text = "hello"
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    store = telegram_bot.ChatSessionStore()
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert replies == []
+
+
+def test_active_chat_text_calls_configured_profile(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+    from marcbot.llm_client import LlmCompletionResult
+
+    replies = []
+
+    class FakeMessage:
+        text = "Explain VLANs briefly."
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    provider = SimpleNamespace(name="lmstudio")
+    profile = SimpleNamespace(
+        name="local_fast",
+        provider="lmstudio",
+        model="test-model",
+        temperature=0.2,
+        max_tokens=100,
+        chat_enabled=True,
+    )
+
+    store = telegram_bot.ChatSessionStore()
+    store.start(chat_id=123, profile_name="local_fast")
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_llm_config",
+        lambda: SimpleNamespace(
+            providers={"lmstudio": provider},
+            profiles={"local_fast": profile},
+        ),
+    )
+
+    calls = []
+
+    def fake_completion(**kwargs):
+        calls.append(kwargs)
+        return LlmCompletionResult(
+            provider_name="lmstudio",
+            profile_name="local_fast",
+            model="test-model",
+            response_text="A VLAN separates network traffic logically.",
+            finish_reason="stop",
+        )
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "run_openai_compatible_completion",
+        fake_completion,
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert replies == ["A VLAN separates network traffic logically."]
+    assert len(calls) == 1
+    assert calls[0]["provider"] is provider
+    assert calls[0]["profile_name"] == "local_fast"
+    assert calls[0]["model"] == "test-model"
+    assert "Explain VLANs briefly." in calls[0]["prompt"]
+
+    session = store.get(chat_id=123)
+    assert session is not None
+    assert [message.role for message in session.history] == ["user", "assistant"]
+
+
+def test_active_chat_rejects_too_long_input(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    replies = []
+
+    class FakeMessage:
+        text = "x" * (telegram_bot.MAX_CHAT_INPUT_CHARS + 1)
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    store = telegram_bot.ChatSessionStore()
+    store.start(chat_id=123, profile_name="local_fast")
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert replies == [
+        f"Chat message is too long. Limit: {telegram_bot.MAX_CHAT_INPUT_CHARS} characters."
+    ]
+
+
+def test_active_chat_stops_if_profile_no_longer_chat_enabled(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    replies = []
+
+    class FakeMessage:
+        text = "hello"
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    profile = SimpleNamespace(
+        name="local_fast",
+        provider="lmstudio",
+        chat_enabled=False,
+    )
+
+    store = telegram_bot.ChatSessionStore()
+    store.start(chat_id=123, profile_name="local_fast")
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_llm_config",
+        lambda: SimpleNamespace(
+            providers={},
+            profiles={"local_fast": profile},
+        ),
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert replies == [
+        "Chat stopped: profile is no longer approved for chat: local_fast"
+    ]
+    assert store.get(chat_id=123) is None
+
+
+def test_active_chat_provider_error_is_clean(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+    from marcbot.errors import MarcBotError
+
+    replies = []
+
+    class FakeMessage:
+        text = "hello"
+
+        async def reply_text(self, text):
+            replies.append(text)
+
+    provider = SimpleNamespace(name="lmstudio")
+    profile = SimpleNamespace(
+        name="local_fast",
+        provider="lmstudio",
+        model="test-model",
+        temperature=0.2,
+        max_tokens=100,
+        chat_enabled=True,
+    )
+
+    store = telegram_bot.ChatSessionStore()
+    store.start(chat_id=123, profile_name="local_fast")
+    monkeypatch.setattr(telegram_bot, "CHAT_SESSIONS", store)
+    monkeypatch.setattr(
+        telegram_bot,
+        "load_llm_config",
+        lambda: SimpleNamespace(
+            providers={"lmstudio": provider},
+            profiles={"local_fast": profile},
+        ),
+    )
+
+    def fake_completion(**kwargs):
+        raise MarcBotError("MBOT-TEST", "provider unavailable")
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "run_openai_compatible_completion",
+        fake_completion,
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.chat_text_message(update, context))
+
+    assert replies == ["Chat provider error: provider unavailable"]
+    session = store.get(chat_id=123)
+    assert session is not None
+    assert session.history == []

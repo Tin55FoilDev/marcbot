@@ -344,3 +344,22 @@ This milestone should not handle normal Telegram text as chat input and should
 not send prompts to a model provider. `/chat_start` may load local LLM
 configuration to validate that the requested profile exists and has
 `chat_enabled = true`.
+
+## Active normal-text chat handling
+
+After lifecycle commands are stable, normal Telegram text may be handled as chat
+input only when chat mode is active.
+
+Required behavior:
+
+- ignore normal text when chat mode is inactive
+- keep slash commands routed to command handlers
+- enforce a bounded input length
+- assemble a bounded prompt from volatile in-memory history
+- call only the selected chat-approved profile
+- append user and assistant messages to volatile history only after success
+- return clean provider errors without tracebacks
+- log metadata only, not full prompts or full responses
+
+This does not add file access, URL access, workflow execution, memory writes, or
+tool use.

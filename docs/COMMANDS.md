@@ -264,3 +264,12 @@ requested profile exists and is approved for chat.
 
 These commands do not send prompts to a model provider. Normal Telegram text is
 not yet handled as chat input in this milestone.
+
+### Active chat text
+
+When chat mode is active, normal Telegram text may be sent to the selected
+chat-approved LLM profile.
+
+This is provider-contacting behavior. It is limited to bounded conversational
+text and volatile in-memory history. It must not read files, browse URLs, run
+commands, trigger workflows, update durable memory, or expose secrets.
