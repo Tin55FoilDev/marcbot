@@ -820,6 +820,7 @@ async def chat_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             prompt=prompt,
             temperature=profile.temperature,
             max_tokens=profile.max_tokens,
+            max_prompt_chars=MAX_CHAT_PROMPT_CHARS,
         )
     except MarcBotError as exc:
         LOGGER.warning(

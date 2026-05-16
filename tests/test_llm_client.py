@@ -389,3 +389,84 @@ def test_format_llm_health_result() -> None:
     assert "Provider: lmstudio" in output
     assert "Result: OK" in output
     assert "Response: marcbot-ok" in output
+
+def test_completion_accepts_custom_prompt_limit() -> None:
+    import json
+
+    from marcbot.llm_client import run_openai_compatible_completion
+    from marcbot.llm_config import LlmProviderConfig
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def read(self):
+            return json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {"content": "ok"},
+                            "finish_reason": "stop",
+                        }
+                    ]
+                }
+            ).encode("utf-8")
+
+    class FakeOpener:
+        def open(self, request, timeout):
+            return FakeResponse()
+
+    provider = LlmProviderConfig(
+        name="lmstudio",
+        enabled=True,
+        provider_type="openai_compatible",
+        base_url="http://localhost:1234/v1",
+        api_key_env="",
+        timeout_seconds=10,
+    )
+
+    result = run_openai_compatible_completion(
+        provider=provider,
+        profile_name="local_fast",
+        model="test-model",
+        prompt="x" * 5000,
+        temperature=0.2,
+        max_tokens=100,
+        max_prompt_chars=6000,
+        opener=FakeOpener(),
+    )
+
+    assert result.response_text == "ok"
+
+
+def test_completion_rejects_invalid_custom_prompt_limit() -> None:
+    import pytest
+
+    from marcbot.errors import MarcBotError
+    from marcbot.llm_client import run_openai_compatible_completion
+    from marcbot.llm_config import LlmProviderConfig
+
+    provider = LlmProviderConfig(
+        name="lmstudio",
+        enabled=True,
+        provider_type="openai_compatible",
+        base_url="http://localhost:1234/v1",
+        api_key_env="",
+        timeout_seconds=10,
+    )
+
+    with pytest.raises(MarcBotError) as excinfo:
+        run_openai_compatible_completion(
+            provider=provider,
+            profile_name="local_fast",
+            model="test-model",
+            prompt="hello",
+            temperature=0.2,
+            max_tokens=100,
+            max_prompt_chars=0,
+        )
+
+    assert excinfo.value.code == "MBOT-LLM-041"

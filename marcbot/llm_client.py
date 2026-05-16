@@ -232,16 +232,22 @@ def run_openai_compatible_completion(
     prompt: str,
     temperature: float,
     max_tokens: int,
+    max_prompt_chars: int = MAX_LLM_PROMPT_CHARS,
     opener: UrlOpener | None = None,
 ) -> LlmCompletionResult:
     """Run a bounded one-shot chat completion for a configured profile."""
     if not isinstance(prompt, str) or not prompt.strip():
         raise MarcBotError("MBOT-LLM-038", "LLM completion prompt must not be empty")
 
-    if len(prompt.strip()) > MAX_LLM_PROMPT_CHARS:
+    if max_prompt_chars < 1:
+        raise MarcBotError(
+            "MBOT-LLM-041",
+            "LLM completion max_prompt_chars must be positive",
+        )
+    if len(prompt.strip()) > max_prompt_chars:
         raise MarcBotError(
             "MBOT-LLM-040",
-            f"LLM completion prompt exceeds {MAX_LLM_PROMPT_CHARS} characters",
+            f"LLM completion prompt exceeds {max_prompt_chars} characters",
         )
 
     if max_tokens < 1:
