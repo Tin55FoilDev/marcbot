@@ -42,7 +42,7 @@ from marcbot.workspace_sender import validate_workspace_send
 LOGGER = logging.getLogger(__name__)
 CHAT_SESSIONS = ChatSessionStore()
 MAX_CHAT_INPUT_CHARS = 2000
-MAX_CHAT_PROMPT_CHARS = 4000
+MAX_CHAT_PROMPT_CHARS = 12000
 MAX_CHAT_REPLY_CHARS = 3500
 
 

@@ -886,3 +886,16 @@ def test_format_chat_prompt_uses_explicit_final_response_instruction() -> None:
     assert "Briefly introduce yourself." in prompt
     assert "Respond now with the assistant message only." in prompt
     assert not prompt.endswith("assistant:")
+
+def test_format_chat_prompt_allows_configured_local_context_size() -> None:
+    import marcbot.telegram_bot as telegram_bot
+
+    local_context = "x" * 7000
+    prompt = telegram_bot._format_chat_prompt(
+        history=[],
+        user_text="Briefly introduce yourself.",
+        local_context=local_context,
+    )
+
+    assert len(prompt) < telegram_bot.MAX_CHAT_PROMPT_CHARS
+    assert telegram_bot.MAX_CHAT_PROMPT_CHARS == 12000
