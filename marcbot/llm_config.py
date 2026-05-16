@@ -36,6 +36,7 @@ class LlmProfileConfig:
     temperature: float
     max_tokens: int
     intended_use: str
+    chat_enabled: bool = False
 
 
 @dataclass(frozen=True)
@@ -196,6 +197,7 @@ def _load_profile(name: str, section: dict[str, Any]) -> LlmProfileConfig:
         temperature=_optional_float(section, "temperature", section_name, 0.2),
         max_tokens=_optional_positive_int(section, "max_tokens", section_name, 500),
         intended_use=_optional_nonempty_string(section, "intended_use", section_name),
+        chat_enabled=_optional_bool(section, "chat_enabled", section_name, False),
     )
 
 
@@ -238,6 +240,7 @@ def format_llm_profile_detail(
     """Format one configured LLM profile for operator output."""
     enabled = "yes" if provider.enabled else "no"
     intended_use = profile.intended_use or "(not set)"
+    chat_enabled = "yes" if profile.chat_enabled else "no"
     api_key_env = provider.api_key_env or "(not set)"
     base_url = provider.base_url or "(not set)"
 
@@ -251,6 +254,7 @@ def format_llm_profile_detail(
             f"Temperature: {profile.temperature:g}",
             f"Max tokens: {profile.max_tokens}",
             f"Intended use: {intended_use}",
+            f"Chat enabled: {chat_enabled}",
             f"Provider enabled: {enabled}",
             f"Base URL: {base_url}",
             f"API key env: {api_key_env}",
@@ -279,5 +283,6 @@ def format_llm_profiles(config: LlmConfig) -> str:
         lines.append(f"  - temperature: {profile.temperature:g}")
         if profile.intended_use:
             lines.append(f"  - intended_use: {profile.intended_use}")
+        lines.append(f"  - chat_enabled: {profile.chat_enabled}")
 
     return "\n".join(lines)

@@ -32,6 +32,7 @@ model = "google/gemma-4-e4b"
 temperature = 0.2
 max_tokens = 500
 intended_use = "low_risk_utility"
+chat_enabled = true
 """,
     )
 
@@ -42,6 +43,7 @@ intended_use = "low_risk_utility"
     assert config.providers["lmstudio"].provider_type == "openai_compatible"
     assert config.profiles["local_fast"].provider == "lmstudio"
     assert config.profiles["local_fast"].model == "google/gemma-4-e4b"
+    assert config.profiles["local_fast"].chat_enabled is True
 
 
 def test_format_llm_profile_detail(tmp_path: Path) -> None:
@@ -79,6 +81,7 @@ intended_use = "low_risk_utility"
     assert "Temperature: 0.2" in output
     assert "Max tokens: 500" in output
     assert "Intended use: low_risk_utility" in output
+    assert "Chat enabled: no" in output
     assert "Provider enabled: yes" in output
     assert "Base URL: http://192.0.2.10:1234/v1" in output
     assert "API key env: MARCBOT_LMSTUDIO_API_KEY" in output
@@ -104,6 +107,7 @@ model = "google/gemma-4-e4b"
     assert "- local_fast" in output
     assert "provider: lmstudio (openai_compatible, enabled)" in output
     assert "model: google/gemma-4-e4b" in output
+    assert "chat_enabled: False" in output
 
 
 def test_missing_llm_config_raises_clean_error(tmp_path: Path) -> None:
@@ -170,3 +174,53 @@ model = "google/gemma-4-e4b"
         load_llm_config(path)
 
     assert excinfo.value.code == "MBOT-LLM-012"
+
+def test_profile_chat_enabled_must_be_bool(tmp_path: Path) -> None:
+    path = write_llm_config(
+        tmp_path,
+        """
+[providers.lmstudio]
+type = "openai_compatible"
+base_url = "http://192.0.2.10:1234/v1"
+
+[profiles.local_fast]
+provider = "lmstudio"
+model = "google/gemma-4-e4b"
+chat_enabled = "yes"
+""",
+    )
+
+    with pytest.raises(MarcBotError) as excinfo:
+        load_llm_config(path)
+
+    assert excinfo.value.code == "MBOT-LLM-009"
+    assert "profiles.local_fast.chat_enabled" in excinfo.value.message
+
+def test_format_llm_profile_detail_reports_chat_enabled_yes(tmp_path: Path) -> None:
+    config_path = write_llm_config(
+        tmp_path,
+        """
+[providers.lmstudio]
+enabled = true
+type = "openai_compatible"
+base_url = "http://192.0.2.10:1234/v1"
+api_key_env = "MARCBOT_LMSTUDIO_API_KEY"
+timeout_seconds = 30
+
+[profiles.local_fast]
+provider = "lmstudio"
+model = "google/gemma-4-e4b"
+temperature = 0.2
+max_tokens = 500
+intended_use = "low_risk_utility"
+chat_enabled = true
+""",
+    )
+
+    config = load_llm_config(config_path)
+    profile = config.profiles["local_fast"]
+    provider = config.providers[profile.provider]
+
+    output = format_llm_profile_detail(profile, provider)
+
+    assert "Chat enabled: yes" in output

@@ -296,3 +296,18 @@ Before implementation, decide:
 4. Exact input and history limits.
 5. Whether the first version should use local profiles only.
 6. Whether `/chat_start` should display an explicit provider-contact warning every time.
+
+## Chat profile approval
+
+Chat-capable profiles should be approved explicitly.
+
+The initial config field for this is:
+
+    chat_enabled = true
+
+Profiles without this field, or with `chat_enabled = false`, must not be usable
+with `/chat_start`.
+
+This keeps chat exposure separate from general LLM profile existence. A profile
+may be valid for CLI health checks, report summaries, or experiments without
+being approved for Telegram chat.

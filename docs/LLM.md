@@ -520,3 +520,26 @@ Command:
 
     python -m marcbot llm status --verbose
 \n
+## Chat-enabled profiles
+
+LLM profiles may optionally include:
+
+    chat_enabled = true
+
+The default is false.
+
+This field means the profile is approved for future Telegram chat mode. It does
+not by itself expose chat commands, contact a provider, or start a chat session.
+
+Example:
+
+    [profiles.local_fast]
+    provider = "lmstudio"
+    model = "google/gemma-4-e4b"
+    temperature = 0.2
+    max_tokens = 500
+    intended_use = "low_risk_utility"
+    chat_enabled = false
+
+A profile can be valid for CLI-only LLM commands and task routes while still not
+being approved for Telegram chat.
