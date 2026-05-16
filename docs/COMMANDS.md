@@ -250,3 +250,17 @@ Telegram command has a deliberate safety design. For example:
 
 is currently CLI-only because it loads LLM provider configuration and sends
 bounded report content to a model provider.
+
+### Initial chat lifecycle commands
+
+Initial chat lifecycle commands are Telegram-facing but provider-contact-free
+except for `/chat_start` loading local LLM configuration to validate that the
+requested profile exists and is approved for chat.
+
+    /chat_start <profile>
+    /chat_status
+    /chat_clear
+    /chat_stop
+
+These commands do not send prompts to a model provider. Normal Telegram text is
+not yet handled as chat input in this milestone.

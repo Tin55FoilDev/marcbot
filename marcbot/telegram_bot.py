@@ -14,6 +14,7 @@ from marcbot import __version__
 from marcbot.about import format_about_message
 from marcbot.backup_list import format_backup_list_message
 from marcbot.backup_status import format_backup_status_message
+from marcbot.chat_session import ChatSessionStore
 from marcbot.config import MarcBotConfig
 from marcbot.disk import format_disk_report
 from marcbot.docs_index import format_doc_message, format_docs_index, validate_send_doc
@@ -21,6 +22,7 @@ from marcbot.errors import MarcBotError
 from marcbot.git_status import format_git_report
 from marcbot.health import format_health_report, run_health_checks
 from marcbot.latest_report import validate_latest_daily_status_report
+from marcbot.llm_config import load_llm_config
 from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.report_status import format_report_status_message
@@ -36,6 +38,7 @@ from marcbot.workspace_list import format_workspace_ls_message
 from marcbot.workspace_sender import validate_workspace_send
 
 LOGGER = logging.getLogger(__name__)
+CHAT_SESSIONS = ChatSessionStore()
 
 
 def _chat_id_from_update(update: Update) -> int | None:
@@ -530,6 +533,114 @@ async def send_source_artifact_command(
     )
 
 
+async def chat_start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /chat_start <profile>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /chat_start from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    args = list(context.args)
+    LOGGER.info("Handled /chat_start for chat_id=%s args=%s", chat_id, args)
+
+    if len(args) != 1:
+        if update.message is not None:
+            await update.message.reply_text("Usage: /chat_start <profile>")
+        return
+
+    profile_name = args[0].strip()
+    if not profile_name:
+        if update.message is not None:
+            await update.message.reply_text("Usage: /chat_start <profile>")
+        return
+
+    try:
+        llm_config = load_llm_config()
+    except Exception:
+        LOGGER.exception("Failed to load LLM config for /chat_start")
+        if update.message is not None:
+            await update.message.reply_text("Chat start failed: LLM config unavailable.")
+        return
+
+    profile = llm_config.profiles.get(profile_name)
+    if profile is None:
+        if update.message is not None:
+            await update.message.reply_text(f"Unknown chat profile: {profile_name}")
+        return
+
+    if not profile.chat_enabled:
+        if update.message is not None:
+            await update.message.reply_text(
+                f"Profile is not approved for chat: {profile_name}"
+            )
+        return
+
+    CHAT_SESSIONS.start(chat_id=chat_id, profile_name=profile.name)
+    if update.message is not None:
+        await update.message.reply_text(
+            "MarcBot chat started.\n"
+            f"Profile: {profile.name}\n"
+            "Provider contact: not yet; future chat text will contact "
+            "the configured model provider."
+        )
+
+
+async def chat_stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /chat_stop."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /chat_stop from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /chat_stop for chat_id=%s", chat_id)
+    stopped = CHAT_SESSIONS.stop(chat_id=chat_id)
+    if update.message is not None:
+        if stopped:
+            await update.message.reply_text("MarcBot chat stopped.")
+        else:
+            await update.message.reply_text("MarcBot chat is already inactive.")
+
+
+async def chat_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /chat_status."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /chat_status from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /chat_status for chat_id=%s", chat_id)
+    if update.message is not None:
+        await update.message.reply_text(CHAT_SESSIONS.status_text(chat_id=chat_id))
+
+
+async def chat_clear_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /chat_clear."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /chat_clear from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /chat_clear for chat_id=%s", chat_id)
+    cleared = CHAT_SESSIONS.clear(chat_id=chat_id)
+    if update.message is not None:
+        if cleared:
+            await update.message.reply_text("MarcBot chat history cleared.")
+        else:
+            await update.message.reply_text("MarcBot chat is inactive; nothing to clear.")
+
+
 async def llm_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /llm_status."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -600,6 +711,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/report_status source <project> - show latest source monitor summary\n"
         "/send_source_artifact <project> <artifact-id> - send approved source monitor artifact\n"
         "/llm_status - show read-only LLM profile status\n"
+        "/chat_start <profile> - start bounded chat mode with a chat-approved profile\n"
+        "/chat_status - show chat mode status without contacting providers\n"
+        "/chat_clear - clear volatile chat history\n"
+        "/chat_stop - stop chat mode\n"
         "/logs - show recent MarcBot application logs\n"
         "/tail <app|service> - show approved diagnostic log tails\n"
         "/help - show this help message"
@@ -673,6 +788,10 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("report_status", report_status_command))
     application.add_handler(CommandHandler("send_source_artifact", send_source_artifact_command))
     application.add_handler(CommandHandler("llm_status", llm_status_command))
+    application.add_handler(CommandHandler("chat_start", chat_start_command))
+    application.add_handler(CommandHandler("chat_status", chat_status_command))
+    application.add_handler(CommandHandler("chat_clear", chat_clear_command))
+    application.add_handler(CommandHandler("chat_stop", chat_stop_command))
     application.add_handler(CommandHandler("logs", logs_command))
     application.add_handler(CommandHandler("tail", tail_command))
     application.add_handler(CommandHandler("help", help_command))

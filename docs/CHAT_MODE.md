@@ -329,3 +329,18 @@ The helper should support:
 This helper must not load LLM config, load provider secrets, contact providers,
 read files, write files, or persist memory. Telegram handlers should be layered
 on top only after the helper is tested.
+
+## Initial Telegram lifecycle commands
+
+The first Telegram-facing chat implementation should add only lifecycle
+commands:
+
+    /chat_start <profile>
+    /chat_status
+    /chat_clear
+    /chat_stop
+
+This milestone should not handle normal Telegram text as chat input and should
+not send prompts to a model provider. `/chat_start` may load local LLM
+configuration to validate that the requested profile exists and has
+`chat_enabled = true`.
