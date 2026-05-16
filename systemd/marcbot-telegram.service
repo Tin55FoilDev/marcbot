@@ -9,6 +9,7 @@ User=marc
 Group=marc
 WorkingDirectory=/srv/marcbot/app
 Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/srv/marcbot/config/llm.env
 ExecStart=/srv/marcbot/app/.venv/bin/python -m marcbot telegram
 Restart=on-failure
 RestartSec=10

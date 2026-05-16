@@ -438,3 +438,32 @@ Compare tracked source monitor units against installed units:
     diff -u /srv/marcbot/app/systemd/marcbot-source-monitor-ai.timer /etc/systemd/system/marcbot-source-monitor-ai.timer
 
 No output from `diff` means the tracked template and installed unit match.
+
+## Telegram service LLM environment
+
+If Telegram chat or another Telegram-facing provider-contacting command is
+enabled, the deployed `marcbot-telegram.service` system unit must load the local
+LLM secret environment file:
+
+    EnvironmentFile=/srv/marcbot/config/llm.env
+
+The file should exist outside Git at:
+
+    /srv/marcbot/config/llm.env
+
+It should be readable by the `marc` runtime user and contain provider secret
+environment variables such as:
+
+    MARCBOT_LMSTUDIO_API_KEY
+
+After editing the deployed unit:
+
+    sudo systemctl daemon-reload
+    sudo systemctl restart marcbot-telegram.service
+
+Verify without printing secrets:
+
+    sudo systemctl show marcbot-telegram.service -p EnvironmentFiles -p Environment
+
+Provider-contacting Telegram chat may return an HTTP 401 provider error if this
+environment file is missing from the service runtime environment.

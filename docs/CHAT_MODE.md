@@ -363,3 +363,28 @@ Required behavior:
 
 This does not add file access, URL access, workflow execution, memory writes, or
 tool use.
+
+## Telegram service environment for provider-contacting chat
+
+Provider-contacting Telegram chat requires the Telegram system service to load
+MarcBot's LLM secret environment file:
+
+    /srv/marcbot/config/llm.env
+
+The deployed service unit should include:
+
+    EnvironmentFile=/srv/marcbot/config/llm.env
+
+This file is local runtime configuration and must not be committed to Git. It
+should be readable by the `marc` runtime user and should define provider secret
+variables such as:
+
+    MARCBOT_LMSTUDIO_API_KEY
+
+Without this environment file, `/chat_start` may succeed, but normal chat text
+can fail with provider authentication errors such as HTTP 401.
+
+After changing the deployed systemd unit, run:
+
+    sudo systemctl daemon-reload
+    sudo systemctl restart marcbot-telegram.service

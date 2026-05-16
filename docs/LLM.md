@@ -543,3 +543,18 @@ Example:
 
 A profile can be valid for CLI-only LLM commands and task routes while still not
 being approved for Telegram chat.
+
+## Telegram provider secret environment
+
+CLI provider-contacting commands can load `/srv/marcbot/config/llm.env` from the
+operator shell. Telegram provider-contacting features run inside
+`marcbot-telegram.service`, so the service must load the same local environment
+file explicitly.
+
+The systemd unit should include:
+
+    EnvironmentFile=/srv/marcbot/config/llm.env
+
+This is required for provider-contacting Telegram chat to access variables such
+as `MARCBOT_LMSTUDIO_API_KEY`. The env file remains local runtime configuration
+and must not be committed.
