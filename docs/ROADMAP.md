@@ -271,3 +271,27 @@ For every milestone:
 9. keep the repo clean
 
 MarcBot should grow slowly, with reliability and inspectability ahead of feature count.
+
+## Future source-monitor Telegram summarization
+
+A possible future source-monitor workflow is a bounded Telegram command:
+
+    /summarize_source_latest <project>
+
+This command should summarize the newest existing source-monitor report for an
+approved project without generating a new report first.
+
+Before implementation, it must follow the Telegram provider-contacting command
+policy documented in `docs/COMMANDS.md` and `docs/SECURITY.md`.
+
+Expected constraints:
+
+- accept only a configured source-monitor project name
+- reject arbitrary paths, URLs, provider names, model IDs, and prompt text
+- use an approved LLM task/profile route
+- clearly disclose that it contacts a model provider
+- require configured provider secrets outside Git
+- avoid logging prompt text, report text, secrets, or generated output
+- return bounded Telegram output
+- point Marc to `/report_status source <project>` or safe artifact IDs after success
+- include Telegram authorization, argument validation, success, and safe-failure tests
