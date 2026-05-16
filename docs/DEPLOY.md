@@ -467,3 +467,27 @@ Verify without printing secrets:
 
 Provider-contacting Telegram chat may return an HTTP 401 provider error if this
 environment file is missing from the service runtime environment.
+
+## Optional local chat context files
+
+Telegram chat may use local Markdown context files under:
+
+    /srv/marcbot/config/chat/
+
+Planned files:
+
+    system.md
+    agent.md
+    user.md
+    project.md
+
+These files are local runtime configuration and should not be committed to Git.
+Git-tracked examples live under:
+
+    docs/examples/chat/
+
+The local files may define MarcBot's chat name, role, tone, humor level,
+enthusiasm level, slang preference, user preferences, and project context.
+
+They must not contain secrets such as API keys, Telegram tokens, OAuth tokens,
+passwords, private keys, or copied `.env` contents.

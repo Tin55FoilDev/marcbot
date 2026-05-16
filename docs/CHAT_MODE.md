@@ -388,3 +388,174 @@ After changing the deployed systemd unit, run:
 
     sudo systemctl daemon-reload
     sudo systemctl restart marcbot-telegram.service
+
+## Local chat context files
+
+MarcBot chat should support local Markdown context files so chat can feel more
+personal and useful without expanding runtime authority.
+
+These files are local runtime configuration and should live outside Git:
+
+    /srv/marcbot/config/chat/system.md
+    /srv/marcbot/config/chat/agent.md
+    /srv/marcbot/config/chat/user.md
+    /srv/marcbot/config/chat/project.md
+
+Git may include examples under a non-secret examples path, but the real local
+files should not be committed.
+
+### Purpose of each file
+
+`system.md`
+
+Defines local hard behavior boundaries for MarcBot chat. This file may reinforce
+rules such as:
+
+- do not claim to execute commands
+- do not claim to read files
+- do not claim to browse URLs
+- do not claim to update memory
+- do not expose secrets
+- suggest approved commands or workflows instead of pretending to perform them
+
+`agent.md`
+
+Defines MarcBot's conversational identity and voice. This file may include:
+
+- bot name
+- role
+- response style
+- humor level
+- excitement or enthusiasm level
+- slang preference
+- concision versus detail preference
+- how technical or casual the bot should sound
+
+Example content:
+
+    Name: MarcBot
+    Role: Marc's personal technical assistant
+    Tone: clear, direct, technically precise, friendly
+    Humor: light and occasional
+    Excitement: moderate; encouraging but not gushy
+    Slang: minimal
+    Default style: practical and step-by-step for systems work
+
+`user.md`
+
+Defines durable Marc-specific preferences that make chat more useful. This file
+may include preferences such as:
+
+- use numbered steps for development work
+- work one step at a time
+- run tests before commit
+- review diffs before commit
+- avoid Python triple-quoted strings in command blocks
+- prefer security, stability, and explicit behavior over broad automation
+
+`project.md`
+
+Defines current project context. For MarcBot, this may include:
+
+- current baseline
+- active milestone
+- important repo paths
+- operational constraints
+- design direction
+- known deferred items
+
+This file should be editable as project focus changes.
+
+### Authority and precedence
+
+Local chat context files should shape conversation, not grant new permissions.
+
+Prompt assembly should follow this precedence:
+
+1. built-in MarcBot chat safety rules
+2. `/srv/marcbot/config/chat/system.md`
+3. `/srv/marcbot/config/chat/agent.md`
+4. `/srv/marcbot/config/chat/user.md`
+5. `/srv/marcbot/config/chat/project.md`
+6. volatile chat history
+7. current user message
+
+Lower-precedence files must not override higher-precedence safety boundaries.
+
+For example, `agent.md` may say to use light humor, but it must not be able to
+override the built-in rule that chat cannot run shell commands or inspect
+secrets.
+
+### Size limits
+
+Each local context file should have a small maximum size.
+
+Suggested starting limits:
+
+- maximum file size per context file: 8000 characters
+- maximum combined local context: 20000 characters
+
+If a file is too large, MarcBot should fail safely with a clean message or skip
+that file with a clear status message. It should not silently send unexpectedly
+large local context to a model provider.
+
+### Secret handling
+
+Local chat context files must not contain secrets.
+
+They must not contain:
+
+- Telegram bot tokens
+- API keys
+- OAuth tokens
+- passwords
+- private keys
+- recovery codes
+- full secret config files
+- credential material copied from `.env` files
+
+The files may contain non-secret preferences, project notes, and operational
+guidance.
+
+### Logging boundary
+
+MarcBot should not log full chat context file contents.
+
+Logs may include:
+
+- which context files were found
+- which context files were loaded
+- file size counts
+- combined prompt size
+- success or failure
+
+Logs must not include full context text, full user prompts, full model
+responses, or secret values.
+
+### Status visibility
+
+A future `/chat_status` enhancement may show context-file status without showing
+file contents.
+
+Example:
+
+    Chat context:
+    - system.md: loaded
+    - agent.md: loaded
+    - user.md: loaded
+    - project.md: missing
+
+This would help Marc understand what context is active without exposing private
+content through Telegram.
+
+### Implementation sequence
+
+A safe implementation sequence is:
+
+1. Document the local chat context file model.
+2. Add example files under a Git-tracked examples directory.
+3. Add a helper that loads allowed local context files with size limits.
+4. Add tests for missing files, loaded files, oversized files, and prompt order.
+5. Add prompt assembly using built-in safety rules plus local context files.
+6. Keep normal chat behavior unchanged except for richer prompt context.
+7. Add `/chat_status` context-file visibility later.
