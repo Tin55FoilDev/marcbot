@@ -596,3 +596,34 @@ Live chat must continue to:
 - keep all file access limited to approved local chat context filenames
 - keep context content out of Telegram status messages unless explicitly sent as
   part of a model prompt
+
+## Chat profile output-token tuning
+
+Chat-enabled profiles may need more output room than short utility or report
+summary profiles.
+
+When local chat context files are loaded, the prompt contains:
+
+- built-in chat safety rules
+- local `system.md`
+- local `agent.md`
+- local `user.md`
+- optional local `project.md`
+- volatile chat history
+- the current user message
+
+If a profile has too small a `max_tokens` value, local models may return
+truncated replies or stop with `finish_reason=length`.
+
+For the current local `local_fast` chat profile, runtime testing showed that:
+
+    max_tokens = 1000
+
+is more appropriate than a smaller utility-style limit when local chat context
+files are active.
+
+This is local runtime configuration in:
+
+    /srv/marcbot/config/llm-providers.toml
+
+It should not be committed to Git unless represented as a non-secret example.

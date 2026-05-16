@@ -558,3 +558,25 @@ The systemd unit should include:
 This is required for provider-contacting Telegram chat to access variables such
 as `MARCBOT_LMSTUDIO_API_KEY`. The env file remains local runtime configuration
 and must not be committed.
+
+## Chat profile token guidance
+
+Profiles used for Telegram chat may need higher `max_tokens` than profiles used
+for short utility checks or compact summaries.
+
+When local chat context files are active, a chat prompt includes configured
+context plus volatile conversation history. A low output-token setting can cause
+local models to return truncated responses.
+
+For local chat testing, `local_fast` worked better with:
+
+    max_tokens = 1000
+
+This value is a practical starting point, not a hard rule. Tune it per model,
+hardware, and chat style.
+
+Keep the profile explicitly chat-approved:
+
+    chat_enabled = true
+
+and keep provider secrets in `/srv/marcbot/config/llm.env`, not in Git.
