@@ -311,3 +311,21 @@ with `/chat_start`.
 This keeps chat exposure separate from general LLM profile existence. A profile
 may be valid for CLI health checks, report summaries, or experiments without
 being approved for Telegram chat.
+
+## Session helper implementation
+
+Initial chat session state should be implemented as a small in-memory helper
+module before Telegram handlers are added.
+
+The helper should support:
+
+- start session
+- stop session
+- inspect active session
+- clear history
+- append bounded history messages
+- report provider-contact-free status text
+
+This helper must not load LLM config, load provider secrets, contact providers,
+read files, write files, or persist memory. Telegram handlers should be layered
+on top only after the helper is tested.
