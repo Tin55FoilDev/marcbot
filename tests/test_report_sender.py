@@ -175,3 +175,82 @@ def test_send_latest_weather_report_wraps_send_failure(monkeypatch, tmp_path) ->
         report_sender.send_latest_weather_report(_config(), sender=fake_sender)
 
     assert excinfo.value.code == "MBOT-WEATHER-SEND-002"
+
+def test_format_weather_report_for_telegram() -> None:
+    report = """# Westfield Weather
+
+Generated: 2026-05-17T00:19:12+00:00
+Source: https://forecast.weather.gov/example
+Days requested: 3
+
+## Summary
+
+- Warm conditions expected.
+- Main watch item: rain or showers.
+
+## Detailed forecast
+
+### Tonight
+
+Mostly clear, low around 55.
+
+### Sunday
+
+Sunny, high near 84.
+"""
+
+    message = report_sender.format_weather_report_for_telegram(report)
+
+    assert "🌤 Westfield Weather" in message
+    assert "Summary:" in message
+    assert "- Warm conditions expected." in message
+    assert "Detailed forecast:" in message
+    assert "Tonight: Mostly clear, low around 55." in message
+    assert "Sunday: Sunny, high near 84." in message
+    assert "Source:" not in message
+    assert "Days requested:" not in message
+
+
+def test_send_latest_weather_report_text_sends_to_all_configured_chats(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    weather_report = tmp_path / "weather-report-2026-05-17-080000.md"
+    weather_report.write_text(
+        "# Westfield Weather\n\n## Summary\n\n- Nice day.\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        report_sender,
+        "find_latest_weather_report",
+        lambda: weather_report,
+    )
+
+    sent = []
+
+    async def fake_sender(bot_token, chat_id, text):
+        sent.append((bot_token, chat_id, text))
+
+    result = report_sender.send_latest_weather_report_text(_config(), sender=fake_sender)
+
+    assert result.path == weather_report
+    assert result.chat_ids == (12345,)
+    assert result.report_label == "weather text"
+    assert "Sent latest weather text report:" in result.message
+    assert sent == [
+        (
+            "test-token",
+            12345,
+            "🌤 Westfield Weather\n\nSummary:\n- Nice day.",
+        )
+    ]
+
+
+def test_send_latest_weather_report_text_rejects_missing_report(monkeypatch) -> None:
+    monkeypatch.setattr(report_sender, "find_latest_weather_report", lambda: None)
+
+    with pytest.raises(MarcBotError) as excinfo:
+        report_sender.send_latest_weather_report_text(_config())
+
+    assert excinfo.value.code == "MBOT-WEATHER-SEND-003"

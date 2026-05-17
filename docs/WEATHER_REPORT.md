@@ -156,3 +156,17 @@ This command uses MarcBot's existing Telegram configuration and sends the newest
 weather report artifact to the configured allowed chat IDs.
 
 It does not fetch a new forecast by itself.
+
+## Telegram text delivery
+
+For daily delivery, the preferred command is:
+
+    python -m marcbot weather-report send-latest-text
+
+This sends the latest generated weather report as a cleaned-up Telegram text
+message instead of a file attachment.
+
+The older document delivery command remains available for debugging or artifact
+retrieval:
+
+    python -m marcbot weather-report send-latest

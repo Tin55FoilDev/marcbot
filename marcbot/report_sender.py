@@ -15,6 +15,8 @@ from marcbot.latest_report import validate_latest_daily_status_report
 from marcbot.weather_report import find_latest_weather_report
 
 TelegramDocumentSender = Callable[[str, int, Path, str], Awaitable[None]]
+TelegramMessageSender = Callable[[str, int, str], Awaitable[None]]
+MAX_TELEGRAM_TEXT_CHARS = 3900
 
 
 @dataclass(frozen=True)
@@ -50,6 +52,71 @@ async def _send_telegram_document(
                 filename=path.name,
                 caption=caption,
             )
+
+
+async def _send_telegram_message(
+    bot_token: str,
+    chat_id: int,
+    text: str,
+) -> None:
+    """Send one Telegram text message."""
+    async with Bot(token=bot_token) as bot:
+        await bot.send_message(chat_id=chat_id, text=text)
+
+
+def format_weather_report_for_telegram(report_text: str) -> str:
+    """Convert a weather Markdown report into bounded Telegram-friendly text."""
+    lines = report_text.splitlines()
+    output: list[str] = []
+    current_heading: str | None = None
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        if stripped.startswith("# "):
+            output.append("🌤 " + stripped[2:].strip())
+            continue
+
+        if stripped.startswith("Generated:"):
+            output.append(stripped)
+            continue
+
+        if stripped.startswith("Source:") or stripped.startswith("Days requested:"):
+            continue
+
+        if stripped == "## Summary":
+            output.append("")
+            output.append("Summary:")
+            continue
+
+        if stripped == "## Detailed forecast":
+            output.append("")
+            output.append("Detailed forecast:")
+            continue
+
+        if stripped.startswith("- "):
+            output.append(stripped)
+            continue
+
+        if stripped.startswith("### "):
+            current_heading = stripped[4:].strip()
+            continue
+
+        if current_heading is not None:
+            output.append("")
+            output.append(f"{current_heading}: {stripped}")
+            current_heading = None
+            continue
+
+        output.append(stripped)
+
+    message = "\n".join(output).strip()
+    if len(message) <= MAX_TELEGRAM_TEXT_CHARS:
+        return message
+
+    return message[: MAX_TELEGRAM_TEXT_CHARS - 40].rstrip() + "\n\n[truncated]"
 
 
 def _validate_telegram_report_config(config: MarcBotConfig) -> None:
@@ -157,3 +224,43 @@ def send_latest_weather_report(
 ) -> SendLatestReportResult:
     """Synchronous wrapper for sending the newest weather report."""
     return asyncio.run(send_latest_weather_report_async(config, sender=sender))
+
+
+async def send_latest_weather_report_text_async(
+    config: MarcBotConfig,
+    sender: TelegramMessageSender = _send_telegram_message,
+) -> SendLatestReportResult:
+    """Send the newest generated weather report as Telegram text."""
+    _validate_telegram_report_config(config)
+
+    latest = find_latest_weather_report()
+    if latest is None:
+        raise MarcBotError(
+            "MBOT-WEATHER-SEND-003",
+            "No weather reports found.",
+        )
+
+    message = format_weather_report_for_telegram(latest.read_text(encoding="utf-8"))
+
+    for chat_id in config.telegram.allowed_chat_ids:
+        try:
+            await sender(config.telegram.bot_token, chat_id, message)
+        except Exception as exc:
+            raise MarcBotError(
+                "MBOT-WEATHER-SEND-004",
+                f"Failed to send weather report text to chat_id {chat_id}: {exc}",
+            ) from exc
+
+    return SendLatestReportResult(
+        path=latest,
+        chat_ids=config.telegram.allowed_chat_ids,
+        report_label="weather text",
+    )
+
+
+def send_latest_weather_report_text(
+    config: MarcBotConfig,
+    sender: TelegramMessageSender = _send_telegram_message,
+) -> SendLatestReportResult:
+    """Synchronous wrapper for sending the newest weather report as text."""
+    return asyncio.run(send_latest_weather_report_text_async(config, sender=sender))

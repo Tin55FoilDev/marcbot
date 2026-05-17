@@ -31,7 +31,11 @@ from marcbot.llm_file_summary import (
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
 from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
-from marcbot.report_sender import send_latest_report, send_latest_weather_report
+from marcbot.report_sender import (
+    send_latest_report,
+    send_latest_weather_report,
+    send_latest_weather_report_text,
+)
 from marcbot.reports import write_daily_status_report
 from marcbot.source_config import format_source_config_summary, load_source_config
 from marcbot.source_monitor import write_source_monitor_report
@@ -454,7 +458,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     weather_subparsers.add_parser(
         "send-latest",
-        help="send newest weather report to Telegram",
+        help="send newest weather report to Telegram as a document",
+    )
+    weather_subparsers.add_parser(
+        "send-latest-text",
+        help="send newest weather report to Telegram as text",
     )
 
     support_parser = subparsers.add_parser(
@@ -882,6 +890,11 @@ def main(argv: list[str] | None = None) -> int:
             if args.weather_command == "send-latest":
                 config = load_config()
                 result = send_latest_weather_report(config)
+                print(result.message)
+                return 0
+            if args.weather_command == "send-latest-text":
+                config = load_config()
+                result = send_latest_weather_report_text(config)
                 print(result.message)
                 return 0
             parser.error("weather-report requires a subcommand")

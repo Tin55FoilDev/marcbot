@@ -976,3 +976,26 @@ def test_weather_report_send_latest_sends_report(capsys, monkeypatch, tmp_path) 
     assert result == 0
     assert "Sent latest weather report:" in captured.out
     assert "weather-report-2026-05-17-080000.md" in captured.out
+
+def test_weather_report_send_latest_text_sends_report(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.report_sender import SendLatestReportResult
+
+    report_path = tmp_path / "weather-report-2026-05-17-080000.md"
+
+    monkeypatch.setattr(
+        cli,
+        "send_latest_weather_report_text",
+        lambda config: SendLatestReportResult(
+            path=report_path,
+            chat_ids=(12345,),
+            report_label="weather text",
+        ),
+    )
+
+    result = cli.main(["weather-report", "send-latest-text"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Sent latest weather text report:" in captured.out
+    assert "weather-report-2026-05-17-080000.md" in captured.out
