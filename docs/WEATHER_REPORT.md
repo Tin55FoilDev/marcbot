@@ -275,3 +275,22 @@ Process lessons:
 
 The weather-report project is now a useful reference pattern for future simple
 MarcBot workflows.
+
+## Production validation
+
+The weather-report workflow was validated end-to-end after deployment.
+
+Validation completed:
+
+- local config created at `/srv/marcbot/config/weather-report.toml`
+- deterministic NWS forecast fetch succeeded
+- Markdown report artifact was written under `/srv/marcbot/workspace/weather/reports/`
+- cleaned Telegram text delivery worked manually
+- combined `weather-report run-send-text` command worked manually
+- systemd service and timer were installed and enabled
+- timer was scheduled for approximately 7:15 AM America/New_York
+- first scheduled Telegram delivery completed successfully
+- delivered Telegram weather report looked correct
+
+This confirms the weather-report project as a working reference pattern for
+future simple MarcBot workflows.
