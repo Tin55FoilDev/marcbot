@@ -218,6 +218,7 @@ MarcBot has several design and operations documents. To avoid duplicate or confl
 - `docs/DEPLOY.md` owns deployment and service setup procedures.
 - `docs/RESTORE.md` owns restore and disaster-recovery procedures.
 - `docs/SOURCE_MONITOR.md` owns source-monitor workflow details.
+- `docs/WEATHER_REPORT.md` owns the weather-report workflow design.
 - `docs/CHANGELOG.md` owns historical changes.
 
 When updating docs, prefer linking to the authoritative document instead of duplicating detailed command lists, configuration inventories, or roadmap text in multiple places.
