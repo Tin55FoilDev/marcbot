@@ -464,6 +464,10 @@ def build_parser() -> argparse.ArgumentParser:
         "send-latest-text",
         help="send newest weather report to Telegram as text",
     )
+    weather_subparsers.add_parser(
+        "run-send-text",
+        help="fetch weather, write report, and send it to Telegram as text",
+    )
 
     support_parser = subparsers.add_parser(
         "support",
@@ -896,6 +900,13 @@ def main(argv: list[str] | None = None) -> int:
                 config = load_config()
                 result = send_latest_weather_report_text(config)
                 print(result.message)
+                return 0
+            if args.weather_command == "run-send-text":
+                report_result = write_weather_report()
+                print(report_result.message)
+                config = load_config()
+                send_result = send_latest_weather_report_text(config)
+                print(send_result.message)
                 return 0
             parser.error("weather-report requires a subcommand")
 

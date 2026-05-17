@@ -170,3 +170,27 @@ The older document delivery command remains available for debugging or artifact
 retrieval:
 
     python -m marcbot weather-report send-latest
+
+## Combined run and Telegram text delivery
+
+For scheduled daily delivery, the preferred command is:
+
+    python -m marcbot weather-report run-send-text
+
+This command:
+
+1. fetches the configured weather forecast
+2. writes a new Markdown report artifact
+3. sends the newest weather report as cleaned Telegram text
+
+This is the command intended for the daily 7:15 AM America/New_York systemd
+service.
+
+## Daily schedule
+
+The intended daily delivery time is:
+
+    7:15 AM America/New_York
+
+This is early enough for the report to be waiting in Telegram before the normal
+morning routine.
