@@ -1196,3 +1196,46 @@ def test_chat_profiles_command_is_registered() -> None:
     }
 
     assert "chat_profiles" in command_names
+
+def test_weather_status_command_replies_with_status(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    replies = []
+
+    class FakeMessage:
+        async def reply_text(self, text):
+            replies.append(text)
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_weather_status_message",
+        lambda: "MarcBot weather report\nProvider contact: no",
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.weather_status_command(update, context))
+
+    assert replies == ["MarcBot weather report\nProvider contact: no"]
+
+
+def test_weather_status_command_is_registered() -> None:
+    application = build_application(make_config())
+    command_names = {
+        command
+        for handlers in application.handlers.values()
+        for handler in handlers
+        if hasattr(handler, "commands")
+        for command in handler.commands
+    }
+
+    assert "weather_status" in command_names

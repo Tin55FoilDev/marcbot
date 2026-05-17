@@ -294,3 +294,16 @@ Validation completed:
 
 This confirms the weather-report project as a working reference pattern for
 future simple MarcBot workflows.
+
+## Telegram weather status
+
+The provider-free Telegram command:
+
+    /weather_status
+
+shows the latest generated weather report artifact and basic workflow status.
+
+It does not fetch weather, send reports, contact model providers, or inspect
+arbitrary files.
+
+Use `/timer_status` for systemd timer status.

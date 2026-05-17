@@ -307,3 +307,12 @@ Example output:
     Provider contact: no
     - local_fast: chat_enabled=True, model=google/gemma-4-e4b, intended_use=low_risk_utility
     - local_careful: chat_enabled=False, model=qwen3.6-35b-a3b, intended_use=bounded_local_analysis
+
+### Weather report status
+
+`/weather_status` shows the latest weather report artifact and basic weather
+workflow status.
+
+It is provider-contact-free and does not fetch a new forecast.
+
+Use `/timer_status` for systemd timer status.
