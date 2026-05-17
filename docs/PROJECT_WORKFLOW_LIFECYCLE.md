@@ -550,3 +550,25 @@ Do not add scheduling before manual runs are reliable.
 Do not add LLM analysis before deterministic inputs and outputs are clear.
 Do not add memory before durable memory is designed.
 Do not expose broad access when a narrow workflow will solve the problem.
+
+## Worked example: weather-report
+
+The `weather-report` project is a small worked example of this lifecycle.
+
+It started with a documented charter and non-goals, then added deterministic
+fetching/parsing, report artifact generation, Telegram text delivery, a combined
+CLI command for scheduled use, and finally a systemd service/timer.
+
+The project validated several useful process rules:
+
+- define delivery format early
+- define schedule time early
+- keep the parser deterministic and testable
+- write artifacts before adding delivery
+- manually validate CLI behavior before scheduling
+- use one clear command for systemd scheduled execution
+- keep local runtime config outside Git
+- commit and push each completed milestone
+
+This makes `weather-report` a reference pattern for future small approved
+workflows.

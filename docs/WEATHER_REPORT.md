@@ -235,3 +235,43 @@ Timer status:
 
     sudo systemctl status marcbot-weather-report.timer --no-pager
     sudo systemctl list-timers --all | grep -E 'weather-report|NEXT'
+
+## Project lifecycle validation notes
+
+The weather-report project is also a practical validation of MarcBot's project
+workflow lifecycle.
+
+It intentionally started as a small, low-risk project so the process could be
+tested before applying it to larger workflows.
+
+This project exercised the following MarcBot lifecycle stages:
+
+1. define a narrow project charter
+2. document source, non-goals, output, and safety boundaries
+3. build a deterministic CLI core
+4. add tests with mocked external input
+5. write a local report artifact
+6. manually validate against the real source
+7. add Telegram delivery
+8. adjust delivery format from document to cleaned-up text
+9. add a combined run-and-send command for scheduling
+10. add systemd service and timer files
+11. deploy and verify systemd units
+12. manually run the deployed service
+13. enable the timer
+14. confirm the next scheduled run
+15. keep Git clean after each completed milestone
+
+Process lessons:
+
+- decide the desired delivery format early: Telegram text, Telegram document,
+  email, or a combination
+- decide the schedule time before creating timer files
+- keep deterministic parsing separate from delivery
+- keep local config outside Git
+- preserve artifacts even when Telegram receives a cleaned-up text message
+- add Telegram exposure only after CLI behavior is stable
+- scheduled workflows should have one clear command suitable for systemd
+
+The weather-report project is now a useful reference pattern for future simple
+MarcBot workflows.
