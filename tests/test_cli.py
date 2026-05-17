@@ -907,3 +907,49 @@ def test_llm_status_verbose_lists_local_profiles_and_tasks(capsys, monkeypatch) 
         "- source_monitor_analysis -> local_fast — "
         "Analyze allowlisted source monitor output"
     ) in captured.out
+
+def test_weather_report_run_writes_report(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.weather_report import WeatherReportResult
+
+    report_path = tmp_path / "weather-report-2026-05-16-080000.md"
+
+    monkeypatch.setattr(
+        cli,
+        "write_weather_report",
+        lambda: WeatherReportResult(
+            path=report_path,
+            message=f"Weather report written: {report_path}",
+        ),
+    )
+
+    result = cli.main(["weather-report", "run"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert f"Weather report written: {report_path}" in captured.out
+
+
+def test_weather_report_latest_reports_missing(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(cli, "find_latest_weather_report", lambda: None)
+
+    result = cli.main(["weather-report", "latest"])
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "No weather reports found." in captured.out
+
+
+def test_weather_report_latest_prints_path(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+
+    report_path = tmp_path / "weather-report-2026-05-16-080000.md"
+    monkeypatch.setattr(cli, "find_latest_weather_report", lambda: report_path)
+
+    result = cli.main(["weather-report", "latest"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert str(report_path) in captured.out

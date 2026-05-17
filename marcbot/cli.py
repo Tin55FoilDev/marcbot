@@ -41,6 +41,10 @@ from marcbot.source_status import (
     resolve_source_monitor_artifact,
 )
 from marcbot.telegram_bot import run_foreground_bot
+from marcbot.weather_report import (
+    find_latest_weather_report,
+    write_weather_report,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -433,6 +437,20 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default="ai",
         help="source project name (default: ai)",
+    )
+
+    weather_parser = subparsers.add_parser(
+        "weather-report",
+        help="generate local weather reports",
+    )
+    weather_subparsers = weather_parser.add_subparsers(dest="weather_command")
+    weather_subparsers.add_parser(
+        "run",
+        help="fetch configured weather forecast and write a Markdown report",
+    )
+    weather_subparsers.add_parser(
+        "latest",
+        help="show newest generated weather report path",
     )
 
     support_parser = subparsers.add_parser(
@@ -844,6 +862,20 @@ def main(argv: list[str] | None = None) -> int:
                 print(_format_support_snapshot())
                 LOGGER.info("Support snapshot generated")
                 return 0
+
+        if args.command == "weather-report":
+            if args.weather_command == "run":
+                result = write_weather_report()
+                print(result.message)
+                return 0
+            if args.weather_command == "latest":
+                latest = find_latest_weather_report()
+                if latest is None:
+                    print("No weather reports found.")
+                    return 1
+                print(latest)
+                return 0
+            parser.error("weather-report requires a subcommand")
 
         if args.command == "source-monitor":
             if args.source_monitor_command == "status":
