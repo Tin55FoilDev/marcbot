@@ -12,6 +12,7 @@ from telegram import Bot
 from marcbot.config import MarcBotConfig
 from marcbot.errors import MarcBotError
 from marcbot.latest_report import validate_latest_daily_status_report
+from marcbot.weather_report import find_latest_weather_report
 
 TelegramDocumentSender = Callable[[str, int, Path, str], Awaitable[None]]
 
@@ -22,12 +23,16 @@ class SendLatestReportResult:
 
     path: Path
     chat_ids: tuple[int, ...]
+    report_label: str = "daily status"
 
     @property
     def message(self) -> str:
         """Return a compact CLI success message."""
         chats = ", ".join(str(chat_id) for chat_id in self.chat_ids)
-        return f"Sent latest daily status report: {self.path.name} to chat_id(s): {chats}"
+        return (
+            f"Sent latest {self.report_label} report: {self.path.name} "
+            f"to chat_id(s): {chats}"
+        )
 
 
 async def _send_telegram_document(
@@ -107,3 +112,48 @@ def send_latest_report(
 ) -> SendLatestReportResult:
     """Synchronous wrapper for sending the newest daily status report."""
     return asyncio.run(send_latest_report_async(config, sender=sender))
+
+
+async def send_latest_weather_report_async(
+    config: MarcBotConfig,
+    sender: TelegramDocumentSender = _send_telegram_document,
+) -> SendLatestReportResult:
+    """Send the newest generated weather report to configured chat IDs."""
+    _validate_telegram_report_config(config)
+
+    latest = find_latest_weather_report()
+    if latest is None:
+        raise MarcBotError(
+            "MBOT-WEATHER-SEND-001",
+            "No weather reports found.",
+        )
+
+    caption = f"🤖 MarcBot latest weather report: {latest.name}"
+
+    for chat_id in config.telegram.allowed_chat_ids:
+        try:
+            await sender(
+                config.telegram.bot_token,
+                chat_id,
+                latest,
+                caption,
+            )
+        except Exception as exc:
+            raise MarcBotError(
+                "MBOT-WEATHER-SEND-002",
+                f"Failed to send weather report to chat_id {chat_id}: {exc}",
+            ) from exc
+
+    return SendLatestReportResult(
+        path=latest,
+        chat_ids=config.telegram.allowed_chat_ids,
+        report_label="weather",
+    )
+
+
+def send_latest_weather_report(
+    config: MarcBotConfig,
+    sender: TelegramDocumentSender = _send_telegram_document,
+) -> SendLatestReportResult:
+    """Synchronous wrapper for sending the newest weather report."""
+    return asyncio.run(send_latest_weather_report_async(config, sender=sender))

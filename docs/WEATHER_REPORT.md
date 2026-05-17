@@ -144,3 +144,15 @@ The implementation should include tests for:
 
 Scheduled service/timer deployment should be validated manually after CLI tests
 pass.
+
+## Manual Telegram delivery
+
+After a report has been generated, the latest weather report can be sent to
+Telegram with:
+
+    python -m marcbot weather-report send-latest
+
+This command uses MarcBot's existing Telegram configuration and sends the newest
+weather report artifact to the configured allowed chat IDs.
+
+It does not fetch a new forecast by itself.

@@ -111,3 +111,67 @@ def test_send_latest_report_async_wraps_send_failure(monkeypatch, tmp_path) -> N
 
     with pytest.raises(MarcBotError, match="Failed to send report to chat_id 12345"):
         report_sender.send_latest_report(_config(), sender=fake_sender)
+
+def test_send_latest_weather_report_sends_to_all_configured_chats(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    weather_report = tmp_path / "weather-report-2026-05-17-080000.md"
+    weather_report.write_text("# Weather", encoding="utf-8")
+
+    monkeypatch.setattr(
+        report_sender,
+        "find_latest_weather_report",
+        lambda: weather_report,
+    )
+
+    sent = []
+
+    async def fake_sender(bot_token, chat_id, path, caption):
+        sent.append((bot_token, chat_id, path, caption))
+
+    result = report_sender.send_latest_weather_report(_config(), sender=fake_sender)
+
+    assert result.path == weather_report
+    assert result.chat_ids == (12345,)
+    assert result.report_label == "weather"
+    assert result.message == (
+        "Sent latest weather report: weather-report-2026-05-17-080000.md "
+        "to chat_id(s): 12345"
+    )
+    assert sent == [
+        (
+            "test-token",
+            12345,
+            weather_report,
+            "🤖 MarcBot latest weather report: weather-report-2026-05-17-080000.md",
+        )
+    ]
+
+
+def test_send_latest_weather_report_rejects_missing_report(monkeypatch) -> None:
+    monkeypatch.setattr(report_sender, "find_latest_weather_report", lambda: None)
+
+    with pytest.raises(MarcBotError) as excinfo:
+        report_sender.send_latest_weather_report(_config())
+
+    assert excinfo.value.code == "MBOT-WEATHER-SEND-001"
+
+
+def test_send_latest_weather_report_wraps_send_failure(monkeypatch, tmp_path) -> None:
+    weather_report = tmp_path / "weather-report-2026-05-17-080000.md"
+    weather_report.write_text("# Weather", encoding="utf-8")
+
+    monkeypatch.setattr(
+        report_sender,
+        "find_latest_weather_report",
+        lambda: weather_report,
+    )
+
+    async def fake_sender(bot_token, chat_id, path, caption):
+        raise RuntimeError("telegram down")
+
+    with pytest.raises(MarcBotError) as excinfo:
+        report_sender.send_latest_weather_report(_config(), sender=fake_sender)
+
+    assert excinfo.value.code == "MBOT-WEATHER-SEND-002"
