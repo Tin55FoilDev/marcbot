@@ -194,3 +194,44 @@ The intended daily delivery time is:
 
 This is early enough for the report to be waiting in Telegram before the normal
 morning routine.
+
+## Systemd service and timer
+
+The weather report daily job uses:
+
+    marcbot-weather-report.service
+    marcbot-weather-report.timer
+
+The service runs:
+
+    /srv/marcbot/app/.venv/bin/python -m marcbot weather-report run-send-text
+
+The timer runs daily at:
+
+    7:15 AM America/New_York
+
+The timer includes:
+
+    Persistent=true
+    RandomizedDelaySec=2m
+
+Install deployed units:
+
+    sudo cp /srv/marcbot/app/systemd/marcbot-weather-report.service /etc/systemd/system/marcbot-weather-report.service
+    sudo cp /srv/marcbot/app/systemd/marcbot-weather-report.timer /etc/systemd/system/marcbot-weather-report.timer
+    sudo chmod 644 /etc/systemd/system/marcbot-weather-report.service
+    sudo chmod 644 /etc/systemd/system/marcbot-weather-report.timer
+    sudo systemd-analyze verify /etc/systemd/system/marcbot-weather-report.service /etc/systemd/system/marcbot-weather-report.timer
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now marcbot-weather-report.timer
+
+Manual service run:
+
+    sudo systemctl start marcbot-weather-report.service
+    sudo systemctl status marcbot-weather-report.service --no-pager
+    sudo journalctl -u marcbot-weather-report.service -n 80 --no-pager
+
+Timer status:
+
+    sudo systemctl status marcbot-weather-report.timer --no-pager
+    sudo systemctl list-timers --all | grep -E 'weather-report|NEXT'

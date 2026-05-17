@@ -1,0 +1,11 @@
+[Unit]
+Description=Run MarcBot weather report
+
+[Timer]
+OnCalendar=*-*-* 07:15:00 America/New_York
+Persistent=true
+RandomizedDelaySec=2m
+Unit=marcbot-weather-report.service
+
+[Install]
+WantedBy=timers.target

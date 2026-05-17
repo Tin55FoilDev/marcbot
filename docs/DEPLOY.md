@@ -491,3 +491,53 @@ enthusiasm level, slang preference, user preferences, and project context.
 
 They must not contain secrets such as API keys, Telegram tokens, OAuth tokens,
 passwords, private keys, or copied `.env` contents.
+
+## Weather report systemd timer
+
+MarcBot can generate and send the daily Westfield weather report through a
+systemd service and timer.
+
+Repo unit files:
+
+    /srv/marcbot/app/systemd/marcbot-weather-report.service
+    /srv/marcbot/app/systemd/marcbot-weather-report.timer
+
+Deployed unit files:
+
+    /etc/systemd/system/marcbot-weather-report.service
+    /etc/systemd/system/marcbot-weather-report.timer
+
+The service runs:
+
+    ExecStart=/srv/marcbot/app/.venv/bin/python -m marcbot weather-report run-send-text
+
+The timer runs daily at:
+
+    OnCalendar=*-*-* 07:15:00 America/New_York
+
+Install:
+
+    sudo cp /srv/marcbot/app/systemd/marcbot-weather-report.service /etc/systemd/system/marcbot-weather-report.service
+    sudo cp /srv/marcbot/app/systemd/marcbot-weather-report.timer /etc/systemd/system/marcbot-weather-report.timer
+    sudo chmod 644 /etc/systemd/system/marcbot-weather-report.service
+    sudo chmod 644 /etc/systemd/system/marcbot-weather-report.timer
+    sudo systemd-analyze verify /etc/systemd/system/marcbot-weather-report.service /etc/systemd/system/marcbot-weather-report.timer
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now marcbot-weather-report.timer
+
+Manual service test:
+
+    sudo systemctl start marcbot-weather-report.service
+    sudo systemctl status marcbot-weather-report.service --no-pager
+    sudo journalctl -u marcbot-weather-report.service -n 80 --no-pager
+
+Timer check:
+
+    sudo systemctl status marcbot-weather-report.timer --no-pager
+    sudo systemctl list-timers --all | grep -E 'weather-report|NEXT'
+
+The weather report requires local runtime config at:
+
+    /srv/marcbot/config/weather-report.toml
+
+and Telegram config in MarcBot's normal local config.
