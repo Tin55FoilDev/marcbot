@@ -30,7 +30,12 @@ from marcbot.llm_file_summary import (
 )
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
-from marcbot.memory_store import format_memory_status_message, init_memory_store
+from marcbot.memory_store import (
+    add_memory_event,
+    format_memory_event_list,
+    format_memory_status_message,
+    init_memory_store,
+)
 from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
 from marcbot.report_sender import (
     send_latest_report,
@@ -367,6 +372,36 @@ def build_parser() -> argparse.ArgumentParser:
     memory_subparsers = memory_parser.add_subparsers(dest="memory_command")
     memory_subparsers.add_parser("init", help="initialize local memory store")
     memory_subparsers.add_parser("status", help="show local memory store status")
+    memory_event_parser = memory_subparsers.add_parser(
+        "event",
+        help="add or list explicit memory events",
+    )
+    memory_event_subparsers = memory_event_parser.add_subparsers(
+        dest="memory_event_command"
+    )
+    memory_event_add_parser = memory_event_subparsers.add_parser(
+        "add",
+        help="add an explicit memory event",
+    )
+    memory_event_add_parser.add_argument("--type", required=True)
+    memory_event_add_parser.add_argument("--summary", required=True)
+    memory_event_add_parser.add_argument("--source", required=True)
+    memory_event_add_parser.add_argument("--confidence", required=True)
+    memory_event_add_parser.add_argument("--project", default=None)
+    memory_event_add_parser.add_argument("--details", default=None)
+    memory_event_add_parser.add_argument("--cause", default=None)
+    memory_event_add_parser.add_argument("--resolution", default=None)
+    memory_event_add_parser.add_argument("--verification", default=None)
+    memory_event_add_parser.add_argument("--follow-up", default=None)
+    memory_event_add_parser.add_argument("--related-file", action="append", default=[])
+    memory_event_add_parser.add_argument("--related-command", action="append", default=[])
+    memory_event_add_parser.add_argument("--related-artifact", action="append", default=[])
+    memory_event_add_parser.add_argument("--related-commit", action="append", default=[])
+    memory_event_list_parser = memory_event_subparsers.add_parser(
+        "list",
+        help="list recent memory events",
+    )
+    memory_event_list_parser.add_argument("--limit", type=int, default=10)
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -896,6 +931,30 @@ def main(argv: list[str] | None = None) -> int:
             if args.memory_command == "status":
                 print(format_memory_status_message())
                 return 0
+            if args.memory_command == "event":
+                if args.memory_event_command == "add":
+                    result = add_memory_event(
+                        event_type=args.type,
+                        summary=args.summary,
+                        source=args.source,
+                        confidence=args.confidence,
+                        project=args.project,
+                        details=args.details,
+                        cause=args.cause,
+                        resolution=args.resolution,
+                        verification=args.verification,
+                        follow_up=args.follow_up,
+                        related_files=tuple(args.related_file),
+                        related_commands=tuple(args.related_command),
+                        related_artifacts=tuple(args.related_artifact),
+                        related_commits=tuple(args.related_commit),
+                    )
+                    print(result.message)
+                    return 0
+                if args.memory_event_command == "list":
+                    print(format_memory_event_list(limit=args.limit))
+                    return 0
+                parser.error("memory event requires a subcommand")
             parser.error("memory requires a subcommand")
 
         if args.command == "weather-report":

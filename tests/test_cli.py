@@ -1073,3 +1073,63 @@ def test_memory_status_command(capsys, monkeypatch) -> None:
 
     assert result == 0
     assert captured.out == "MarcBot memory\nProvider contact: no\n"
+
+def test_memory_event_add_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_event
+
+    monkeypatch.setattr(
+        cli,
+        "add_memory_event",
+        lambda **kwargs: add_memory_event(root=tmp_path, **kwargs),
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "event",
+            "add",
+            "--type",
+            "issue_resolved",
+            "--summary",
+            "Fixed backup timer.",
+            "--source",
+            "test",
+            "--confidence",
+            "high",
+            "--project",
+            "marcbot-operations",
+            "--details",
+            "Useful detail.",
+            "--cause",
+            "Useful cause.",
+            "--resolution",
+            "Useful resolution.",
+            "--verification",
+            "Useful verification.",
+            "--follow-up",
+            "Useful follow-up.",
+            "--related-command",
+            "sudo systemctl status marcbot-backup.service",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory event added:" in captured.out
+
+
+def test_memory_event_list_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_event_list",
+        lambda limit: f"MarcBot memory events\nLimit: {limit}",
+    )
+
+    result = cli.main(["memory", "event", "list", "--limit", "5"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory events\nLimit: 5\n"

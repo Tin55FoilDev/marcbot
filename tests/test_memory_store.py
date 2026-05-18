@@ -73,3 +73,93 @@ def test_format_memory_status_message(tmp_path: Path) -> None:
     assert "- events: present" in message
     assert "- pending proposals: 0" in message
     assert "Provider contact: no" in message
+
+def test_add_memory_event_writes_jsonl(tmp_path: Path) -> None:
+    import json
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_event
+
+    result = add_memory_event(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 12, 0, tzinfo=UTC),
+        event_type="issue_resolved",
+        project="marcbot-operations",
+        summary="Fixed backup timer warning.",
+        source="manual_debug_session",
+        confidence="high",
+        details="timer_status showed exit-code status 2.",
+        cause="Unreadable root-owned backup files.",
+        resolution="Removed stale tuning backup files.",
+        verification="Backup service exited success.",
+        follow_up="Avoid root-owned runtime config backups.",
+        related_commands=("sudo systemctl start marcbot-backup.service",),
+    )
+
+    assert result.path == tmp_path / "events" / "2026-05.jsonl"
+    data = json.loads(result.path.read_text(encoding="utf-8").strip())
+
+    assert data["type"] == "issue_resolved"
+    assert data["project"] == "marcbot-operations"
+    assert data["summary"] == "Fixed backup timer warning."
+    assert data["cause"] == "Unreadable root-owned backup files."
+    assert data["related_commands"] == [
+        "sudo systemctl start marcbot-backup.service"
+    ]
+
+
+def test_add_memory_event_rejects_unknown_type(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import add_memory_event
+
+    with pytest.raises(ValueError, match="type must be one of"):
+        add_memory_event(
+            root=tmp_path,
+            event_type="unknown",
+            summary="Something happened.",
+            source="test",
+            confidence="high",
+        )
+
+
+def test_list_memory_events_returns_newest_first(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_event, list_memory_events
+
+    add_memory_event(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 17, 12, 0, tzinfo=UTC),
+        event_type="report_sent",
+        summary="Older report sent.",
+        source="test",
+        confidence="high",
+    )
+    add_memory_event(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 12, 0, tzinfo=UTC),
+        event_type="report_sent",
+        summary="Newer report sent.",
+        source="test",
+        confidence="high",
+    )
+
+    events = list_memory_events(root=tmp_path, limit=2)
+
+    assert [event.summary for event in events] == [
+        "Newer report sent.",
+        "Older report sent.",
+    ]
+
+
+def test_format_memory_event_list_reports_no_events(tmp_path: Path) -> None:
+    from marcbot.memory_store import format_memory_event_list, init_memory_store
+
+    init_memory_store(root=tmp_path)
+
+    message = format_memory_event_list(root=tmp_path)
+
+    assert "MarcBot memory events" in message
+    assert "No events found." in message
+    assert "Provider contact: no" in message

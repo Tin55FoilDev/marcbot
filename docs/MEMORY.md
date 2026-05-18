@@ -726,3 +726,32 @@ shows the same provider-free memory status as:
 
 It does not write memory, approve proposals, inspect arbitrary paths, or contact
 model providers.
+
+## Implemented M4 explicit event ledger
+
+The explicit memory event ledger provides:
+
+    python -m marcbot memory event add
+    python -m marcbot memory event list
+
+Events are written to monthly JSONL files under:
+
+    /srv/marcbot/memory/events/
+
+The event add command supports operational detail fields, including:
+
+    details
+    cause
+    resolution
+    verification
+    follow_up
+    related_files
+    related_commands
+    related_artifacts
+    related_commits
+
+This keeps memory useful for future debugging and recovery, not merely a thin
+activity list.
+
+This milestone remains explicit and CLI-only. It does not perform automatic
+capture and does not expose memory writes through Telegram.

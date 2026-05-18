@@ -359,3 +359,13 @@ These commands are local, provider-contact-free, and do not use LLMs.
 
 It is read-only and provider-contact-free. It does not write memory, approve
 memory proposals, inspect arbitrary paths, or contact model providers.
+
+### Memory event ledger
+
+Explicit memory event commands:
+
+    python -m marcbot memory event add
+    python -m marcbot memory event list
+
+These commands are CLI-only, provider-contact-free, and intended for explicit
+low-risk memory events.
