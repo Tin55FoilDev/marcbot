@@ -74,7 +74,10 @@ class MemoryStatus:
     event_files: int
     fact_files: int
     summary_files: int
-    pending_files: int
+    proposal_files: int
+    pending_proposals: int
+    approved_proposals: int
+    rejected_proposals: int
     correction_files: int
     export_files: int
 
@@ -100,7 +103,10 @@ class MemoryStatus:
                 f"- event files: {self.event_files}",
                 f"- fact files: {self.fact_files}",
                 f"- summary files: {self.summary_files}",
-                f"- pending proposals: {self.pending_files}",
+                f"- proposal files: {self.proposal_files}",
+                f"- pending proposals: {self.pending_proposals}",
+                f"- approved proposals: {self.approved_proposals}",
+                f"- rejected proposals: {self.rejected_proposals}",
                 f"- correction files: {self.correction_files}",
                 f"- export files: {self.export_files}",
                 "Provider contact: no",
@@ -137,6 +143,27 @@ def _count_files(path: Path, pattern: str = "*") -> int:
     return sum(1 for candidate in path.glob(pattern) if candidate.is_file())
 
 
+def _count_proposals_by_status(path: Path) -> dict[str, int]:
+    """Count proposal JSON files by review status."""
+    counts = {"pending": 0, "approved": 0, "rejected": 0}
+
+    if not path.is_dir():
+        return counts
+
+    for candidate in path.glob("*.json"):
+        if not candidate.is_file():
+            continue
+        try:
+            data = json.loads(candidate.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        status = data.get("status")
+        if isinstance(status, str) and status in counts:
+            counts[status] += 1
+
+    return counts
+
+
 def init_memory_store(root: Path = MEMORY_ROOT) -> MemoryInitResult:
     """Create the local memory directory skeleton."""
     created: list[Path] = []
@@ -165,6 +192,8 @@ def get_memory_status(root: Path = MEMORY_ROOT) -> MemoryStatus:
     directories = {name: (root / name).is_dir() for name in MEMORY_SUBDIRS}
     initialized = root.is_dir() and readme.is_file() and all(directories.values())
 
+    proposal_counts = _count_proposals_by_status(root / "pending")
+
     return MemoryStatus(
         root=root,
         initialized=initialized,
@@ -173,7 +202,10 @@ def get_memory_status(root: Path = MEMORY_ROOT) -> MemoryStatus:
         event_files=_count_files(root / "events", "*.jsonl"),
         fact_files=_count_files(root / "facts", "*.toml"),
         summary_files=_count_files(root / "summaries", "*.md"),
-        pending_files=_count_files(root / "pending", "*.json"),
+        proposal_files=_count_files(root / "pending", "*.json"),
+        pending_proposals=proposal_counts["pending"],
+        approved_proposals=proposal_counts["approved"],
+        rejected_proposals=proposal_counts["rejected"],
         correction_files=_count_files(root / "corrections", "*.jsonl"),
         export_files=_count_files(root / "exports"),
     )

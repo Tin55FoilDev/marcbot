@@ -57,7 +57,8 @@ def test_get_memory_status_counts_files(tmp_path: Path) -> None:
     assert status.event_files == 1
     assert status.fact_files == 1
     assert status.summary_files == 1
-    assert status.pending_files == 1
+    assert status.proposal_files == 1
+    assert status.pending_proposals == 0
     assert status.correction_files == 1
     assert status.export_files == 1
 
@@ -71,7 +72,10 @@ def test_format_memory_status_message(tmp_path: Path) -> None:
     assert f"Root: {tmp_path}" in message
     assert "Initialized: yes" in message
     assert "- events: present" in message
+    assert "- proposal files: 0" in message
     assert "- pending proposals: 0" in message
+    assert "- approved proposals: 0" in message
+    assert "- rejected proposals: 0" in message
     assert "Provider contact: no" in message
 
 def test_add_memory_event_writes_jsonl(tmp_path: Path) -> None:
@@ -748,3 +752,58 @@ def test_approve_memory_proposal_rejects_non_fact_proposal(tmp_path: Path) -> No
             proposal_id="event-proposal",
             source="test",
         )
+
+
+def test_get_memory_status_counts_proposals_by_status(tmp_path: Path) -> None:
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        approve_memory_proposal,
+        get_memory_status,
+        reject_memory_proposal,
+    )
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="pending-proposal",
+        proposed_type="fact",
+        proposed_statement="Pending.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="approved-proposal",
+        proposed_type="fact",
+        proposed_statement="Approved.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+    approve_memory_proposal(
+        root=tmp_path,
+        proposal_id="approved-proposal",
+        source="test",
+    )
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="rejected-proposal",
+        proposed_type="fact",
+        proposed_statement="Rejected.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+    reject_memory_proposal(
+        root=tmp_path,
+        proposal_id="rejected-proposal",
+        reason="Test.",
+        source="test",
+    )
+
+    status = get_memory_status(root=tmp_path)
+
+    assert status.proposal_files == 3
+    assert status.pending_proposals == 1
+    assert status.approved_proposals == 1
+    assert status.rejected_proposals == 1
