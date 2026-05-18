@@ -466,3 +466,12 @@ Read-only memory search command:
 
 The command searches local memory files by case-insensitive substring. It is
 CLI-only and provider-contact-free.
+
+### Automatic memory integration policy
+
+MarcBot may auto-record low-risk workflow events only for approved workflows
+with clear success boundaries.
+
+Automatic memory writes are limited to low-risk events. Facts, proposal review,
+fact correction, and security-sensitive memory changes remain explicit CLI
+operations.

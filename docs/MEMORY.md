@@ -963,3 +963,108 @@ Search behavior:
 - does not contact model providers
 
 This is intentionally simple. LLM-assisted search or embeddings are deferred.
+
+## M11 automatic memory integration policy
+
+MarcBot may eventually record low-risk memory automatically from approved
+workflows. This must remain narrow, explicit, auditable, and easy to disable.
+
+The weather-report workflow is the first approved example:
+
+    python -m marcbot weather-report run-send-text
+
+It records a low-risk `workflow_completed` event only after the workflow
+successfully generates a report artifact and sends the Telegram text report.
+
+## Auto-record eligibility
+
+A workflow may auto-record a memory event only when all of the following are
+true:
+
+1. The workflow is deterministic or mostly deterministic.
+2. The workflow already has tests.
+3. The workflow has a clear success boundary.
+4. The event is low-risk operational history.
+5. The event does not include secrets.
+6. The event does not include raw unrestricted logs.
+7. The event does not claim a user preference unless Marc explicitly stated it.
+8. The event does not change facts, proposals, summaries, or corrections.
+9. The event records what happened, not what should happen.
+10. The memory write occurs only after the workflow succeeds.
+
+## Approved automatic event types
+
+Initially approved automatic event types:
+
+    workflow_completed
+    report_generated
+    report_sent
+    backup_completed
+    validation_passed
+    service_restarted
+
+These should be used conservatively.
+
+## Disallowed automatic writes
+
+MarcBot must not automatically write:
+
+    facts
+    proposal approvals
+    proposal rejections
+    fact supersessions
+    fact rejections
+    high-risk security or permission changes
+    credential-handling assumptions
+    trusted host or service assumptions
+    user preference changes
+    autonomous behavior expansion
+
+Those require explicit CLI actions or future review workflows.
+
+## Required fields for automatic workflow events
+
+Automatic workflow events should include:
+
+    type
+    project
+    summary
+    source
+    confidence
+    details
+    verification
+    related_commands
+
+When applicable, also include:
+
+    related_files
+    related_artifacts
+    follow_up
+
+## Failure behavior
+
+If the workflow succeeds but the memory event write fails, the first version of
+automatic memory integration should fail closed for scheduled workflow commands.
+
+This means the command should return an error so MarcBot does not silently lose
+expected operational memory.
+
+A future design may allow non-critical best-effort memory writes, but only after
+that behavior is explicit and tested.
+
+## Review cadence
+
+Automatic memory events should be reviewed periodically with:
+
+    python -m marcbot memory event list
+    python -m marcbot memory search <term>
+    python -m marcbot memory status
+
+If automatic events become noisy, the integration should be tightened rather
+than allowing memory to become cluttered.
+
+## Telegram boundary
+
+Telegram may show memory status and memory retrieval in future read-only
+commands, but Telegram must not approve, reject, supersede, or create durable
+memory until that command surface is explicitly designed and tested.
