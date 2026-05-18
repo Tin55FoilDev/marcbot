@@ -418,3 +418,12 @@ Explicit memory proposal commands:
 
 These commands are CLI-only and provider-contact-free. Proposal approval is
 deferred to a later milestone.
+
+### Memory proposal approval
+
+Explicit fact proposal approval command:
+
+    python -m marcbot memory proposal approve
+
+Initial approval supports fact proposals only. It is CLI-only and
+provider-contact-free.

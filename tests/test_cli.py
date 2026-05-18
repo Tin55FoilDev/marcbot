@@ -1418,3 +1418,45 @@ def test_memory_proposal_reject_command(capsys, monkeypatch, tmp_path) -> None:
 
     assert result == 0
     assert "Memory proposal rejected: test-proposal" in captured.out
+
+def test_memory_proposal_approve_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_proposal, approve_memory_proposal
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        proposed_type="fact",
+        proposed_statement="A proposed fact.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "approve_memory_proposal",
+        lambda **kwargs: approve_memory_proposal(root=tmp_path, **kwargs),
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "proposal",
+            "approve",
+            "--id",
+            "test-proposal",
+            "--source",
+            "test_approval",
+            "--review-reason",
+            "Looks correct.",
+            "--category",
+            "test",
+            "--confidence",
+            "high",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory proposal approved: test-proposal -> fact test-proposal" in captured.out

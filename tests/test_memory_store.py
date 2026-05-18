@@ -635,3 +635,116 @@ def test_format_memory_proposal_list_reports_no_proposals(tmp_path: Path) -> Non
     assert "MarcBot memory proposals" in message
     assert "No proposals found." in message
     assert "Provider contact: no" in message
+
+def test_approve_memory_proposal_creates_fact_and_marks_approved(tmp_path: Path) -> None:
+    import json
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_proposal, approve_memory_proposal
+
+    add_memory_proposal(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 16, 0, tzinfo=UTC),
+        proposal_id="weather-reference-pattern",
+        proposed_type="fact",
+        proposed_statement="Weather report is the reference pattern.",
+        project="marcbot-memory",
+        source="test_proposal",
+        rationale="It validated the workflow lifecycle.",
+        risk_level="medium",
+        details="Useful implementation pattern.",
+    )
+
+    result = approve_memory_proposal(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 17, 0, tzinfo=UTC),
+        proposal_id="weather-reference-pattern",
+        source="test_approval",
+        review_reason="Looks correct.",
+        category="project-pattern",
+        confidence="high",
+    )
+
+    proposal_data = json.loads(result.proposal_path.read_text(encoding="utf-8"))
+    fact_text = result.created_path.read_text(encoding="utf-8")
+    correction_text = (tmp_path / "corrections" / "2026-05.jsonl").read_text(
+        encoding="utf-8"
+    )
+
+    assert result.created_id == "weather-reference-pattern"
+    assert proposal_data["status"] == "approved"
+    assert proposal_data["reviewed_at"] == "2026-05-18T17:00:00+00:00"
+    assert proposal_data["review_reason"] == "Looks correct."
+    assert 'id = "weather-reference-pattern"' in fact_text
+    assert 'category = "project-pattern"' in fact_text
+    assert 'project = "marcbot-memory"' in fact_text
+    assert "proposal_approved" in correction_text
+
+
+def test_approve_memory_proposal_rejects_missing_proposal(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import approve_memory_proposal
+
+    with pytest.raises(ValueError, match="proposal does not exist"):
+        approve_memory_proposal(
+            root=tmp_path,
+            proposal_id="missing",
+            source="test",
+        )
+
+
+def test_approve_memory_proposal_rejects_non_pending_proposal(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        approve_memory_proposal,
+        reject_memory_proposal,
+    )
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        proposed_type="fact",
+        proposed_statement="A proposal.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+    reject_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        reason="Reject.",
+        source="test",
+    )
+
+    with pytest.raises(ValueError, match="proposal is not pending"):
+        approve_memory_proposal(
+            root=tmp_path,
+            proposal_id="test-proposal",
+            source="test",
+        )
+
+
+def test_approve_memory_proposal_rejects_non_fact_proposal(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import add_memory_proposal, approve_memory_proposal
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="event-proposal",
+        proposed_type="event",
+        proposed_statement="An event proposal.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+
+    with pytest.raises(ValueError, match="only fact proposal approval is supported"):
+        approve_memory_proposal(
+            root=tmp_path,
+            proposal_id="event-proposal",
+            source="test",
+        )

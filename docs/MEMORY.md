@@ -875,3 +875,26 @@ milestone.
 
 This milestone is CLI-only, provider-contact-free, and does not perform
 automatic proposal generation.
+
+## Implemented M8B fact proposal approval
+
+Pending fact proposals can now be approved explicitly.
+
+Command:
+
+    python -m marcbot memory proposal approve
+
+Initial approval behavior supports `proposed_type = "fact"` only.
+
+Approval behavior:
+
+- reads a pending proposal
+- verifies it is still pending
+- verifies it is a fact proposal
+- creates an active memory fact from the proposed statement
+- marks the proposal approved
+- records `reviewed_at` and `review_reason`
+- writes a correction/review record
+
+Approval remains CLI-only and provider-contact-free. Event and summary proposal
+approval are deferred.

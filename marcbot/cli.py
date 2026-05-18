@@ -35,6 +35,7 @@ from marcbot.memory_store import (
     add_memory_fact,
     add_memory_proposal,
     add_memory_summary,
+    approve_memory_proposal,
     format_memory_event_list,
     format_memory_fact_list,
     format_memory_proposal_list,
@@ -512,6 +513,16 @@ def build_parser() -> argparse.ArgumentParser:
     memory_proposal_reject_parser.add_argument("--id", required=True)
     memory_proposal_reject_parser.add_argument("--reason", required=True)
     memory_proposal_reject_parser.add_argument("--source", required=True)
+    memory_proposal_approve_parser = memory_proposal_subparsers.add_parser(
+        "approve",
+        help="approve a pending fact memory proposal",
+    )
+    memory_proposal_approve_parser.add_argument("--id", required=True)
+    memory_proposal_approve_parser.add_argument("--source", required=True)
+    memory_proposal_approve_parser.add_argument("--review-reason", default=None)
+    memory_proposal_approve_parser.add_argument("--fact-id", default=None)
+    memory_proposal_approve_parser.add_argument("--category", default="general")
+    memory_proposal_approve_parser.add_argument("--confidence", default="high")
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -1110,6 +1121,17 @@ def main(argv: list[str] | None = None) -> int:
                         proposal_id=args.id,
                         reason=args.reason,
                         source=args.source,
+                    )
+                    print(result.message)
+                    return 0
+                if args.memory_proposal_command == "approve":
+                    result = approve_memory_proposal(
+                        proposal_id=args.id,
+                        source=args.source,
+                        review_reason=args.review_reason,
+                        fact_id=args.fact_id,
+                        category=args.category,
+                        confidence=args.confidence,
                     )
                     print(result.message)
                     return 0

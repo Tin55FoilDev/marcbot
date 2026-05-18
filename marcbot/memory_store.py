@@ -1277,3 +1277,108 @@ def reject_memory_proposal(
 
     return MemoryProposalRejectResult(path=path, proposal_id=safe_id)
 
+@dataclass(frozen=True)
+class MemoryProposalApproveResult:
+    # Result of approving one memory proposal.
+
+    proposal_path: Path
+    created_path: Path
+    proposal_id: str
+    created_id: str
+    created_type: str
+
+    @property
+    def message(self) -> str:
+        return (
+            f"Memory proposal approved: {self.proposal_id} -> "
+            f"{self.created_type} {self.created_id}"
+        )
+
+
+def approve_memory_proposal(
+    *,
+    proposal_id: str,
+    source: str,
+    root: Path = MEMORY_ROOT,
+    timestamp: datetime | None = None,
+    review_reason: str | None = None,
+    fact_id: str | None = None,
+    category: str = "general",
+    confidence: str = "high",
+) -> MemoryProposalApproveResult:
+    init_memory_store(root=root)
+
+    safe_id = _slugify_fact_id(_validate_nonempty_text(proposal_id, "id"))
+    proposal_path = _proposal_path(root, safe_id)
+
+    if not proposal_path.is_file():
+        raise ValueError(f"proposal does not exist: {safe_id}")
+
+    proposal = _load_memory_proposal(proposal_path)
+    if proposal.status != "pending":
+        raise ValueError(f"proposal is not pending: {safe_id}")
+
+    if proposal.proposed_type != "fact":
+        raise ValueError("only fact proposal approval is supported")
+
+    current_time = timestamp or datetime.now(UTC)
+    timestamp_text = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
+    safe_source = _validate_nonempty_text(source, "source")
+    safe_reason = (
+        review_reason.strip()
+        if review_reason and review_reason.strip()
+        else "Approved after review."
+    )
+    safe_fact_id = _slugify_fact_id(fact_id) if fact_id else proposal.id
+
+    fact_result = add_memory_fact(
+        fact_id=safe_fact_id,
+        statement=proposal.proposed_statement,
+        category=category,
+        source=safe_source,
+        confidence=confidence,
+        root=root,
+        timestamp=current_time,
+        project=proposal.project,
+        details=proposal.details or proposal.rationale,
+    )
+
+    approved = MemoryProposal(
+        id=proposal.id,
+        created_at=proposal.created_at,
+        proposed_type=proposal.proposed_type,
+        proposed_statement=proposal.proposed_statement,
+        source=proposal.source,
+        rationale=proposal.rationale,
+        risk_level=proposal.risk_level,
+        status="approved",
+        project=proposal.project,
+        details=proposal.details,
+        reviewed_at=timestamp_text,
+        review_reason=safe_reason,
+        path=proposal_path,
+    )
+    _write_memory_proposal(proposal_path, approved)
+
+    correction_path = _correction_path_for_timestamp(root, timestamp_text)
+    correction = {
+        "timestamp": timestamp_text,
+        "type": "proposal_approved",
+        "proposal_id": proposal.id,
+        "created_type": "fact",
+        "created_id": fact_result.fact.id,
+        "source": safe_source,
+        "reason": safe_reason,
+        "confidence": _validate_confidence(confidence),
+    }
+    with correction_path.open("a", encoding="utf-8") as file_obj:
+        file_obj.write(json.dumps(correction, sort_keys=True) + "\n")
+
+    return MemoryProposalApproveResult(
+        proposal_path=proposal_path,
+        created_path=fact_result.path,
+        proposal_id=proposal.id,
+        created_id=fact_result.fact.id,
+        created_type="fact",
+    )
+
