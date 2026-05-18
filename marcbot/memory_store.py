@@ -988,3 +988,292 @@ def reject_memory_fact(
         fact_id=safe_id,
     )
 
+ALLOWED_PROPOSAL_TYPES: tuple[str, ...] = (
+    "event",
+    "fact",
+    "summary",
+)
+
+ALLOWED_PROPOSAL_RISK_LEVELS: tuple[str, ...] = (
+    "low",
+    "medium",
+    "high",
+)
+
+ALLOWED_PROPOSAL_STATUSES: tuple[str, ...] = (
+    "pending",
+    "approved",
+    "rejected",
+)
+
+
+@dataclass(frozen=True)
+class MemoryProposal:
+    # One pending or reviewed memory proposal.
+
+    id: str
+    created_at: str
+    proposed_type: str
+    proposed_statement: str
+    source: str
+    rationale: str
+    risk_level: str
+    status: str
+    project: str | None = None
+    details: str | None = None
+    reviewed_at: str | None = None
+    review_reason: str | None = None
+    path: Path | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        data: dict[str, object] = {
+            "id": self.id,
+            "created_at": self.created_at,
+            "proposed_type": self.proposed_type,
+            "proposed_statement": self.proposed_statement,
+            "source": self.source,
+            "rationale": self.rationale,
+            "risk_level": self.risk_level,
+            "status": self.status,
+        }
+
+        optional_values = {
+            "project": self.project,
+            "details": self.details,
+            "reviewed_at": self.reviewed_at,
+            "review_reason": self.review_reason,
+        }
+
+        for key, value in optional_values.items():
+            if value not in (None, ""):
+                data[key] = value
+
+        return data
+
+    def format_one_line(self) -> str:
+        project = f" [{self.project}]" if self.project else ""
+        return (
+            f"{self.id}{project}: {self.proposed_type} / {self.risk_level} / "
+            f"{self.status}: {self.proposed_statement}"
+        )
+
+
+@dataclass(frozen=True)
+class MemoryProposalAddResult:
+    # Result of writing one memory proposal.
+
+    path: Path
+    proposal: MemoryProposal
+
+    @property
+    def message(self) -> str:
+        return f"Memory proposal added: {self.path}"
+
+
+@dataclass(frozen=True)
+class MemoryProposalRejectResult:
+    # Result of rejecting one memory proposal.
+
+    path: Path
+    proposal_id: str
+
+    @property
+    def message(self) -> str:
+        return f"Memory proposal rejected: {self.proposal_id}"
+
+
+def _validate_proposal_type(value: str) -> str:
+    cleaned = _validate_nonempty_text(value, "proposed-type")
+    if cleaned not in ALLOWED_PROPOSAL_TYPES:
+        allowed = ", ".join(ALLOWED_PROPOSAL_TYPES)
+        raise ValueError(f"proposed-type must be one of: {allowed}")
+    return cleaned
+
+
+def _validate_proposal_risk_level(value: str) -> str:
+    cleaned = _validate_nonempty_text(value, "risk-level")
+    if cleaned not in ALLOWED_PROPOSAL_RISK_LEVELS:
+        allowed = ", ".join(ALLOWED_PROPOSAL_RISK_LEVELS)
+        raise ValueError(f"risk-level must be one of: {allowed}")
+    return cleaned
+
+
+def _validate_proposal_status(value: str) -> str:
+    cleaned = _validate_nonempty_text(value, "status")
+    if cleaned not in ALLOWED_PROPOSAL_STATUSES:
+        allowed = ", ".join(ALLOWED_PROPOSAL_STATUSES)
+        raise ValueError(f"status must be one of: {allowed}")
+    return cleaned
+
+
+def _proposal_path(root: Path, proposal_id: str) -> Path:
+    return root / "pending" / f"{proposal_id}.json"
+
+
+def _load_memory_proposal(path: Path) -> MemoryProposal:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return MemoryProposal(
+        id=str(data["id"]),
+        created_at=str(data["created_at"]),
+        proposed_type=str(data["proposed_type"]),
+        proposed_statement=str(data["proposed_statement"]),
+        source=str(data["source"]),
+        rationale=str(data["rationale"]),
+        risk_level=str(data["risk_level"]),
+        status=str(data["status"]),
+        project=data.get("project"),
+        details=data.get("details"),
+        reviewed_at=data.get("reviewed_at"),
+        review_reason=data.get("review_reason"),
+        path=path,
+    )
+
+
+def _write_memory_proposal(path: Path, proposal: MemoryProposal) -> None:
+    path.write_text(
+        json.dumps(proposal.to_dict(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def add_memory_proposal(
+    *,
+    proposal_id: str,
+    proposed_type: str,
+    proposed_statement: str,
+    source: str,
+    rationale: str,
+    risk_level: str,
+    root: Path = MEMORY_ROOT,
+    timestamp: datetime | None = None,
+    project: str | None = None,
+    details: str | None = None,
+) -> MemoryProposalAddResult:
+    init_memory_store(root=root)
+
+    safe_id = _slugify_fact_id(_validate_nonempty_text(proposal_id, "id"))
+    path = _proposal_path(root, safe_id)
+    if path.exists():
+        raise ValueError(f"proposal already exists: {safe_id}")
+
+    current_time = timestamp or datetime.now(UTC)
+    timestamp_text = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
+
+    proposal = MemoryProposal(
+        id=safe_id,
+        created_at=timestamp_text,
+        proposed_type=_validate_proposal_type(proposed_type),
+        proposed_statement=_validate_nonempty_text(
+            proposed_statement,
+            "proposed-statement",
+        ),
+        source=_validate_nonempty_text(source, "source"),
+        rationale=_validate_nonempty_text(rationale, "rationale"),
+        risk_level=_validate_proposal_risk_level(risk_level),
+        status="pending",
+        project=project.strip() if project else None,
+        details=details.strip() if details else None,
+        path=path,
+    )
+    _write_memory_proposal(path, proposal)
+
+    return MemoryProposalAddResult(path=path, proposal=proposal)
+
+
+def list_memory_proposals(
+    *,
+    root: Path = MEMORY_ROOT,
+    status: str = "pending",
+    limit: int = 50,
+) -> tuple[MemoryProposal, ...]:
+    if limit < 1 or limit > 200:
+        raise ValueError("limit must be from 1 to 200")
+
+    safe_status = _validate_proposal_status(status)
+    pending_dir = root / "pending"
+    if not pending_dir.is_dir():
+        return ()
+
+    proposals: list[MemoryProposal] = []
+    for path in sorted(pending_dir.glob("*.json")):
+        proposal = _load_memory_proposal(path)
+        if proposal.status == safe_status:
+            proposals.append(proposal)
+
+    proposals.sort(key=lambda proposal: proposal.created_at, reverse=True)
+    return tuple(proposals[:limit])
+
+
+def format_memory_proposal_list(
+    *,
+    root: Path = MEMORY_ROOT,
+    status: str = "pending",
+    limit: int = 50,
+) -> str:
+    proposals = list_memory_proposals(root=root, status=status, limit=limit)
+
+    lines = [
+        "MarcBot memory proposals",
+        f"Root: {root}",
+        f"Status: {status}",
+        f"Limit: {limit}",
+    ]
+
+    if not proposals:
+        lines.append("No proposals found.")
+        lines.append("Provider contact: no")
+        return "\n".join(lines)
+
+    for proposal in proposals:
+        lines.append(f"- {proposal.format_one_line()}")
+        if proposal.details:
+            lines.append(f"  Details: {proposal.details}")
+        if proposal.path:
+            lines.append(f"  File: {proposal.path}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
+
+
+def reject_memory_proposal(
+    *,
+    proposal_id: str,
+    reason: str,
+    source: str,
+    root: Path = MEMORY_ROOT,
+    timestamp: datetime | None = None,
+) -> MemoryProposalRejectResult:
+    init_memory_store(root=root)
+
+    safe_id = _slugify_fact_id(_validate_nonempty_text(proposal_id, "id"))
+    path = _proposal_path(root, safe_id)
+
+    if not path.is_file():
+        raise ValueError(f"proposal does not exist: {safe_id}")
+
+    proposal = _load_memory_proposal(path)
+    if proposal.status != "pending":
+        raise ValueError(f"proposal is not pending: {safe_id}")
+
+    current_time = timestamp or datetime.now(UTC)
+    timestamp_text = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
+
+    rejected = MemoryProposal(
+        id=proposal.id,
+        created_at=proposal.created_at,
+        proposed_type=proposal.proposed_type,
+        proposed_statement=proposal.proposed_statement,
+        source=proposal.source,
+        rationale=proposal.rationale,
+        risk_level=proposal.risk_level,
+        status="rejected",
+        project=proposal.project,
+        details=proposal.details,
+        reviewed_at=timestamp_text,
+        review_reason=_validate_nonempty_text(reason, "reason"),
+        path=path,
+    )
+    _write_memory_proposal(path, rejected)
+
+    return MemoryProposalRejectResult(path=path, proposal_id=safe_id)
+

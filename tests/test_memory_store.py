@@ -515,3 +515,123 @@ def test_reject_memory_fact_rejects_already_rejected_fact(tmp_path: Path) -> Non
             source="test",
             confidence="high",
         )
+
+def test_add_memory_proposal_writes_json(tmp_path: Path) -> None:
+    import json
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_proposal
+
+    result = add_memory_proposal(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 16, 0, tzinfo=UTC),
+        proposal_id="weather-reference-pattern",
+        proposed_type="fact",
+        proposed_statement="weather-report is the reference pattern for simple workflows.",
+        project="marcbot-memory",
+        source="manual_proposal",
+        rationale="The workflow validated the project lifecycle.",
+        risk_level="medium",
+        details="Consider approving after review.",
+    )
+
+    assert result.path == tmp_path / "pending" / "weather-reference-pattern.json"
+    data = json.loads(result.path.read_text(encoding="utf-8"))
+
+    assert data["id"] == "weather-reference-pattern"
+    assert data["proposed_type"] == "fact"
+    assert data["status"] == "pending"
+    assert data["risk_level"] == "medium"
+    assert data["project"] == "marcbot-memory"
+
+
+def test_add_memory_proposal_rejects_invalid_type(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import add_memory_proposal
+
+    with pytest.raises(ValueError, match="proposed-type must be one of"):
+        add_memory_proposal(
+            root=tmp_path,
+            proposal_id="bad",
+            proposed_type="bad",
+            proposed_statement="Bad.",
+            source="test",
+            rationale="Test.",
+            risk_level="low",
+        )
+
+
+def test_list_memory_proposals_returns_pending_newest_first(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_proposal, list_memory_proposals
+
+    add_memory_proposal(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 15, 0, tzinfo=UTC),
+        proposal_id="older",
+        proposed_type="fact",
+        proposed_statement="Older proposal.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+    add_memory_proposal(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 16, 0, tzinfo=UTC),
+        proposal_id="newer",
+        proposed_type="fact",
+        proposed_statement="Newer proposal.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+
+    proposals = list_memory_proposals(root=tmp_path)
+
+    assert [proposal.id for proposal in proposals] == ["newer", "older"]
+
+
+def test_reject_memory_proposal_marks_proposal_rejected(tmp_path: Path) -> None:
+    import json
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_proposal, reject_memory_proposal
+
+    add_memory_proposal(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 16, 0, tzinfo=UTC),
+        proposal_id="test-proposal",
+        proposed_type="fact",
+        proposed_statement="Temporary proposal.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+
+    result = reject_memory_proposal(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 17, 0, tzinfo=UTC),
+        proposal_id="test-proposal",
+        reason="Temporary proposal cleanup.",
+        source="test_cleanup",
+    )
+
+    data = json.loads(result.path.read_text(encoding="utf-8"))
+
+    assert data["status"] == "rejected"
+    assert data["reviewed_at"] == "2026-05-18T17:00:00+00:00"
+    assert data["review_reason"] == "Temporary proposal cleanup."
+
+
+def test_format_memory_proposal_list_reports_no_proposals(tmp_path: Path) -> None:
+    from marcbot.memory_store import format_memory_proposal_list, init_memory_store
+
+    init_memory_store(root=tmp_path)
+
+    message = format_memory_proposal_list(root=tmp_path)
+
+    assert "MarcBot memory proposals" in message
+    assert "No proposals found." in message
+    assert "Provider contact: no" in message

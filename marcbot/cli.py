@@ -33,13 +33,16 @@ from marcbot.logging_setup import configure_logging
 from marcbot.memory_store import (
     add_memory_event,
     add_memory_fact,
+    add_memory_proposal,
     add_memory_summary,
     format_memory_event_list,
     format_memory_fact_list,
+    format_memory_proposal_list,
     format_memory_status_message,
     format_memory_summary_list,
     init_memory_store,
     reject_memory_fact,
+    reject_memory_proposal,
     supersede_memory_fact,
 )
 from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
@@ -477,6 +480,38 @@ def build_parser() -> argparse.ArgumentParser:
     memory_fact_reject_parser.add_argument("--reason", required=True)
     memory_fact_reject_parser.add_argument("--source", required=True)
     memory_fact_reject_parser.add_argument("--confidence", required=True)
+    memory_proposal_parser = memory_subparsers.add_parser(
+        "proposal",
+        help="add, list, or reject memory proposals",
+    )
+    memory_proposal_subparsers = memory_proposal_parser.add_subparsers(
+        dest="memory_proposal_command"
+    )
+    memory_proposal_add_parser = memory_proposal_subparsers.add_parser(
+        "add",
+        help="add a pending memory proposal",
+    )
+    memory_proposal_add_parser.add_argument("--id", required=True)
+    memory_proposal_add_parser.add_argument("--proposed-type", required=True)
+    memory_proposal_add_parser.add_argument("--proposed-statement", required=True)
+    memory_proposal_add_parser.add_argument("--source", required=True)
+    memory_proposal_add_parser.add_argument("--rationale", required=True)
+    memory_proposal_add_parser.add_argument("--risk-level", required=True)
+    memory_proposal_add_parser.add_argument("--project", default=None)
+    memory_proposal_add_parser.add_argument("--details", default=None)
+    memory_proposal_list_parser = memory_proposal_subparsers.add_parser(
+        "list",
+        help="list memory proposals",
+    )
+    memory_proposal_list_parser.add_argument("--status", default="pending")
+    memory_proposal_list_parser.add_argument("--limit", type=int, default=50)
+    memory_proposal_reject_parser = memory_proposal_subparsers.add_parser(
+        "reject",
+        help="reject a pending memory proposal",
+    )
+    memory_proposal_reject_parser.add_argument("--id", required=True)
+    memory_proposal_reject_parser.add_argument("--reason", required=True)
+    memory_proposal_reject_parser.add_argument("--source", required=True)
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -1048,6 +1083,37 @@ def main(argv: list[str] | None = None) -> int:
                     print(format_memory_summary_list(limit=args.limit))
                     return 0
                 parser.error("memory summary requires a subcommand")
+            if args.memory_command == "proposal":
+                if args.memory_proposal_command == "add":
+                    result = add_memory_proposal(
+                        proposal_id=args.id,
+                        proposed_type=args.proposed_type,
+                        proposed_statement=args.proposed_statement,
+                        source=args.source,
+                        rationale=args.rationale,
+                        risk_level=args.risk_level,
+                        project=args.project,
+                        details=args.details,
+                    )
+                    print(result.message)
+                    return 0
+                if args.memory_proposal_command == "list":
+                    print(
+                        format_memory_proposal_list(
+                            status=args.status,
+                            limit=args.limit,
+                        )
+                    )
+                    return 0
+                if args.memory_proposal_command == "reject":
+                    result = reject_memory_proposal(
+                        proposal_id=args.id,
+                        reason=args.reason,
+                        source=args.source,
+                    )
+                    print(result.message)
+                    return 0
+                parser.error("memory proposal requires a subcommand")
             if args.memory_command == "fact":
                 if args.memory_fact_command == "add":
                     result = add_memory_fact(

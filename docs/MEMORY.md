@@ -854,3 +854,24 @@ Rejection behavior:
 
 This is useful for cleaning up temporary or incorrect facts while preserving an
 audit trail.
+
+## Implemented M8A pending proposals
+
+The pending proposal commands are:
+
+    python -m marcbot memory proposal add
+    python -m marcbot memory proposal list
+    python -m marcbot memory proposal reject
+
+Proposals are JSON files written under:
+
+    /srv/marcbot/memory/pending/
+
+This milestone supports explicit proposal creation, listing, and rejection.
+
+Proposal approval is intentionally deferred. Approval must safely create the
+appropriate durable memory type and should be implemented as a separate
+milestone.
+
+This milestone is CLI-only, provider-contact-free, and does not perform
+automatic proposal generation.

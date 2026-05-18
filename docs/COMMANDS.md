@@ -407,3 +407,14 @@ Explicit fact rejection command:
 
 This command marks a fact rejected and writes a correction record. It is
 CLI-only and provider-contact-free.
+
+### Memory proposals
+
+Explicit memory proposal commands:
+
+    python -m marcbot memory proposal add
+    python -m marcbot memory proposal list
+    python -m marcbot memory proposal reject
+
+These commands are CLI-only and provider-contact-free. Proposal approval is
+deferred to a later milestone.

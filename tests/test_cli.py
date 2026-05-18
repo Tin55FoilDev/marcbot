@@ -1323,3 +1323,98 @@ def test_memory_fact_reject_command(capsys, monkeypatch, tmp_path) -> None:
 
     assert result == 0
     assert "Memory fact rejected: test-fact" in captured.out
+
+def test_memory_proposal_add_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_proposal
+
+    monkeypatch.setattr(
+        cli,
+        "add_memory_proposal",
+        lambda **kwargs: add_memory_proposal(root=tmp_path, **kwargs),
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "proposal",
+            "add",
+            "--id",
+            "weather-reference-pattern",
+            "--proposed-type",
+            "fact",
+            "--proposed-statement",
+            "weather-report is the reference pattern.",
+            "--source",
+            "test",
+            "--rationale",
+            "It validated the workflow lifecycle.",
+            "--risk-level",
+            "medium",
+            "--project",
+            "marcbot-memory",
+            "--details",
+            "Review before approval.",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory proposal added:" in captured.out
+
+
+def test_memory_proposal_list_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_proposal_list",
+        lambda status, limit: (
+            f"MarcBot memory proposals\nStatus: {status}\nLimit: {limit}"
+        ),
+    )
+
+    result = cli.main(["memory", "proposal", "list", "--status", "pending", "--limit", "5"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory proposals\nStatus: pending\nLimit: 5\n"
+
+
+def test_memory_proposal_reject_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_proposal, reject_memory_proposal
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        proposed_type="fact",
+        proposed_statement="Temporary proposal.",
+        source="test",
+        rationale="Test.",
+        risk_level="low",
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "reject_memory_proposal",
+        lambda **kwargs: reject_memory_proposal(root=tmp_path, **kwargs),
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "proposal",
+            "reject",
+            "--id",
+            "test-proposal",
+            "--reason",
+            "Temporary proposal cleanup.",
+            "--source",
+            "test_cleanup",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory proposal rejected: test-proposal" in captured.out
