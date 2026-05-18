@@ -379,3 +379,13 @@ Explicit memory summary commands:
 
 These commands are CLI-only, provider-contact-free, and intended for milestone,
 project, and session handoff summaries.
+
+### Memory facts
+
+Explicit memory fact commands:
+
+    python -m marcbot memory fact add
+    python -m marcbot memory fact list
+
+These commands are CLI-only, provider-contact-free, and intended for durable
+facts that should remain correctable in later milestones.

@@ -32,8 +32,10 @@ from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm
 from marcbot.logging_setup import configure_logging
 from marcbot.memory_store import (
     add_memory_event,
+    add_memory_fact,
     add_memory_summary,
     format_memory_event_list,
+    format_memory_fact_list,
     format_memory_status_message,
     format_memory_summary_list,
     init_memory_store,
@@ -428,6 +430,30 @@ def build_parser() -> argparse.ArgumentParser:
         help="list recent memory summaries",
     )
     memory_summary_list_parser.add_argument("--limit", type=int, default=10)
+    memory_fact_parser = memory_subparsers.add_parser(
+        "fact",
+        help="add or list explicit memory facts",
+    )
+    memory_fact_subparsers = memory_fact_parser.add_subparsers(
+        dest="memory_fact_command"
+    )
+    memory_fact_add_parser = memory_fact_subparsers.add_parser(
+        "add",
+        help="add an explicit memory fact",
+    )
+    memory_fact_add_parser.add_argument("--id", required=True)
+    memory_fact_add_parser.add_argument("--statement", required=True)
+    memory_fact_add_parser.add_argument("--category", required=True)
+    memory_fact_add_parser.add_argument("--source", required=True)
+    memory_fact_add_parser.add_argument("--confidence", required=True)
+    memory_fact_add_parser.add_argument("--project", default=None)
+    memory_fact_add_parser.add_argument("--details", default=None)
+    memory_fact_list_parser = memory_fact_subparsers.add_parser(
+        "list",
+        help="list memory facts",
+    )
+    memory_fact_list_parser.add_argument("--status", default="active")
+    memory_fact_list_parser.add_argument("--limit", type=int, default=50)
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -999,6 +1025,23 @@ def main(argv: list[str] | None = None) -> int:
                     print(format_memory_summary_list(limit=args.limit))
                     return 0
                 parser.error("memory summary requires a subcommand")
+            if args.memory_command == "fact":
+                if args.memory_fact_command == "add":
+                    result = add_memory_fact(
+                        fact_id=args.id,
+                        statement=args.statement,
+                        category=args.category,
+                        source=args.source,
+                        confidence=args.confidence,
+                        project=args.project,
+                        details=args.details,
+                    )
+                    print(result.message)
+                    return 0
+                if args.memory_fact_command == "list":
+                    print(format_memory_fact_list(status=args.status, limit=args.limit))
+                    return 0
+                parser.error("memory fact requires a subcommand")
             parser.error("memory requires a subcommand")
 
         if args.command == "weather-report":

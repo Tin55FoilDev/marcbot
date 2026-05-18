@@ -579,3 +579,220 @@ def format_memory_summary_list(
     lines.append("Provider contact: no")
     return "\n".join(lines)
 
+ALLOWED_FACT_STATUSES: tuple[str, ...] = (
+    "active",
+    "superseded",
+    "rejected",
+)
+
+
+@dataclass(frozen=True)
+class MemoryFact:
+    # One explicit durable memory fact.
+
+    id: str
+    statement: str
+    category: str
+    source: str
+    created_at: str
+    updated_at: str
+    confidence: str
+    status: str
+    project: str | None = None
+    details: str | None = None
+    path: Path | None = None
+
+    def format_one_line(self) -> str:
+        project = f" [{self.project}]" if self.project else ""
+        return f"{self.id}{project}: {self.statement}"
+
+
+@dataclass(frozen=True)
+class MemoryFactAddResult:
+    # Result of writing one fact.
+
+    path: Path
+    fact: MemoryFact
+
+    @property
+    def message(self) -> str:
+        return f"Memory fact added: {self.path}"
+
+
+def _slugify_fact_id(value: str) -> str:
+    cleaned = value.lower()
+    chars: list[str] = []
+    previous_dash = False
+
+    for char in cleaned:
+        if char.isalnum():
+            chars.append(char)
+            previous_dash = False
+            continue
+
+        if not previous_dash:
+            chars.append("-")
+            previous_dash = True
+
+    slug = "".join(chars).strip("-")
+    return slug or "fact"
+
+
+def _validate_fact_status(status: str) -> str:
+    cleaned = _validate_nonempty_text(status, "status")
+    if cleaned not in ALLOWED_FACT_STATUSES:
+        allowed = ", ".join(ALLOWED_FACT_STATUSES)
+        raise ValueError(f"status must be one of: {allowed}")
+    return cleaned
+
+
+def _toml_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _write_simple_toml(path: Path, values: dict[str, str]) -> None:
+    lines = []
+    for key, value in values.items():
+        lines.append(f'{key} = "{_toml_escape(value)}"')
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _read_simple_toml(path: Path) -> dict[str, str]:
+    import tomllib
+
+    with path.open("rb") as file_obj:
+        data = tomllib.load(file_obj)
+
+    result: dict[str, str] = {}
+    for key, value in data.items():
+        if isinstance(value, str):
+            result[key] = value
+    return result
+
+
+def add_memory_fact(
+    *,
+    fact_id: str,
+    statement: str,
+    category: str,
+    source: str,
+    confidence: str,
+    root: Path = MEMORY_ROOT,
+    timestamp: datetime | None = None,
+    project: str | None = None,
+    details: str | None = None,
+) -> MemoryFactAddResult:
+    init_memory_store(root=root)
+
+    safe_id = _slugify_fact_id(_validate_nonempty_text(fact_id, "id"))
+    current_time = timestamp or datetime.now(UTC)
+    timestamp_text = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
+    path = root / "facts" / f"{safe_id}.toml"
+
+    if path.exists():
+        raise ValueError(f"fact already exists: {safe_id}")
+
+    fact = MemoryFact(
+        id=safe_id,
+        statement=_validate_nonempty_text(statement, "statement"),
+        category=_validate_nonempty_text(category, "category"),
+        source=_validate_nonempty_text(source, "source"),
+        created_at=timestamp_text,
+        updated_at=timestamp_text,
+        confidence=_validate_confidence(confidence),
+        status="active",
+        project=project.strip() if project else None,
+        details=details.strip() if details else None,
+        path=path,
+    )
+
+    values = {
+        "id": fact.id,
+        "statement": fact.statement,
+        "category": fact.category,
+        "source": fact.source,
+        "created_at": fact.created_at,
+        "updated_at": fact.updated_at,
+        "confidence": fact.confidence,
+        "status": fact.status,
+    }
+
+    if fact.project:
+        values["project"] = fact.project
+    if fact.details:
+        values["details"] = fact.details
+
+    _write_simple_toml(path, values)
+    return MemoryFactAddResult(path=path, fact=fact)
+
+
+def list_memory_facts(
+    *,
+    root: Path = MEMORY_ROOT,
+    status: str = "active",
+    limit: int = 50,
+) -> tuple[MemoryFact, ...]:
+    if limit < 1 or limit > 200:
+        raise ValueError("limit must be from 1 to 200")
+
+    safe_status = _validate_fact_status(status)
+    facts_dir = root / "facts"
+    if not facts_dir.is_dir():
+        return ()
+
+    facts: list[MemoryFact] = []
+    for path in sorted(facts_dir.glob("*.toml")):
+        data = _read_simple_toml(path)
+        if data.get("status", "active") != safe_status:
+            continue
+
+        facts.append(
+            MemoryFact(
+                id=data.get("id", path.stem),
+                statement=data.get("statement", ""),
+                category=data.get("category", "unknown"),
+                source=data.get("source", "unknown"),
+                created_at=data.get("created_at", "unknown"),
+                updated_at=data.get("updated_at", "unknown"),
+                confidence=data.get("confidence", "unknown"),
+                status=data.get("status", "active"),
+                project=data.get("project"),
+                details=data.get("details"),
+                path=path,
+            )
+        )
+
+    facts.sort(key=lambda fact: fact.updated_at, reverse=True)
+    return tuple(facts[:limit])
+
+
+def format_memory_fact_list(
+    *,
+    root: Path = MEMORY_ROOT,
+    status: str = "active",
+    limit: int = 50,
+) -> str:
+    facts = list_memory_facts(root=root, status=status, limit=limit)
+
+    lines = [
+        "MarcBot memory facts",
+        f"Root: {root}",
+        f"Status: {status}",
+        f"Limit: {limit}",
+    ]
+
+    if not facts:
+        lines.append("No facts found.")
+        lines.append("Provider contact: no")
+        return "\n".join(lines)
+
+    for fact in facts:
+        lines.append(f"- {fact.format_one_line()}")
+        if fact.details:
+            lines.append(f"  Details: {fact.details}")
+        if fact.path:
+            lines.append(f"  File: {fact.path}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
+

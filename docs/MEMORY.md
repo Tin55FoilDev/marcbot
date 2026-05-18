@@ -798,3 +798,22 @@ output, validation results, Git commits, or Marc's explicit corrections.
 
 This milestone remains explicit and CLI-only. It does not perform automatic
 summary generation and does not use LLMs.
+
+## Implemented M7A explicit facts
+
+The explicit memory fact commands are:
+
+    python -m marcbot memory fact add
+    python -m marcbot memory fact list
+
+Facts are TOML files written under:
+
+    /srv/marcbot/memory/facts/
+
+This first fact milestone supports active facts only. Correction and supersession
+are intentionally deferred to the next milestone.
+
+Facts are more authoritative than events or summaries, so they should be added
+carefully and explicitly. They remain helpful context, not final authority over
+current repo files, command output, validation results, Git commits, or Marc's
+explicit corrections.

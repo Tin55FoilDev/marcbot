@@ -253,3 +253,90 @@ def test_format_memory_summary_list_reports_no_summaries(tmp_path: Path) -> None
     assert "MarcBot memory summaries" in message
     assert "No summaries found." in message
     assert "Provider contact: no" in message
+
+def test_add_memory_fact_writes_toml(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_fact
+
+    result = add_memory_fact(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 14, 0, tzinfo=UTC),
+        fact_id="Weather Report Schedule",
+        statement="The weather report runs daily around 7:15 AM America/New_York.",
+        category="schedule",
+        project="weather-report",
+        source="manual_fact_entry",
+        confidence="high",
+        details="Defined by marcbot-weather-report.timer.",
+    )
+
+    assert result.path == tmp_path / "facts" / "weather-report-schedule.toml"
+    text = result.path.read_text(encoding="utf-8")
+
+    assert 'id = "weather-report-schedule"' in text
+    assert 'status = "active"' in text
+    assert 'category = "schedule"' in text
+    assert 'project = "weather-report"' in text
+    assert 'Defined by marcbot-weather-report.timer.' in text
+
+
+def test_add_memory_fact_rejects_duplicate_id(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import add_memory_fact
+
+    kwargs = {
+        "root": tmp_path,
+        "fact_id": "duplicate",
+        "statement": "A fact.",
+        "category": "test",
+        "source": "test",
+        "confidence": "high",
+    }
+
+    add_memory_fact(**kwargs)
+
+    with pytest.raises(ValueError, match="fact already exists"):
+        add_memory_fact(**kwargs)
+
+
+def test_list_memory_facts_returns_active_facts(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_fact, list_memory_facts
+
+    add_memory_fact(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 14, 0, tzinfo=UTC),
+        fact_id="first",
+        statement="First fact.",
+        category="test",
+        source="test",
+        confidence="high",
+    )
+    add_memory_fact(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 15, 0, tzinfo=UTC),
+        fact_id="second",
+        statement="Second fact.",
+        category="test",
+        source="test",
+        confidence="high",
+    )
+
+    facts = list_memory_facts(root=tmp_path)
+
+    assert [fact.id for fact in facts] == ["second", "first"]
+
+
+def test_format_memory_fact_list_reports_no_facts(tmp_path: Path) -> None:
+    from marcbot.memory_store import format_memory_fact_list, init_memory_store
+
+    init_memory_store(root=tmp_path)
+
+    message = format_memory_fact_list(root=tmp_path)
+
+    assert "MarcBot memory facts" in message
+    assert "No facts found." in message
+    assert "Provider contact: no" in message

@@ -1189,3 +1189,55 @@ def test_memory_summary_list_command(capsys, monkeypatch) -> None:
 
     assert result == 0
     assert captured.out == "MarcBot memory summaries\nLimit: 5\n"
+
+def test_memory_fact_add_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_fact
+
+    monkeypatch.setattr(
+        cli,
+        "add_memory_fact",
+        lambda **kwargs: add_memory_fact(root=tmp_path, **kwargs),
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "fact",
+            "add",
+            "--id",
+            "weather-report-schedule",
+            "--statement",
+            "Weather report runs daily around 7:15 AM.",
+            "--category",
+            "schedule",
+            "--source",
+            "test",
+            "--confidence",
+            "high",
+            "--project",
+            "weather-report",
+            "--details",
+            "Defined by marcbot-weather-report.timer.",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory fact added:" in captured.out
+
+
+def test_memory_fact_list_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_fact_list",
+        lambda status, limit: f"MarcBot memory facts\nStatus: {status}\nLimit: {limit}",
+    )
+
+    result = cli.main(["memory", "fact", "list", "--status", "active", "--limit", "5"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory facts\nStatus: active\nLimit: 5\n"
