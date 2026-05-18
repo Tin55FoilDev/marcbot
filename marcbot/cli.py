@@ -32,8 +32,10 @@ from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm
 from marcbot.logging_setup import configure_logging
 from marcbot.memory_store import (
     add_memory_event,
+    add_memory_summary,
     format_memory_event_list,
     format_memory_status_message,
+    format_memory_summary_list,
     init_memory_store,
 )
 from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
@@ -402,6 +404,30 @@ def build_parser() -> argparse.ArgumentParser:
         help="list recent memory events",
     )
     memory_event_list_parser.add_argument("--limit", type=int, default=10)
+    memory_summary_parser = memory_subparsers.add_parser(
+        "summary",
+        help="add or list explicit memory summaries",
+    )
+    memory_summary_subparsers = memory_summary_parser.add_subparsers(
+        dest="memory_summary_command"
+    )
+    memory_summary_add_parser = memory_summary_subparsers.add_parser(
+        "add",
+        help="add an explicit memory summary",
+    )
+    memory_summary_add_parser.add_argument("--title", required=True)
+    memory_summary_add_parser.add_argument("--body", required=True)
+    memory_summary_add_parser.add_argument("--source", required=True)
+    memory_summary_add_parser.add_argument("--project", default=None)
+    memory_summary_add_parser.add_argument("--related-file", action="append", default=[])
+    memory_summary_add_parser.add_argument("--related-command", action="append", default=[])
+    memory_summary_add_parser.add_argument("--related-artifact", action="append", default=[])
+    memory_summary_add_parser.add_argument("--related-commit", action="append", default=[])
+    memory_summary_list_parser = memory_summary_subparsers.add_parser(
+        "list",
+        help="list recent memory summaries",
+    )
+    memory_summary_list_parser.add_argument("--limit", type=int, default=10)
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -955,6 +981,24 @@ def main(argv: list[str] | None = None) -> int:
                     print(format_memory_event_list(limit=args.limit))
                     return 0
                 parser.error("memory event requires a subcommand")
+            if args.memory_command == "summary":
+                if args.memory_summary_command == "add":
+                    result = add_memory_summary(
+                        title=args.title,
+                        body=args.body,
+                        source=args.source,
+                        project=args.project,
+                        related_files=tuple(args.related_file),
+                        related_commands=tuple(args.related_command),
+                        related_artifacts=tuple(args.related_artifact),
+                        related_commits=tuple(args.related_commit),
+                    )
+                    print(result.message)
+                    return 0
+                if args.memory_summary_command == "list":
+                    print(format_memory_summary_list(limit=args.limit))
+                    return 0
+                parser.error("memory summary requires a subcommand")
             parser.error("memory requires a subcommand")
 
         if args.command == "weather-report":

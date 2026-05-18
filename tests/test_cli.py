@@ -1141,3 +1141,51 @@ def test_memory_event_list_command(capsys, monkeypatch) -> None:
 
     assert result == 0
     assert captured.out == "MarcBot memory events\nLimit: 5\n"
+
+def test_memory_summary_add_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_summary
+
+    monkeypatch.setattr(
+        cli,
+        "add_memory_summary",
+        lambda **kwargs: add_memory_summary(root=tmp_path, **kwargs),
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "summary",
+            "add",
+            "--title",
+            "Weather milestone",
+            "--body",
+            "Weather workflow completed.",
+            "--source",
+            "test",
+            "--project",
+            "weather-report",
+            "--related-command",
+            "python -m marcbot weather-report run-send-text",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory summary added:" in captured.out
+
+
+def test_memory_summary_list_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_summary_list",
+        lambda limit: f"MarcBot memory summaries\nLimit: {limit}",
+    )
+
+    result = cli.main(["memory", "summary", "list", "--limit", "5"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory summaries\nLimit: 5\n"

@@ -390,3 +390,192 @@ def format_memory_event_list(
     lines.append("Provider contact: no")
     return "\n".join(lines)
 
+@dataclass(frozen=True)
+class MemorySummary:
+    # One explicit memory summary.
+
+    path: Path
+    title: str
+    created_at: str
+    project: str | None
+    source: str
+    body: str
+
+    def format_one_line(self) -> str:
+        project = f" [{self.project}]" if self.project else ""
+        return f"{self.created_at}{project}: {self.title}"
+
+
+@dataclass(frozen=True)
+class MemorySummaryAddResult:
+    # Result of writing one summary.
+
+    path: Path
+
+    @property
+    def message(self) -> str:
+        return f"Memory summary added: {self.path}"
+
+
+def _slugify_summary_title(title: str) -> str:
+    cleaned = title.lower()
+    chars: list[str] = []
+    previous_dash = False
+
+    for char in cleaned:
+        if char.isalnum():
+            chars.append(char)
+            previous_dash = False
+            continue
+
+        if not previous_dash:
+            chars.append("-")
+            previous_dash = True
+
+    slug = "".join(chars).strip("-")
+    return slug or "summary"
+
+
+def add_memory_summary(
+    *,
+    title: str,
+    body: str,
+    source: str,
+    root: Path = MEMORY_ROOT,
+    timestamp: datetime | None = None,
+    project: str | None = None,
+    related_files: tuple[str, ...] = (),
+    related_commands: tuple[str, ...] = (),
+    related_artifacts: tuple[str, ...] = (),
+    related_commits: tuple[str, ...] = (),
+) -> MemorySummaryAddResult:
+    init_memory_store(root=root)
+
+    current_time = timestamp or datetime.now(UTC)
+    created_at = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
+    date_prefix = created_at[:10]
+    safe_title = _validate_nonempty_text(title, "title")
+    safe_body = _validate_nonempty_text(body, "body")
+    safe_source = _validate_nonempty_text(source, "source")
+    slug = _slugify_summary_title(safe_title)
+
+    path = root / "summaries" / f"{date_prefix}-{slug}.md"
+    counter = 2
+    while path.exists():
+        path = root / "summaries" / f"{date_prefix}-{slug}-{counter}.md"
+        counter += 1
+
+    metadata_lines = [
+        "---",
+        f'title: "{safe_title}"',
+        f'created_at: "{created_at}"',
+        f'source: "{safe_source}"',
+    ]
+
+    if project and project.strip():
+        metadata_lines.append(f'project: "{project.strip()}"')
+
+    if related_files:
+        metadata_lines.append("related_files:")
+        for item in related_files:
+            if item.strip():
+                metadata_lines.append(f'  - "{item.strip()}"')
+
+    if related_commands:
+        metadata_lines.append("related_commands:")
+        for item in related_commands:
+            if item.strip():
+                metadata_lines.append(f'  - "{item.strip()}"')
+
+    if related_artifacts:
+        metadata_lines.append("related_artifacts:")
+        for item in related_artifacts:
+            if item.strip():
+                metadata_lines.append(f'  - "{item.strip()}"')
+
+    if related_commits:
+        metadata_lines.append("related_commits:")
+        for item in related_commits:
+            if item.strip():
+                metadata_lines.append(f'  - "{item.strip()}"')
+
+    metadata_lines.extend(["---", "", f"# {safe_title}", "", safe_body.rstrip(), ""])
+
+    path.write_text("\n".join(metadata_lines), encoding="utf-8")
+    return MemorySummaryAddResult(path=path)
+
+
+def _parse_summary_metadata(text: str) -> dict[str, str]:
+    if not text.startswith("---\n"):
+        return {}
+
+    end = text.find("\n---\n", 4)
+    if end == -1:
+        return {}
+
+    metadata: dict[str, str] = {}
+    for line in text[4:end].splitlines():
+        if ": " not in line:
+            continue
+        key, value = line.split(": ", 1)
+        metadata[key.strip()] = value.strip().strip('"')
+
+    return metadata
+
+
+def list_memory_summaries(
+    *,
+    root: Path = MEMORY_ROOT,
+    limit: int = 10,
+) -> tuple[MemorySummary, ...]:
+    if limit < 1 or limit > 100:
+        raise ValueError("limit must be from 1 to 100")
+
+    summaries_dir = root / "summaries"
+    if not summaries_dir.is_dir():
+        return ()
+
+    summaries: list[MemorySummary] = []
+    for path in sorted(summaries_dir.glob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        metadata = _parse_summary_metadata(text)
+        summaries.append(
+            MemorySummary(
+                path=path,
+                title=metadata.get("title", path.stem),
+                created_at=metadata.get("created_at", "unknown"),
+                project=metadata.get("project"),
+                source=metadata.get("source", "unknown"),
+                body=text,
+            )
+        )
+
+    summaries.sort(key=lambda summary: summary.created_at, reverse=True)
+    return tuple(summaries[:limit])
+
+
+def format_memory_summary_list(
+    *,
+    root: Path = MEMORY_ROOT,
+    limit: int = 10,
+) -> str:
+    summaries = list_memory_summaries(root=root, limit=limit)
+
+    lines = [
+        "MarcBot memory summaries",
+        f"Root: {root}",
+        f"Limit: {limit}",
+    ]
+
+    if not summaries:
+        lines.append("No summaries found.")
+        lines.append("Provider contact: no")
+        return "\n".join(lines)
+
+    for summary in summaries:
+        lines.append(f"- {summary.format_one_line()}")
+        lines.append(f"  File: {summary.path}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
+

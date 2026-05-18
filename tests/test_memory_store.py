@@ -163,3 +163,93 @@ def test_format_memory_event_list_reports_no_events(tmp_path: Path) -> None:
     assert "MarcBot memory events" in message
     assert "No events found." in message
     assert "Provider contact: no" in message
+
+def test_add_memory_summary_writes_markdown(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_summary
+
+    result = add_memory_summary(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 13, 0, tzinfo=UTC),
+        title="Weather workflow completed",
+        project="weather-report",
+        source="manual_milestone_summary",
+        body="The weather workflow is production validated.",
+        related_commands=("python -m marcbot weather-report run-send-text",),
+        related_commits=("abc1234",),
+    )
+
+    assert result.path == tmp_path / "summaries" / "2026-05-18-weather-workflow-completed.md"
+    text = result.path.read_text(encoding="utf-8")
+
+    assert 'title: "Weather workflow completed"' in text
+    assert 'created_at: "2026-05-18T13:00:00+00:00"' in text
+    assert 'project: "weather-report"' in text
+    assert "The weather workflow is production validated." in text
+    assert "python -m marcbot weather-report run-send-text" in text
+    assert "abc1234" in text
+
+
+def test_add_memory_summary_uses_unique_filename(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_summary
+
+    first = add_memory_summary(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 13, 0, tzinfo=UTC),
+        title="Same title",
+        source="test",
+        body="First.",
+    )
+    second = add_memory_summary(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 13, 1, tzinfo=UTC),
+        title="Same title",
+        source="test",
+        body="Second.",
+    )
+
+    assert first.path.name == "2026-05-18-same-title.md"
+    assert second.path.name == "2026-05-18-same-title-2.md"
+
+
+def test_list_memory_summaries_returns_newest_first(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_summary, list_memory_summaries
+
+    add_memory_summary(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 17, 12, 0, tzinfo=UTC),
+        title="Older summary",
+        source="test",
+        body="Older.",
+    )
+    add_memory_summary(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 12, 0, tzinfo=UTC),
+        title="Newer summary",
+        source="test",
+        body="Newer.",
+    )
+
+    summaries = list_memory_summaries(root=tmp_path, limit=2)
+
+    assert [summary.title for summary in summaries] == [
+        "Newer summary",
+        "Older summary",
+    ]
+
+
+def test_format_memory_summary_list_reports_no_summaries(tmp_path: Path) -> None:
+    from marcbot.memory_store import format_memory_summary_list, init_memory_store
+
+    init_memory_store(root=tmp_path)
+
+    message = format_memory_summary_list(root=tmp_path)
+
+    assert "MarcBot memory summaries" in message
+    assert "No summaries found." in message
+    assert "Provider contact: no" in message

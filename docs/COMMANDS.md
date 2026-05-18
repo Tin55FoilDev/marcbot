@@ -369,3 +369,13 @@ Explicit memory event commands:
 
 These commands are CLI-only, provider-contact-free, and intended for explicit
 low-risk memory events.
+
+### Memory summaries
+
+Explicit memory summary commands:
+
+    python -m marcbot memory summary add
+    python -m marcbot memory summary list
+
+These commands are CLI-only, provider-contact-free, and intended for milestone,
+project, and session handoff summaries.

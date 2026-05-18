@@ -780,3 +780,21 @@ The event includes:
 
 This is intentionally narrow. It does not enable broad automatic memory capture,
 Telegram memory writes, proposal approval, or LLM-assisted memory generation.
+
+## Implemented M6 explicit milestone summaries
+
+The explicit memory summary commands are:
+
+    python -m marcbot memory summary add
+    python -m marcbot memory summary list
+
+Summaries are Markdown files written under:
+
+    /srv/marcbot/memory/summaries/
+
+Summaries are intended for milestone, project, and session handoff context.
+They are useful context, but they do not override current repo files, command
+output, validation results, Git commits, or Marc's explicit corrections.
+
+This milestone remains explicit and CLI-only. It does not perform automatic
+summary generation and does not use LLMs.
