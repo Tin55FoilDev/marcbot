@@ -1027,11 +1027,21 @@ def test_weather_report_run_send_text_writes_and_sends(
             report_label="weather text",
         )
 
-    def fake_add_memory_event(**kwargs):
+    def fake_record_approved_workflow_event(**kwargs):
         calls.append("memory")
+        import marcbot.memory_workflows as memory_workflows
         from marcbot.memory_store import add_memory_event
+        from marcbot.memory_workflows import record_approved_workflow_event
 
-        return add_memory_event(root=tmp_path / "memory", **kwargs)
+        original = memory_workflows.add_memory_event
+        memory_workflows.add_memory_event = lambda **inner_kwargs: add_memory_event(
+            root=tmp_path / "memory",
+            **inner_kwargs,
+        )
+        try:
+            return record_approved_workflow_event(**kwargs)
+        finally:
+            memory_workflows.add_memory_event = original
 
     monkeypatch.setattr(cli, "write_weather_report", fake_write_weather_report)
     monkeypatch.setattr(
@@ -1039,7 +1049,11 @@ def test_weather_report_run_send_text_writes_and_sends(
         "send_latest_weather_report_text",
         fake_send_latest_weather_report_text,
     )
-    monkeypatch.setattr(cli, "add_memory_event", fake_add_memory_event)
+    monkeypatch.setattr(
+        cli,
+        "record_approved_workflow_event",
+        fake_record_approved_workflow_event,
+    )
 
     result = cli.main(["weather-report", "run-send-text"])
     captured = capsys.readouterr()

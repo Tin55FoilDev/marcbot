@@ -1068,3 +1068,25 @@ than allowing memory to become cluttered.
 Telegram may show memory status and memory retrieval in future read-only
 commands, but Telegram must not approve, reject, supersede, or create durable
 memory until that command surface is explicitly designed and tested.
+
+## Implemented M11B approved automatic workflow helper
+
+MarcBot now has a narrow helper for approved automatic workflow event writes.
+
+The helper requires:
+
+- an approved low-risk event type
+- project
+- summary
+- source
+- details
+- verification
+
+It supports optional follow-up guidance, related files, related commands, and
+related artifacts.
+
+The weather-report `run-send-text` workflow now uses this helper instead of
+hand-rolling its automatic memory event.
+
+This keeps Marc out of routine low-risk memory transactions while preserving
+guardrails and auditability.

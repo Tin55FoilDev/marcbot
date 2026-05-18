@@ -51,6 +51,7 @@ from marcbot.memory_store import (
     reject_memory_proposal,
     supersede_memory_fact,
 )
+from marcbot.memory_workflows import record_approved_workflow_event
 from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
 from marcbot.report_sender import (
     send_latest_report,
@@ -1253,20 +1254,15 @@ def main(argv: list[str] | None = None) -> int:
                 config = load_config()
                 send_result = send_latest_weather_report_text(config)
                 print(send_result.message)
-                memory_result = add_memory_event(
+                memory_result = record_approved_workflow_event(
                     event_type="workflow_completed",
                     project="weather-report",
                     summary="Weather report generated and sent to Telegram as cleaned text.",
                     source="weather_report_run_send_text",
-                    confidence="high",
                     details=(
                         "The weather-report run-send-text workflow fetched the configured "
                         "forecast, wrote a Markdown artifact, and sent the latest weather "
                         "report to Telegram as cleaned text."
-                    ),
-                    resolution=(
-                        "Generated artifact and completed Telegram text delivery using the "
-                        "configured MarcBot Telegram settings."
                     ),
                     verification="Command completed successfully with no exception.",
                     follow_up=(
@@ -1274,7 +1270,7 @@ def main(argv: list[str] | None = None) -> int:
                         "scheduled timer health, and /send_weather_report to resend the "
                         "latest report manually."
                     ),
-                    related_files=(str(report_result.path),),
+                    related_files=(report_result.path,),
                     related_commands=(
                         "python -m marcbot weather-report run-send-text",
                     ),
