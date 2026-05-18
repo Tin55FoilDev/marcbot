@@ -86,19 +86,22 @@ find "${BACKUP_DIR}" \
   -print \
   -delete
 
-"${APP_DIR}/.venv/bin/python" -m marcbot memory event add \
-  --type backup_completed \
-  --project marcbot-operations \
-  --summary "MarcBot app-level backup completed." \
-  --source marcbot_backup_script \
-  --confidence high \
-  --details "The MarcBot app-level backup script created a tar.gz archive, checksum file, and latest-backup marker." \
-  --verification "Archive, checksum, and latest-backup marker were written successfully before this event was recorded." \
-  --follow-up "Use /backup_status, /backup_list, or python -m marcbot memory search backup to inspect backup history." \
-  --related-file "${backup_path}" \
-  --related-file "${sha_path}" \
-  --related-file "${LATEST_FILE}" \
-  --related-command "systemctl start marcbot-backup.service"
+(
+  cd "${APP_DIR}"
+  "${APP_DIR}/.venv/bin/python" -m marcbot memory event add \
+    --type backup_completed \
+    --project marcbot-operations \
+    --summary "MarcBot app-level backup completed." \
+    --source marcbot_backup_script \
+    --confidence high \
+    --details "The MarcBot app-level backup script created a tar.gz archive, checksum file, and latest-backup marker." \
+    --verification "Archive, checksum, and latest-backup marker were written successfully before this event was recorded." \
+    --follow-up "Use /backup_status, /backup_list, or python -m marcbot memory search backup to inspect backup history." \
+    --related-file "${backup_path}" \
+    --related-file "${sha_path}" \
+    --related-file "${LATEST_FILE}" \
+    --related-command "systemctl start marcbot-backup.service"
+)
 
 echo "MarcBot backup created:"
 echo "  archive: ${backup_path}"
