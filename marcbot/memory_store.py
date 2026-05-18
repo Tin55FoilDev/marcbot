@@ -1414,3 +1414,91 @@ def approve_memory_proposal(
         created_type="fact",
     )
 
+def get_memory_fact(
+    *,
+    fact_id: str,
+    root: Path = MEMORY_ROOT,
+) -> MemoryFact:
+    safe_id = _slugify_fact_id(_validate_nonempty_text(fact_id, "id"))
+    path = root / "facts" / f"{safe_id}.toml"
+
+    if not path.is_file():
+        raise ValueError(f"fact does not exist: {safe_id}")
+
+    return _memory_fact_from_path(path)
+
+
+def format_memory_fact_detail(
+    *,
+    fact_id: str,
+    root: Path = MEMORY_ROOT,
+) -> str:
+    fact = get_memory_fact(fact_id=fact_id, root=root)
+
+    lines = [
+        "MarcBot memory fact",
+        f"ID: {fact.id}",
+        f"Status: {fact.status}",
+        f"Category: {fact.category}",
+        f"Project: {fact.project or 'none'}",
+        f"Confidence: {fact.confidence}",
+        f"Source: {fact.source}",
+        f"Created: {fact.created_at}",
+        f"Updated: {fact.updated_at}",
+        f"Statement: {fact.statement}",
+    ]
+
+    if fact.details:
+        lines.append(f"Details: {fact.details}")
+    if fact.path:
+        lines.append(f"File: {fact.path}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
+
+
+def get_memory_proposal(
+    *,
+    proposal_id: str,
+    root: Path = MEMORY_ROOT,
+) -> MemoryProposal:
+    safe_id = _slugify_fact_id(_validate_nonempty_text(proposal_id, "id"))
+    path = _proposal_path(root, safe_id)
+
+    if not path.is_file():
+        raise ValueError(f"proposal does not exist: {safe_id}")
+
+    return _load_memory_proposal(path)
+
+
+def format_memory_proposal_detail(
+    *,
+    proposal_id: str,
+    root: Path = MEMORY_ROOT,
+) -> str:
+    proposal = get_memory_proposal(proposal_id=proposal_id, root=root)
+
+    lines = [
+        "MarcBot memory proposal",
+        f"ID: {proposal.id}",
+        f"Status: {proposal.status}",
+        f"Proposed type: {proposal.proposed_type}",
+        f"Risk level: {proposal.risk_level}",
+        f"Project: {proposal.project or 'none'}",
+        f"Source: {proposal.source}",
+        f"Created: {proposal.created_at}",
+        f"Reviewed: {proposal.reviewed_at or 'not reviewed'}",
+        f"Proposed statement: {proposal.proposed_statement}",
+        f"Rationale: {proposal.rationale}",
+    ]
+
+    if proposal.details:
+        lines.append(f"Details: {proposal.details}")
+    if proposal.review_reason:
+        lines.append(f"Review reason: {proposal.review_reason}")
+    if proposal.path:
+        lines.append(f"File: {proposal.path}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
+

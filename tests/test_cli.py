@@ -1460,3 +1460,34 @@ def test_memory_proposal_approve_command(capsys, monkeypatch, tmp_path) -> None:
 
     assert result == 0
     assert "Memory proposal approved: test-proposal -> fact test-proposal" in captured.out
+
+def test_memory_fact_show_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_fact_detail",
+        lambda fact_id: f"MarcBot memory fact\nID: {fact_id}",
+    )
+
+    result = cli.main(["memory", "fact", "show", "--id", "weather-report-schedule"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory fact\nID: weather-report-schedule\n"
+
+
+def test_memory_proposal_show_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_proposal_detail",
+        lambda proposal_id: f"MarcBot memory proposal\nID: {proposal_id}",
+    )
+
+    result = cli.main(["memory", "proposal", "show", "--id", "weather-reference-pattern"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory proposal\nID: weather-reference-pattern\n"

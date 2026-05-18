@@ -37,7 +37,9 @@ from marcbot.memory_store import (
     add_memory_summary,
     approve_memory_proposal,
     format_memory_event_list,
+    format_memory_fact_detail,
     format_memory_fact_list,
+    format_memory_proposal_detail,
     format_memory_proposal_list,
     format_memory_status_message,
     format_memory_summary_list,
@@ -460,6 +462,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     memory_fact_list_parser.add_argument("--status", default="active")
     memory_fact_list_parser.add_argument("--limit", type=int, default=50)
+    memory_fact_show_parser = memory_fact_subparsers.add_parser(
+        "show",
+        help="show one memory fact by id",
+    )
+    memory_fact_show_parser.add_argument("--id", required=True)
     memory_fact_supersede_parser = memory_fact_subparsers.add_parser(
         "supersede",
         help="supersede an active memory fact with a corrected fact",
@@ -506,6 +513,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     memory_proposal_list_parser.add_argument("--status", default="pending")
     memory_proposal_list_parser.add_argument("--limit", type=int, default=50)
+    memory_proposal_show_parser = memory_proposal_subparsers.add_parser(
+        "show",
+        help="show one memory proposal by id",
+    )
+    memory_proposal_show_parser.add_argument("--id", required=True)
     memory_proposal_reject_parser = memory_proposal_subparsers.add_parser(
         "reject",
         help="reject a pending memory proposal",
@@ -1116,6 +1128,9 @@ def main(argv: list[str] | None = None) -> int:
                         )
                     )
                     return 0
+                if args.memory_proposal_command == "show":
+                    print(format_memory_proposal_detail(proposal_id=args.id))
+                    return 0
                 if args.memory_proposal_command == "reject":
                     result = reject_memory_proposal(
                         proposal_id=args.id,
@@ -1151,6 +1166,9 @@ def main(argv: list[str] | None = None) -> int:
                     return 0
                 if args.memory_fact_command == "list":
                     print(format_memory_fact_list(status=args.status, limit=args.limit))
+                    return 0
+                if args.memory_fact_command == "show":
+                    print(format_memory_fact_detail(fact_id=args.id))
                     return 0
                 if args.memory_fact_command == "supersede":
                     result = supersede_memory_fact(

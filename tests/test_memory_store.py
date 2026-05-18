@@ -807,3 +807,89 @@ def test_get_memory_status_counts_proposals_by_status(tmp_path: Path) -> None:
     assert status.pending_proposals == 1
     assert status.approved_proposals == 1
     assert status.rejected_proposals == 1
+
+def test_format_memory_fact_detail(tmp_path: Path) -> None:
+    from marcbot.memory_store import add_memory_fact, format_memory_fact_detail
+
+    add_memory_fact(
+        root=tmp_path,
+        fact_id="weather-report-schedule",
+        statement="Weather report runs at 7:15 AM.",
+        category="schedule",
+        project="weather-report",
+        source="test",
+        confidence="high",
+        details="Defined by timer.",
+    )
+
+    message = format_memory_fact_detail(
+        root=tmp_path,
+        fact_id="weather-report-schedule",
+    )
+
+    assert "MarcBot memory fact" in message
+    assert "ID: weather-report-schedule" in message
+    assert "Status: active" in message
+    assert "Category: schedule" in message
+    assert "Project: weather-report" in message
+    assert "Statement: Weather report runs at 7:15 AM." in message
+    assert "Details: Defined by timer." in message
+    assert "Provider contact: no" in message
+
+
+def test_format_memory_fact_detail_rejects_missing_fact(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import format_memory_fact_detail
+
+    with pytest.raises(ValueError, match="fact does not exist"):
+        format_memory_fact_detail(root=tmp_path, fact_id="missing")
+
+
+def test_format_memory_proposal_detail(tmp_path: Path) -> None:
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        approve_memory_proposal,
+        format_memory_proposal_detail,
+    )
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="weather-reference-pattern",
+        proposed_type="fact",
+        proposed_statement="Weather is the reference pattern.",
+        project="marcbot-memory",
+        source="test",
+        rationale="It validated the lifecycle.",
+        risk_level="medium",
+        details="Reviewable proposal.",
+    )
+    approve_memory_proposal(
+        root=tmp_path,
+        proposal_id="weather-reference-pattern",
+        source="test_approval",
+        review_reason="Looks right.",
+    )
+
+    message = format_memory_proposal_detail(
+        root=tmp_path,
+        proposal_id="weather-reference-pattern",
+    )
+
+    assert "MarcBot memory proposal" in message
+    assert "ID: weather-reference-pattern" in message
+    assert "Status: approved" in message
+    assert "Proposed type: fact" in message
+    assert "Risk level: medium" in message
+    assert "Project: marcbot-memory" in message
+    assert "Review reason: Looks right." in message
+    assert "Provider contact: no" in message
+
+
+def test_format_memory_proposal_detail_rejects_missing_proposal(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import format_memory_proposal_detail
+
+    with pytest.raises(ValueError, match="proposal does not exist"):
+        format_memory_proposal_detail(root=tmp_path, proposal_id="missing")

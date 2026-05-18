@@ -914,3 +914,15 @@ This avoids confusing approved or rejected proposal records with still-pending
 review work.
 
 The command remains provider-contact-free and read-only.
+
+## Implemented M9A read-only memory detail retrieval
+
+Memory now supports read-only detail retrieval for facts and proposals.
+
+Commands:
+
+    python -m marcbot memory fact show --id <fact-id>
+    python -m marcbot memory proposal show --id <proposal-id>
+
+These commands format known memory records by ID. They do not write memory,
+inspect arbitrary paths, or contact model providers.

@@ -439,3 +439,12 @@ status:
 
 This helps distinguish outstanding review work from preserved approved/rejected
 proposal history.
+
+### Memory detail retrieval
+
+Read-only memory detail commands:
+
+    python -m marcbot memory fact show --id <fact-id>
+    python -m marcbot memory proposal show --id <proposal-id>
+
+These commands are CLI-only and provider-contact-free.
