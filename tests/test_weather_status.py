@@ -30,8 +30,10 @@ def test_format_weather_status_reports_latest_report(tmp_path: Path) -> None:
     older.write_text("older", encoding="utf-8")
     newer.write_text("newer", encoding="utf-8")
 
-    modified = datetime(2026, 5, 18, 11, 15, tzinfo=UTC).timestamp()
-    os.utime(newer, (modified, modified))
+    older_modified = datetime(2026, 5, 17, 11, 15, tzinfo=UTC).timestamp()
+    newer_modified = datetime(2026, 5, 18, 11, 15, tzinfo=UTC).timestamp()
+    os.utime(older, (older_modified, older_modified))
+    os.utime(newer, (newer_modified, newer_modified))
 
     message = format_weather_status_message(reports_dir=tmp_path)
 
