@@ -325,3 +325,10 @@ Use `/timer_status` for systemd timer status.
     marcbot-weather-report.service
 
 This remains read-only and limited to approved MarcBot-related units.
+
+### Send latest weather report
+
+`/send_weather_report` resends the latest generated weather report as cleaned
+Telegram text.
+
+It is provider-contact-free and does not fetch a new forecast.

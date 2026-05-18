@@ -1239,3 +1239,77 @@ def test_weather_status_command_is_registered() -> None:
     }
 
     assert "weather_status" in command_names
+
+def test_send_weather_report_command_sends_latest_text(monkeypatch, tmp_path) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    report = tmp_path / "weather-report-2026-05-18-071500.md"
+    report.write_text("# Westfield Weather\n\n## Summary\n\n- Nice day.\n", encoding="utf-8")
+
+    replies = []
+
+    class FakeMessage:
+        async def reply_text(self, text):
+            replies.append(text)
+
+    monkeypatch.setattr(telegram_bot, "find_latest_weather_report", lambda: report)
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_weather_report_for_telegram",
+        lambda text: "🌤 Westfield Weather\n\nSummary:\n- Nice day.",
+    )
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.send_weather_report_command(update, context))
+
+    assert replies == ["🌤 Westfield Weather\n\nSummary:\n- Nice day."]
+
+
+def test_send_weather_report_command_reports_missing_latest(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    import marcbot.telegram_bot as telegram_bot
+
+    replies = []
+
+    class FakeMessage:
+        async def reply_text(self, text):
+            replies.append(text)
+
+    monkeypatch.setattr(telegram_bot, "find_latest_weather_report", lambda: None)
+
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=FakeMessage(),
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.send_weather_report_command(update, context))
+
+    assert replies == ["No weather reports found."]
+
+
+def test_send_weather_report_command_is_registered() -> None:
+    application = build_application(make_config())
+    command_names = {
+        command
+        for handlers in application.handlers.values()
+        for handler in handlers
+        if hasattr(handler, "commands")
+        for command in handler.commands
+    }
+
+    assert "send_weather_report" in command_names

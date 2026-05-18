@@ -27,6 +27,7 @@ from marcbot.llm_client import run_openai_compatible_completion
 from marcbot.llm_config import load_llm_config
 from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
+from marcbot.report_sender import format_weather_report_for_telegram
 from marcbot.report_status import format_report_status_message
 from marcbot.service_status import format_service_report
 from marcbot.source_status import (
@@ -36,6 +37,7 @@ from marcbot.source_status import (
 from marcbot.tail_reader import format_tail_message
 from marcbot.timer_status import format_timer_status_message
 from marcbot.uptime import format_uptime_report
+from marcbot.weather_report import find_latest_weather_report
 from marcbot.weather_status import format_weather_status_message
 from marcbot.workspace_list import format_workspace_ls_message
 from marcbot.workspace_sender import validate_workspace_send
@@ -439,6 +441,38 @@ async def tail_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     if update.message is not None:
         await update.message.reply_text(tail_text)
+
+
+
+async def send_weather_report_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /send_weather_report."""
+
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /send_weather_report from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    latest = find_latest_weather_report()
+    if latest is None:
+        LOGGER.info("Handled /send_weather_report for chat_id=%s ok=false missing_report", chat_id)
+        if update.message is not None:
+            await update.message.reply_text("No weather reports found.")
+        return
+
+    message = format_weather_report_for_telegram(latest.read_text(encoding="utf-8"))
+
+    LOGGER.info(
+        "Handled /send_weather_report for chat_id=%s ok=true path=%s chars=%s",
+        chat_id,
+        latest,
+        len(message),
+    )
+
+    if update.message is not None:
+        await update.message.reply_text(message)
 
 
 async def weather_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1002,6 +1036,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/backup_status - show latest MarcBot app-level backup status\n"
         "/timer_status - show MarcBot scheduled timer status\n"
         "/weather_status - show latest weather report status\n"
+        "/send_weather_report - resend the latest weather report as text\n"
         "/report_status - show latest daily status report status\n"
         "/report_status source <project> - show latest source monitor summary\n"
         "/send_source_artifact <project> <artifact-id> - send approved source monitor artifact\n"
@@ -1083,6 +1118,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("backup_status", backup_status_command))
     application.add_handler(CommandHandler("timer_status", timer_status_command))
     application.add_handler(CommandHandler("weather_status", weather_status_command))
+    application.add_handler(CommandHandler("send_weather_report", send_weather_report_command))
     application.add_handler(CommandHandler("report_status", report_status_command))
     application.add_handler(CommandHandler("send_source_artifact", send_source_artifact_command))
     application.add_handler(CommandHandler("llm_status", llm_status_command))

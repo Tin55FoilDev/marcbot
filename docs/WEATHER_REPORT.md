@@ -315,3 +315,14 @@ allowlist.
 
 This lets Telegram show the weather timer and service state without exposing
 arbitrary systemd unit inspection.
+
+## Manual Telegram resend
+
+The provider-free Telegram command:
+
+    /send_weather_report
+
+resends the latest existing weather report as cleaned Telegram text.
+
+It does not fetch a new forecast, send a file attachment, contact model
+providers, or accept arbitrary paths.
