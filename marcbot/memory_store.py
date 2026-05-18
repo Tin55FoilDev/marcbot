@@ -921,3 +921,70 @@ def supersede_memory_fact(
         new_fact_id=safe_new_id,
     )
 
+@dataclass(frozen=True)
+class MemoryFactRejectResult:
+    # Result of rejecting one fact.
+
+    path: Path
+    correction_path: Path
+    fact_id: str
+
+    @property
+    def message(self) -> str:
+        return f"Memory fact rejected: {self.fact_id} ({self.correction_path})"
+
+
+def reject_memory_fact(
+    *,
+    fact_id: str,
+    reason: str,
+    source: str,
+    confidence: str,
+    root: Path = MEMORY_ROOT,
+    timestamp: datetime | None = None,
+) -> MemoryFactRejectResult:
+    init_memory_store(root=root)
+
+    safe_id = _slugify_fact_id(_validate_nonempty_text(fact_id, "id"))
+    path = root / "facts" / f"{safe_id}.toml"
+
+    if not path.is_file():
+        raise ValueError(f"fact does not exist: {safe_id}")
+
+    data = _read_simple_toml(path)
+    current_status = data.get("status", "active")
+    if current_status == "rejected":
+        raise ValueError(f"fact is already rejected: {safe_id}")
+
+    current_time = timestamp or datetime.now(UTC)
+    timestamp_text = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
+    safe_reason = _validate_nonempty_text(reason, "reason")
+    safe_source = _validate_nonempty_text(source, "source")
+    safe_confidence = _validate_confidence(confidence)
+
+    data["status"] = "rejected"
+    data["updated_at"] = timestamp_text
+    data["rejected_at"] = timestamp_text
+    data["rejected_reason"] = safe_reason
+    data["rejected_source"] = safe_source
+    _write_simple_toml(path, data)
+
+    correction_path = _correction_path_for_timestamp(root, timestamp_text)
+    correction = {
+        "timestamp": timestamp_text,
+        "type": "fact_rejected",
+        "fact_id": safe_id,
+        "previous_status": current_status,
+        "reason": safe_reason,
+        "source": safe_source,
+        "confidence": safe_confidence,
+    }
+    with correction_path.open("a", encoding="utf-8") as file_obj:
+        file_obj.write(json.dumps(correction, sort_keys=True) + "\n")
+
+    return MemoryFactRejectResult(
+        path=path,
+        correction_path=correction_path,
+        fact_id=safe_id,
+    )
+

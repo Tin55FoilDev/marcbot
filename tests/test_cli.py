@@ -1284,3 +1284,42 @@ def test_memory_fact_supersede_command(capsys, monkeypatch, tmp_path) -> None:
 
     assert result == 0
     assert "Memory fact superseded: old -> new" in captured.out
+
+def test_memory_fact_reject_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_fact, reject_memory_fact
+
+    add_memory_fact(
+        root=tmp_path,
+        fact_id="test-fact",
+        statement="Temporary test fact.",
+        category="test",
+        source="test",
+        confidence="high",
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "reject_memory_fact",
+        lambda **kwargs: reject_memory_fact(root=tmp_path, **kwargs),
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "fact",
+            "reject",
+            "--id",
+            "test-fact",
+            "--reason",
+            "Temporary fact cleanup.",
+            "--source",
+            "test_cleanup",
+            "--confidence",
+            "high",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory fact rejected: test-fact" in captured.out

@@ -398,3 +398,12 @@ Explicit fact correction command:
 
 This command supersedes an active fact with a corrected active fact and writes a
 correction record. It is CLI-only and provider-contact-free.
+
+### Memory fact rejection
+
+Explicit fact rejection command:
+
+    python -m marcbot memory fact reject
+
+This command marks a fact rejected and writes a correction record. It is
+CLI-only and provider-contact-free.

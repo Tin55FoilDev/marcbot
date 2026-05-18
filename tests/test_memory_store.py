@@ -435,3 +435,83 @@ def test_supersede_memory_fact_rejects_non_active_fact(tmp_path: Path) -> None:
             source="test",
             confidence="high",
         )
+
+def test_reject_memory_fact_marks_fact_rejected(tmp_path: Path) -> None:
+    import json
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_fact, reject_memory_fact
+
+    add_memory_fact(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 14, 0, tzinfo=UTC),
+        fact_id="test-fact",
+        statement="Temporary test fact.",
+        category="test",
+        source="test",
+        confidence="high",
+    )
+
+    result = reject_memory_fact(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 15, 0, tzinfo=UTC),
+        fact_id="test-fact",
+        reason="Temporary fact cleanup.",
+        source="test_cleanup",
+        confidence="high",
+    )
+
+    fact_text = result.path.read_text(encoding="utf-8")
+    correction = json.loads(result.correction_path.read_text(encoding="utf-8").strip())
+
+    assert 'status = "rejected"' in fact_text
+    assert 'rejected_reason = "Temporary fact cleanup."' in fact_text
+    assert correction["type"] == "fact_rejected"
+    assert correction["fact_id"] == "test-fact"
+    assert correction["previous_status"] == "active"
+
+
+def test_reject_memory_fact_rejects_missing_fact(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import reject_memory_fact
+
+    with pytest.raises(ValueError, match="fact does not exist"):
+        reject_memory_fact(
+            root=tmp_path,
+            fact_id="missing",
+            reason="Cleanup.",
+            source="test",
+            confidence="high",
+        )
+
+
+def test_reject_memory_fact_rejects_already_rejected_fact(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import add_memory_fact, reject_memory_fact
+
+    add_memory_fact(
+        root=tmp_path,
+        fact_id="test-fact",
+        statement="Temporary test fact.",
+        category="test",
+        source="test",
+        confidence="high",
+    )
+    reject_memory_fact(
+        root=tmp_path,
+        fact_id="test-fact",
+        reason="Cleanup.",
+        source="test",
+        confidence="high",
+    )
+
+    with pytest.raises(ValueError, match="fact is already rejected"):
+        reject_memory_fact(
+            root=tmp_path,
+            fact_id="test-fact",
+            reason="Second cleanup.",
+            source="test",
+            confidence="high",
+        )

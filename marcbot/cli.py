@@ -39,6 +39,7 @@ from marcbot.memory_store import (
     format_memory_status_message,
     format_memory_summary_list,
     init_memory_store,
+    reject_memory_fact,
     supersede_memory_fact,
 )
 from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
@@ -468,6 +469,14 @@ def build_parser() -> argparse.ArgumentParser:
     memory_fact_supersede_parser.add_argument("--category", default=None)
     memory_fact_supersede_parser.add_argument("--project", default=None)
     memory_fact_supersede_parser.add_argument("--details", default=None)
+    memory_fact_reject_parser = memory_fact_subparsers.add_parser(
+        "reject",
+        help="mark a memory fact as rejected",
+    )
+    memory_fact_reject_parser.add_argument("--id", required=True)
+    memory_fact_reject_parser.add_argument("--reason", required=True)
+    memory_fact_reject_parser.add_argument("--source", required=True)
+    memory_fact_reject_parser.add_argument("--confidence", required=True)
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -1066,6 +1075,15 @@ def main(argv: list[str] | None = None) -> int:
                         category=args.category,
                         project=args.project,
                         details=args.details,
+                    )
+                    print(result.message)
+                    return 0
+                if args.memory_fact_command == "reject":
+                    result = reject_memory_fact(
+                        fact_id=args.id,
+                        reason=args.reason,
+                        source=args.source,
+                        confidence=args.confidence,
                     )
                     print(result.message)
                     return 0

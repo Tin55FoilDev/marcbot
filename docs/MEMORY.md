@@ -835,3 +835,22 @@ Supersession behavior:
 - correction metadata is appended under `/srv/marcbot/memory/corrections/`
 
 This preserves history while allowing retrieval to prefer active facts.
+
+## Implemented M7C fact rejection
+
+Facts can now be marked rejected without deleting their history.
+
+Command:
+
+    python -m marcbot memory fact reject
+
+Rejection behavior:
+
+- fact is marked `status = "rejected"`
+- fact records `rejected_at`
+- fact records `rejected_reason`
+- fact records `rejected_source`
+- correction metadata is appended under `/srv/marcbot/memory/corrections/`
+
+This is useful for cleaning up temporary or incorrect facts while preserving an
+audit trail.
