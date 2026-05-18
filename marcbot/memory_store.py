@@ -796,3 +796,128 @@ def format_memory_fact_list(
     lines.append("Provider contact: no")
     return "\n".join(lines)
 
+@dataclass(frozen=True)
+class MemoryFactSupersedeResult:
+    # Result of superseding one fact with another.
+
+    old_path: Path
+    new_path: Path
+    correction_path: Path
+    old_fact_id: str
+    new_fact_id: str
+
+    @property
+    def message(self) -> str:
+        return (
+            f"Memory fact superseded: {self.old_fact_id} -> {self.new_fact_id} "
+            f"({self.correction_path})"
+        )
+
+
+def _correction_path_for_timestamp(root: Path, timestamp: str) -> Path:
+    return root / "corrections" / f"{timestamp[:7]}.jsonl"
+
+
+def _memory_fact_from_path(path: Path) -> MemoryFact:
+    data = _read_simple_toml(path)
+    return MemoryFact(
+        id=data.get("id", path.stem),
+        statement=data.get("statement", ""),
+        category=data.get("category", "unknown"),
+        source=data.get("source", "unknown"),
+        created_at=data.get("created_at", "unknown"),
+        updated_at=data.get("updated_at", "unknown"),
+        confidence=data.get("confidence", "unknown"),
+        status=data.get("status", "active"),
+        project=data.get("project"),
+        details=data.get("details"),
+        path=path,
+    )
+
+
+def supersede_memory_fact(
+    *,
+    fact_id: str,
+    new_fact_id: str,
+    statement: str,
+    reason: str,
+    source: str,
+    confidence: str,
+    root: Path = MEMORY_ROOT,
+    timestamp: datetime | None = None,
+    category: str | None = None,
+    project: str | None = None,
+    details: str | None = None,
+) -> MemoryFactSupersedeResult:
+    init_memory_store(root=root)
+
+    old_id = _slugify_fact_id(_validate_nonempty_text(fact_id, "id"))
+    safe_new_id = _slugify_fact_id(_validate_nonempty_text(new_fact_id, "new-id"))
+    old_path = root / "facts" / f"{old_id}.toml"
+    new_path = root / "facts" / f"{safe_new_id}.toml"
+
+    if not old_path.is_file():
+        raise ValueError(f"fact does not exist: {old_id}")
+
+    if new_path.exists():
+        raise ValueError(f"new fact already exists: {safe_new_id}")
+
+    old_data = _read_simple_toml(old_path)
+    old_status = old_data.get("status", "active")
+    if old_status != "active":
+        raise ValueError(f"fact is not active: {old_id}")
+
+    current_time = timestamp or datetime.now(UTC)
+    timestamp_text = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
+
+    new_category = category.strip() if category else old_data.get("category", "unknown")
+    new_project = project.strip() if project else old_data.get("project")
+    new_details = details.strip() if details else old_data.get("details")
+
+    old_data["status"] = "superseded"
+    old_data["updated_at"] = timestamp_text
+    old_data["superseded_by"] = safe_new_id
+    old_data["superseded_reason"] = _validate_nonempty_text(reason, "reason")
+    _write_simple_toml(old_path, old_data)
+
+    new_values = {
+        "id": safe_new_id,
+        "statement": _validate_nonempty_text(statement, "statement"),
+        "category": _validate_nonempty_text(new_category, "category"),
+        "source": _validate_nonempty_text(source, "source"),
+        "created_at": timestamp_text,
+        "updated_at": timestamp_text,
+        "confidence": _validate_confidence(confidence),
+        "status": "active",
+        "supersedes": old_id,
+        "supersession_reason": _validate_nonempty_text(reason, "reason"),
+    }
+
+    if new_project:
+        new_values["project"] = new_project
+    if new_details:
+        new_values["details"] = new_details
+
+    _write_simple_toml(new_path, new_values)
+
+    correction_path = _correction_path_for_timestamp(root, timestamp_text)
+    correction = {
+        "timestamp": timestamp_text,
+        "type": "fact_superseded",
+        "old_fact_id": old_id,
+        "new_fact_id": safe_new_id,
+        "reason": _validate_nonempty_text(reason, "reason"),
+        "source": _validate_nonempty_text(source, "source"),
+        "confidence": _validate_confidence(confidence),
+    }
+    with correction_path.open("a", encoding="utf-8") as file_obj:
+        file_obj.write(json.dumps(correction, sort_keys=True) + "\n")
+
+    return MemoryFactSupersedeResult(
+        old_path=old_path,
+        new_path=new_path,
+        correction_path=correction_path,
+        old_fact_id=old_id,
+        new_fact_id=safe_new_id,
+    )
+

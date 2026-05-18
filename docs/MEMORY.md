@@ -817,3 +817,21 @@ Facts are more authoritative than events or summaries, so they should be added
 carefully and explicitly. They remain helpful context, not final authority over
 current repo files, command output, validation results, Git commits, or Marc's
 explicit corrections.
+
+## Implemented M7B fact supersession
+
+Facts can now be corrected by supersession rather than editing in place.
+
+Command:
+
+    python -m marcbot memory fact supersede
+
+Supersession behavior:
+
+- old fact is marked `status = "superseded"`
+- old fact records `superseded_by`
+- new fact is written with `status = "active"`
+- new fact records `supersedes`
+- correction metadata is appended under `/srv/marcbot/memory/corrections/`
+
+This preserves history while allowing retrieval to prefer active facts.

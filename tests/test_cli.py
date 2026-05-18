@@ -1241,3 +1241,46 @@ def test_memory_fact_list_command(capsys, monkeypatch) -> None:
 
     assert result == 0
     assert captured.out == "MarcBot memory facts\nStatus: active\nLimit: 5\n"
+
+def test_memory_fact_supersede_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_fact, supersede_memory_fact
+
+    add_memory_fact(
+        root=tmp_path,
+        fact_id="old",
+        statement="Old fact.",
+        category="test",
+        source="test",
+        confidence="high",
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "supersede_memory_fact",
+        lambda **kwargs: supersede_memory_fact(root=tmp_path, **kwargs),
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "fact",
+            "supersede",
+            "--id",
+            "old",
+            "--new-id",
+            "new",
+            "--statement",
+            "New fact.",
+            "--reason",
+            "Correction.",
+            "--source",
+            "test",
+            "--confidence",
+            "high",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory fact superseded: old -> new" in captured.out

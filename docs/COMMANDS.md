@@ -389,3 +389,12 @@ Explicit memory fact commands:
 
 These commands are CLI-only, provider-contact-free, and intended for durable
 facts that should remain correctable in later milestones.
+
+### Memory fact supersession
+
+Explicit fact correction command:
+
+    python -m marcbot memory fact supersede
+
+This command supersedes an active fact with a corrected active fact and writes a
+correction record. It is CLI-only and provider-contact-free.

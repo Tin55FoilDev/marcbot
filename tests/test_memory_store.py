@@ -340,3 +340,98 @@ def test_format_memory_fact_list_reports_no_facts(tmp_path: Path) -> None:
     assert "MarcBot memory facts" in message
     assert "No facts found." in message
     assert "Provider contact: no" in message
+
+def test_supersede_memory_fact_marks_old_and_writes_new(tmp_path: Path) -> None:
+    import json
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_fact, supersede_memory_fact
+
+    add_memory_fact(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 14, 0, tzinfo=UTC),
+        fact_id="weather-report-schedule",
+        statement="Weather report runs at 8 AM.",
+        category="schedule",
+        project="weather-report",
+        source="test",
+        confidence="high",
+        details="Old schedule.",
+    )
+
+    result = supersede_memory_fact(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 15, 0, tzinfo=UTC),
+        fact_id="weather-report-schedule",
+        new_fact_id="weather-report-schedule-715",
+        statement="Weather report runs around 7:15 AM America/New_York.",
+        reason="Schedule was changed before production deployment.",
+        source="test_correction",
+        confidence="high",
+        details="Defined by marcbot-weather-report.timer.",
+    )
+
+    old_text = result.old_path.read_text(encoding="utf-8")
+    new_text = result.new_path.read_text(encoding="utf-8")
+    correction = json.loads(result.correction_path.read_text(encoding="utf-8").strip())
+
+    assert 'status = "superseded"' in old_text
+    assert 'superseded_by = "weather-report-schedule-715"' in old_text
+    assert 'id = "weather-report-schedule-715"' in new_text
+    assert 'status = "active"' in new_text
+    assert 'supersedes = "weather-report-schedule"' in new_text
+    assert correction["type"] == "fact_superseded"
+    assert correction["old_fact_id"] == "weather-report-schedule"
+    assert correction["new_fact_id"] == "weather-report-schedule-715"
+
+
+def test_supersede_memory_fact_rejects_missing_old_fact(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import supersede_memory_fact
+
+    with pytest.raises(ValueError, match="fact does not exist"):
+        supersede_memory_fact(
+            root=tmp_path,
+            fact_id="missing",
+            new_fact_id="new",
+            statement="New fact.",
+            reason="Correction.",
+            source="test",
+            confidence="high",
+        )
+
+
+def test_supersede_memory_fact_rejects_non_active_fact(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import add_memory_fact, supersede_memory_fact
+
+    add_memory_fact(
+        root=tmp_path,
+        fact_id="old",
+        statement="Old fact.",
+        category="test",
+        source="test",
+        confidence="high",
+    )
+    supersede_memory_fact(
+        root=tmp_path,
+        fact_id="old",
+        new_fact_id="new",
+        statement="New fact.",
+        reason="Correction.",
+        source="test",
+        confidence="high",
+    )
+
+    with pytest.raises(ValueError, match="fact is not active"):
+        supersede_memory_fact(
+            root=tmp_path,
+            fact_id="old",
+            new_fact_id="newer",
+            statement="Newer fact.",
+            reason="Second correction.",
+            source="test",
+            confidence="high",
+        )

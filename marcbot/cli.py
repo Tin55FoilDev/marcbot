@@ -39,6 +39,7 @@ from marcbot.memory_store import (
     format_memory_status_message,
     format_memory_summary_list,
     init_memory_store,
+    supersede_memory_fact,
 )
 from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
 from marcbot.report_sender import (
@@ -454,6 +455,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     memory_fact_list_parser.add_argument("--status", default="active")
     memory_fact_list_parser.add_argument("--limit", type=int, default=50)
+    memory_fact_supersede_parser = memory_fact_subparsers.add_parser(
+        "supersede",
+        help="supersede an active memory fact with a corrected fact",
+    )
+    memory_fact_supersede_parser.add_argument("--id", required=True)
+    memory_fact_supersede_parser.add_argument("--new-id", required=True)
+    memory_fact_supersede_parser.add_argument("--statement", required=True)
+    memory_fact_supersede_parser.add_argument("--reason", required=True)
+    memory_fact_supersede_parser.add_argument("--source", required=True)
+    memory_fact_supersede_parser.add_argument("--confidence", required=True)
+    memory_fact_supersede_parser.add_argument("--category", default=None)
+    memory_fact_supersede_parser.add_argument("--project", default=None)
+    memory_fact_supersede_parser.add_argument("--details", default=None)
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -1040,6 +1054,20 @@ def main(argv: list[str] | None = None) -> int:
                     return 0
                 if args.memory_fact_command == "list":
                     print(format_memory_fact_list(status=args.status, limit=args.limit))
+                    return 0
+                if args.memory_fact_command == "supersede":
+                    result = supersede_memory_fact(
+                        fact_id=args.id,
+                        new_fact_id=args.new_id,
+                        statement=args.statement,
+                        reason=args.reason,
+                        source=args.source,
+                        confidence=args.confidence,
+                        category=args.category,
+                        project=args.project,
+                        details=args.details,
+                    )
+                    print(result.message)
                     return 0
                 parser.error("memory fact requires a subcommand")
             parser.error("memory requires a subcommand")
