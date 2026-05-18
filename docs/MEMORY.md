@@ -926,3 +926,20 @@ Commands:
 
 These commands format known memory records by ID. They do not write memory,
 inspect arbitrary paths, or contact model providers.
+
+## Implemented M9B read-only event and summary detail retrieval
+
+Memory now supports read-only detail retrieval for events and summaries.
+
+Commands:
+
+    python -m marcbot memory event show --index <n> --limit <limit>
+    python -m marcbot memory summary show --name <summary-file-name>
+
+Event detail retrieval reads from the recent sorted event list using a 1-based
+index.
+
+Summary detail retrieval accepts only a file name under the memory summaries
+directory. It does not accept arbitrary paths.
+
+These commands are read-only and provider-contact-free.

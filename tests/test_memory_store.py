@@ -893,3 +893,82 @@ def test_format_memory_proposal_detail_rejects_missing_proposal(tmp_path: Path) 
 
     with pytest.raises(ValueError, match="proposal does not exist"):
         format_memory_proposal_detail(root=tmp_path, proposal_id="missing")
+
+def test_format_memory_event_detail(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_event, format_memory_event_detail
+
+    add_memory_event(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 18, 0, tzinfo=UTC),
+        event_type="issue_resolved",
+        project="marcbot-operations",
+        summary="Fixed backup timer.",
+        source="test",
+        confidence="high",
+        details="Detailed evidence.",
+        cause="Root-owned file.",
+        resolution="Removed stale file.",
+        verification="Backup passed.",
+        follow_up="Avoid root-owned backups.",
+        related_commands=("sudo systemctl start marcbot-backup.service",),
+    )
+
+    message = format_memory_event_detail(root=tmp_path, index=1, limit=10)
+
+    assert "MarcBot memory event" in message
+    assert "Index: 1" in message
+    assert "Type: issue_resolved" in message
+    assert "Project: marcbot-operations" in message
+    assert "Summary: Fixed backup timer." in message
+    assert "Cause: Root-owned file." in message
+    assert "Related commands:" in message
+    assert "Provider contact: no" in message
+
+
+def test_format_memory_event_detail_rejects_out_of_range(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import format_memory_event_detail, init_memory_store
+
+    init_memory_store(root=tmp_path)
+
+    with pytest.raises(ValueError, match="event index out of range"):
+        format_memory_event_detail(root=tmp_path, index=1, limit=10)
+
+
+def test_format_memory_summary_detail(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_summary, format_memory_summary_detail
+
+    add_memory_summary(
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 18, 18, 0, tzinfo=UTC),
+        title="Memory foundation",
+        project="marcbot-memory",
+        source="test",
+        body="Memory foundation body.",
+    )
+
+    message = format_memory_summary_detail(
+        root=tmp_path,
+        name="2026-05-18-memory-foundation.md",
+    )
+
+    assert "MarcBot memory summary" in message
+    assert "Title: Memory foundation" in message
+    assert "Project: marcbot-memory" in message
+    assert "Body:" in message
+    assert "Memory foundation body." in message
+    assert "Provider contact: no" in message
+
+
+def test_format_memory_summary_detail_rejects_path_name(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import format_memory_summary_detail
+
+    with pytest.raises(ValueError, match="name must be a file name"):
+        format_memory_summary_detail(root=tmp_path, name="../bad.md")

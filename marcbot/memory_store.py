@@ -1502,3 +1502,99 @@ def format_memory_proposal_detail(
     lines.append("Provider contact: no")
     return "\n".join(lines)
 
+def format_memory_event_detail(
+    *,
+    index: int = 1,
+    limit: int = 10,
+    root: Path = MEMORY_ROOT,
+) -> str:
+    if index < 1:
+        raise ValueError("index must be 1 or greater")
+
+    events = list_memory_events(root=root, limit=limit)
+    if index > len(events):
+        raise ValueError(f"event index out of range: {index}")
+
+    event = events[index - 1]
+
+    lines = [
+        "MarcBot memory event",
+        f"Index: {index}",
+        f"Timestamp: {event.timestamp}",
+        f"Type: {event.type}",
+        f"Project: {event.project or 'none'}",
+        f"Source: {event.source}",
+        f"Confidence: {event.confidence}",
+        f"Summary: {event.summary}",
+    ]
+
+    optional_fields = [
+        ("Details", event.details),
+        ("Cause", event.cause),
+        ("Resolution", event.resolution),
+        ("Verification", event.verification),
+        ("Follow-up", event.follow_up),
+    ]
+
+    for label, value in optional_fields:
+        if value:
+            lines.append(f"{label}: {value}")
+
+    list_fields = [
+        ("Related files", event.related_files),
+        ("Related commands", event.related_commands),
+        ("Related artifacts", event.related_artifacts),
+        ("Related commits", event.related_commits),
+    ]
+
+    for label, values in list_fields:
+        if values:
+            lines.append(f"{label}:")
+            for value in values:
+                lines.append(f"- {value}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
+
+
+def _safe_memory_filename(name: str) -> str:
+    cleaned = _validate_nonempty_text(name, "name")
+    if Path(cleaned).name != cleaned:
+        raise ValueError("name must be a file name, not a path")
+    return cleaned
+
+
+def format_memory_summary_detail(
+    *,
+    name: str,
+    root: Path = MEMORY_ROOT,
+) -> str:
+    safe_name = _safe_memory_filename(name)
+    path = root / "summaries" / safe_name
+
+    if not path.is_file():
+        raise ValueError(f"summary does not exist: {safe_name}")
+
+    text = path.read_text(encoding="utf-8")
+    metadata = _parse_summary_metadata(text)
+
+    body = text
+    if text.startswith("---\n"):
+        end = text.find("\n---\n", 4)
+        if end != -1:
+            body = text[end + len("\n---\n") :].strip()
+
+    lines = [
+        "MarcBot memory summary",
+        f"File: {path}",
+        f"Title: {metadata.get('title', path.stem)}",
+        f"Created: {metadata.get('created_at', 'unknown')}",
+        f"Project: {metadata.get('project', 'none')}",
+        f"Source: {metadata.get('source', 'unknown')}",
+        "Body:",
+        body,
+        "Provider contact: no",
+    ]
+
+    return "\n".join(lines)
+

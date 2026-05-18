@@ -448,3 +448,12 @@ Read-only memory detail commands:
     python -m marcbot memory proposal show --id <proposal-id>
 
 These commands are CLI-only and provider-contact-free.
+
+### Memory event and summary detail retrieval
+
+Read-only memory detail commands:
+
+    python -m marcbot memory event show --index <n> --limit <limit>
+    python -m marcbot memory summary show --name <summary-file-name>
+
+These commands are CLI-only and provider-contact-free.

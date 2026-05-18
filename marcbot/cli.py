@@ -36,12 +36,14 @@ from marcbot.memory_store import (
     add_memory_proposal,
     add_memory_summary,
     approve_memory_proposal,
+    format_memory_event_detail,
     format_memory_event_list,
     format_memory_fact_detail,
     format_memory_fact_list,
     format_memory_proposal_detail,
     format_memory_proposal_list,
     format_memory_status_message,
+    format_memory_summary_detail,
     format_memory_summary_list,
     init_memory_store,
     reject_memory_fact,
@@ -414,6 +416,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="list recent memory events",
     )
     memory_event_list_parser.add_argument("--limit", type=int, default=10)
+    memory_event_show_parser = memory_event_subparsers.add_parser(
+        "show",
+        help="show one recent memory event by index",
+    )
+    memory_event_show_parser.add_argument("--index", type=int, default=1)
+    memory_event_show_parser.add_argument("--limit", type=int, default=10)
     memory_summary_parser = memory_subparsers.add_parser(
         "summary",
         help="add or list explicit memory summaries",
@@ -438,6 +446,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="list recent memory summaries",
     )
     memory_summary_list_parser.add_argument("--limit", type=int, default=10)
+    memory_summary_show_parser = memory_summary_subparsers.add_parser(
+        "show",
+        help="show one memory summary by file name",
+    )
+    memory_summary_show_parser.add_argument("--name", required=True)
     memory_fact_parser = memory_subparsers.add_parser(
         "fact",
         help="add or list explicit memory facts",
@@ -1087,6 +1100,9 @@ def main(argv: list[str] | None = None) -> int:
                 if args.memory_event_command == "list":
                     print(format_memory_event_list(limit=args.limit))
                     return 0
+                if args.memory_event_command == "show":
+                    print(format_memory_event_detail(index=args.index, limit=args.limit))
+                    return 0
                 parser.error("memory event requires a subcommand")
             if args.memory_command == "summary":
                 if args.memory_summary_command == "add":
@@ -1104,6 +1120,9 @@ def main(argv: list[str] | None = None) -> int:
                     return 0
                 if args.memory_summary_command == "list":
                     print(format_memory_summary_list(limit=args.limit))
+                    return 0
+                if args.memory_summary_command == "show":
+                    print(format_memory_summary_detail(name=args.name))
                     return 0
                 parser.error("memory summary requires a subcommand")
             if args.memory_command == "proposal":

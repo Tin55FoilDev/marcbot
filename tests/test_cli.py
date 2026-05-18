@@ -1491,3 +1491,45 @@ def test_memory_proposal_show_command(capsys, monkeypatch) -> None:
 
     assert result == 0
     assert captured.out == "MarcBot memory proposal\nID: weather-reference-pattern\n"
+
+def test_memory_event_show_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_event_detail",
+        lambda index, limit: f"MarcBot memory event\nIndex: {index}\nLimit: {limit}",
+    )
+
+    result = cli.main(["memory", "event", "show", "--index", "2", "--limit", "5"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory event\nIndex: 2\nLimit: 5\n"
+
+
+def test_memory_summary_show_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_summary_detail",
+        lambda name: f"MarcBot memory summary\nName: {name}",
+    )
+
+    result = cli.main(
+        [
+            "memory",
+            "summary",
+            "show",
+            "--name",
+            "2026-05-18-memory-foundation-through-m6.md",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert (
+        captured.out
+        == "MarcBot memory summary\nName: 2026-05-18-memory-foundation-through-m6.md\n"
+    )
