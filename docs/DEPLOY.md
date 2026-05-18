@@ -541,3 +541,15 @@ The weather report requires local runtime config at:
     /srv/marcbot/config/weather-report.toml
 
 and Telegram config in MarcBot's normal local config.
+
+## Backup memory integration
+
+The app-level backup script includes `/srv/marcbot/memory` in the archive.
+
+After a successful backup, the script records a low-risk `backup_completed`
+memory event using:
+
+    python -m marcbot memory event add
+
+This event is written after the archive, checksum, and latest marker are
+created. The event itself will therefore be included in a later backup.

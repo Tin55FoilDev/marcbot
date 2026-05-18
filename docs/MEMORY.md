@@ -1111,3 +1111,18 @@ daily status report to Telegram.
 
 These events are operational history only. They do not create or modify facts,
 proposals, summaries, or corrections.
+
+## Backup workflow automatic memory integration
+
+The MarcBot app-level backup script now records a low-risk `backup_completed`
+memory event after successfully creating:
+
+- the backup archive
+- the checksum file
+- the latest-backup marker
+
+The app-level backup archive also includes `/srv/marcbot/memory`.
+
+The backup completion event is recorded after archive creation, so that specific
+event is included in a later backup rather than the archive it describes. This
+avoids recording a successful backup before the backup has actually completed.
