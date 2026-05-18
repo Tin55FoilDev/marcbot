@@ -30,6 +30,7 @@ from marcbot.llm_file_summary import (
 )
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
+from marcbot.memory_store import format_memory_status_message, init_memory_store
 from marcbot.paths import LOG_DIR, WORKSPACE_DIR, missing_runtime_dirs
 from marcbot.report_sender import (
     send_latest_report,
@@ -358,6 +359,14 @@ def build_parser() -> argparse.ArgumentParser:
         "output_path",
         help="workspace-relative output file path",
     )
+
+    memory_parser = subparsers.add_parser(
+        "memory",
+        help="inspect local MarcBot memory",
+    )
+    memory_subparsers = memory_parser.add_subparsers(dest="memory_command")
+    memory_subparsers.add_parser("init", help="initialize local memory store")
+    memory_subparsers.add_parser("status", help="show local memory store status")
 
     report_parser = subparsers.add_parser("report", help="generate local MarcBot reports")
     report_subparsers = report_parser.add_subparsers(dest="report_name")
@@ -878,6 +887,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(_format_support_snapshot())
                 LOGGER.info("Support snapshot generated")
                 return 0
+
+        if args.command == "memory":
+            if args.memory_command == "init":
+                result = init_memory_store()
+                print(result.message)
+                return 0
+            if args.memory_command == "status":
+                print(format_memory_status_message())
+                return 0
+            parser.error("memory requires a subcommand")
 
         if args.command == "weather-report":
             if args.weather_command == "run":

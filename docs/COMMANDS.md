@@ -343,3 +343,12 @@ summary counts, and pending proposal counts.
 
 It must not write memory, approve proposals, fetch arbitrary files, expose
 secrets, or contact model providers.
+
+### Memory CLI scaffold
+
+Initial memory CLI commands:
+
+    python -m marcbot memory init
+    python -m marcbot memory status
+
+These commands are local, provider-contact-free, and do not use LLMs.

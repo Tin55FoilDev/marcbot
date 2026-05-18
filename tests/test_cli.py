@@ -1041,3 +1041,35 @@ def test_weather_report_run_send_text_writes_and_sends(
     assert calls == ["write", "send"]
     assert f"Weather report written: {report_path}" in captured.out
     assert "Sent latest weather text report:" in captured.out
+
+def test_memory_init_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import init_memory_store
+
+    monkeypatch.setattr(
+        cli,
+        "init_memory_store",
+        lambda: init_memory_store(root=tmp_path),
+    )
+
+    result = cli.main(["memory", "init"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory initialized:" in captured.out
+
+
+def test_memory_status_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_status_message",
+        lambda: "MarcBot memory\nProvider contact: no",
+    )
+
+    result = cli.main(["memory", "status"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory\nProvider contact: no\n"

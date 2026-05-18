@@ -699,3 +699,17 @@ Phase M9: LLM-assisted memory candidate generation with Marc approval.
 Automatic capture should not begin until the memory root, status commands,
 event schema, review expectations, and safety boundaries are implemented and
 tested.
+
+## Implemented M2 scaffold
+
+The initial memory scaffold provides:
+
+    python -m marcbot memory init
+    python -m marcbot memory status
+
+`memory init` creates the local memory root and expected subdirectories.
+
+`memory status` reports initialization state and file counts.
+
+This milestone does not write events, facts, summaries, proposals, or
+corrections beyond the initial scaffold files.
