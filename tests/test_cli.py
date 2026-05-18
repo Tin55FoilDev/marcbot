@@ -1562,3 +1562,80 @@ def test_memory_search_command(capsys, monkeypatch) -> None:
 
     assert result == 0
     assert captured.out == "MarcBot memory search\nQuery: weather\nLimit: 5\n"
+
+def test_daily_status_report_records_memory_event(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.reports import ReportResult
+
+    calls = []
+    report_path = tmp_path / "daily-status.md"
+
+    monkeypatch.setattr(
+        cli,
+        "write_daily_status_report",
+        lambda: ReportResult(
+            path=report_path,
+            message=f"Daily status report written: {report_path}",
+        ),
+    )
+
+    class FakeMemoryResult:
+        message = "Memory event added: test"
+
+    def fake_record_approved_workflow_event(**kwargs):
+        calls.append(kwargs)
+        return FakeMemoryResult()
+
+    monkeypatch.setattr(
+        cli,
+        "record_approved_workflow_event",
+        fake_record_approved_workflow_event,
+    )
+
+    result = cli.main(["report", "daily-status"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert f"Daily status report written: {report_path}" in captured.out
+    assert "Memory event added: test" in captured.out
+    assert calls[0]["event_type"] == "report_generated"
+    assert calls[0]["project"] == "daily-status-report"
+    assert calls[0]["related_files"] == (report_path,)
+
+
+def test_daily_status_report_send_records_memory_event(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.report_sender import SendLatestReportResult
+
+    calls = []
+    report_path = tmp_path / "daily-status.md"
+
+    monkeypatch.setattr(cli, "load_config", lambda path: object())
+    monkeypatch.setattr(
+        cli,
+        "send_latest_report",
+        lambda config: SendLatestReportResult(path=report_path, chat_ids=(12345,)),
+    )
+
+    class FakeMemoryResult:
+        message = "Memory event added: test"
+
+    def fake_record_approved_workflow_event(**kwargs):
+        calls.append(kwargs)
+        return FakeMemoryResult()
+
+    monkeypatch.setattr(
+        cli,
+        "record_approved_workflow_event",
+        fake_record_approved_workflow_event,
+    )
+
+    result = cli.main(["report", "send-latest"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Sent latest daily status report:" in captured.out
+    assert "Memory event added: test" in captured.out
+    assert calls[0]["event_type"] == "report_sent"
+    assert calls[0]["project"] == "daily-status-report"
+    assert calls[0]["related_files"] == (report_path,)

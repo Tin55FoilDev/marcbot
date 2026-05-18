@@ -1090,3 +1090,24 @@ hand-rolling its automatic memory event.
 
 This keeps Marc out of routine low-risk memory transactions while preserving
 guardrails and auditability.
+
+## Daily status report automatic memory integration
+
+The daily status report commands now use the approved automatic workflow helper.
+
+The generation command:
+
+    python -m marcbot report daily-status
+
+records a low-risk `report_generated` event after successfully writing the daily
+status report artifact.
+
+The send command:
+
+    python -m marcbot report send-latest
+
+records a low-risk `report_sent` event after successfully sending the newest
+daily status report to Telegram.
+
+These events are operational history only. They do not create or modify facts,
+proposals, summaries, or corrections.

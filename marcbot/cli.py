@@ -1372,6 +1372,24 @@ def main(argv: list[str] | None = None) -> int:
                 result = write_daily_status_report()
                 print(result.message)
                 LOGGER.info("Report generated: %s", result.path)
+                memory_result = record_approved_workflow_event(
+                    event_type="report_generated",
+                    project="daily-status-report",
+                    summary="Daily status report generated.",
+                    source="daily_status_report_cli",
+                    details=(
+                        "The daily status report CLI wrote a Markdown report artifact "
+                        "for later inspection or Telegram delivery."
+                    ),
+                    verification="Command completed successfully with no exception.",
+                    follow_up=(
+                        "Use python -m marcbot report send-latest to send the newest "
+                        "daily status report to Telegram."
+                    ),
+                    related_files=(result.path,),
+                    related_commands=("python -m marcbot report daily-status",),
+                )
+                print(memory_result.message)
                 return 0
 
             if args.report_name == "send-latest":
@@ -1383,6 +1401,25 @@ def main(argv: list[str] | None = None) -> int:
                     result.path,
                     result.chat_ids,
                 )
+                memory_result = record_approved_workflow_event(
+                    event_type="report_sent",
+                    project="daily-status-report",
+                    summary="Latest daily status report sent to Telegram.",
+                    source="daily_status_report_send_latest_cli",
+                    details=(
+                        "The daily status report send-latest CLI sent the newest "
+                        "validated daily status report artifact to configured Telegram "
+                        "chat IDs."
+                    ),
+                    verification="Command completed successfully with no exception.",
+                    follow_up=(
+                        "Use /send_latest_report to manually resend the newest daily "
+                        "status report from Telegram."
+                    ),
+                    related_files=(result.path,),
+                    related_commands=("python -m marcbot report send-latest",),
+                )
+                print(memory_result.message)
                 return 0
 
             parser.print_help()
