@@ -352,3 +352,350 @@ The current project already has early memory-like support through:
 
 These should remain the source of truth until a real memory subsystem is
 designed, tested, and documented.
+
+## Implementation charter
+
+MarcBot memory should be implemented gradually, using the same lifecycle pattern
+validated by the weather-report project.
+
+The first goal is not autonomous learning. The first goal is a safe, inspectable
+memory substrate that can later support automatic capture and review.
+
+## Initial local memory root
+
+The initial runtime memory root should be:
+
+    /srv/marcbot/memory
+
+This directory is local runtime state and should not be committed to Git.
+
+Repo documentation and examples may describe memory schemas, but the real memory
+store lives outside Git unless a future design explicitly says otherwise.
+
+Initial layout:
+
+    /srv/marcbot/memory/
+      README.md
+      events/
+      facts/
+      summaries/
+      pending/
+      corrections/
+      exports/
+
+## Initial command surface
+
+Start CLI-first.
+
+Initial CLI commands:
+
+    python -m marcbot memory init
+    python -m marcbot memory status
+
+Initial Telegram command:
+
+    /memory_status
+
+The Telegram command must be read-only and provider-contact-free.
+
+## Memory classes
+
+Initial memory classes:
+
+1. events
+2. facts
+3. summaries
+4. pending proposals
+5. corrections
+
+Events are append-only or mostly append-only records of what happened.
+
+Facts are durable statements believed to be currently true.
+
+Summaries are handoff or milestone documents.
+
+Pending proposals are possible memory updates awaiting review.
+
+Corrections record superseded or corrected facts.
+
+## Operational usefulness rule
+
+Memory must be useful to future Marc and future MarcBot, not just a simple list
+of activities.
+
+For operational events, memory should preserve enough structured detail to make
+future retrieval actionable.
+
+A weak memory event says:
+
+    backup fixed
+
+A useful memory event explains:
+
+- what happened
+- how it was detected
+- what evidence was observed
+- likely cause
+- fix applied
+- verification result
+- future guidance
+- related files, commands, services, timers, commits, or artifacts
+
+Not every event needs every field, but the schema must support enough detail for
+debugging, recovery, and future decision-making.
+
+Example:
+
+    Summary: Fixed backup timer warning caused by unreadable root-owned tuning
+    backup files.
+
+    Details: /timer_status showed marcbot-backup.service with Last service
+    result exit-code and Last exit status 2. Journal logs showed tar permission
+    errors for stale *.bak-* files under /srv/marcbot/config and
+    /srv/marcbot/config/chat.
+
+    Cause: Temporary backup files created during chat-context tuning were owned
+    by root:root with mode 600, while marcbot-backup.service runs as marc.
+
+    Resolution: Confirmed active config files were marc:marc and readable,
+    removed stale root-owned tuning backup files, and manually restarted
+    marcbot-backup.service.
+
+    Verification: Manual service run exited status=0/SUCCESS and /timer_status
+    reported all timers healthy.
+
+    Follow-up: Avoid creating root-owned files under /srv/marcbot/config during
+    future tuning; use sudo -u marc for runtime config backups where possible.
+
+This level of detail is especially important for operational fixes, service
+failures, timer problems, deployment issues, security decisions, and project
+workflow lessons.
+
+## Storage format v1
+
+The first implementation should use inspectable files.
+
+Suggested v1 storage:
+
+    events/YYYY-MM.jsonl
+    facts/*.toml
+    summaries/YYYY-MM-DD-<slug>.md
+    pending/*.json
+    corrections/*.jsonl
+
+SQLite may be added later after the file schemas are proven.
+
+## Event schema v1
+
+Events should be JSON lines with stable fields.
+
+Required fields:
+
+    timestamp
+    type
+    summary
+    source
+    confidence
+
+Optional fields:
+
+    project
+    details
+    cause
+    resolution
+    verification
+    follow_up
+    related_files
+    related_commands
+    related_artifacts
+    related_commits
+
+The optional fields are important. They allow memory events to become
+operationally useful instead of merely chronological.
+
+The `details`, `cause`, `resolution`, `verification`, and `follow_up` fields
+should be used when an event records a fix, failure, debugging session, service
+change, deployment, or meaningful project decision.
+
+The `related_commands` field should include only safe, non-secret command
+examples. Do not include tokens, credentials, private keys, or raw sensitive
+output.
+
+Allowed initial event types should be narrow. Examples:
+
+    validation_passed
+    report_generated
+    report_sent
+    timer_validated
+    service_restarted
+    backup_completed
+    issue_detected
+    issue_resolved
+    commit_pushed
+    workflow_completed
+    design_decision
+
+## Fact schema v1
+
+Facts should be explicit and correctable.
+
+Suggested fields:
+
+    id
+    statement
+    category
+    project
+    source
+    created_at
+    updated_at
+    confidence
+    status
+    details
+
+Allowed statuses:
+
+    active
+    superseded
+    rejected
+
+Facts should not be silently changed. A correction should supersede an old fact
+rather than overwriting it without history.
+
+Use `details` when a fact needs context to be useful. For example, a fact about
+a timer schedule may include why that time was selected, where the unit is
+defined, and how to validate it.
+
+## Summary schema v1
+
+Summaries should be Markdown files with a short metadata block.
+
+Suggested fields:
+
+    title
+    created_at
+    project
+    source
+    related_commits
+    related_artifacts
+
+Summaries are useful context but should not override current command output,
+current repo files, validation results, or Marc's explicit corrections.
+
+## Pending proposal schema v1
+
+Pending proposals should be JSON files.
+
+Suggested fields:
+
+    id
+    created_at
+    proposed_type
+    proposed_statement
+    project
+    source
+    rationale
+    risk_level
+    status
+    details
+
+Allowed statuses:
+
+    pending
+    approved
+    rejected
+
+Telegram should not approve or reject proposals until that command surface is
+explicitly designed and tested.
+
+## Risk tiers
+
+Low-risk memory may eventually be auto-recorded.
+
+Examples:
+
+    report generated
+    report sent
+    validation passed
+    backup completed
+    commit pushed
+    workflow completed
+
+Medium-risk memory should initially be proposed for review.
+
+Examples:
+
+    recurring workflow preference
+    durable project direction
+    non-sensitive operational pattern
+    repeated user preference
+    corrected project fact
+
+High-risk memory requires explicit Marc approval before becoming durable.
+
+Examples:
+
+    security policy changes
+    permission model changes
+    trusted host or service changes
+    destructive-action rules
+    credential or secret-handling assumptions
+    Telegram authority expansion
+    autonomous code modification or execution rules
+
+## Forbidden memory content
+
+Memory must not store:
+
+    API keys
+    Telegram bot tokens
+    OAuth tokens
+    provider tokens
+    passwords
+    SSH private keys
+    raw unrestricted logs
+    full local config files containing secrets
+    unnecessary personal data
+
+If a sensitive system must be referenced, store only safe metadata or a redacted
+description.
+
+## Authority rule
+
+Memory is helpful context, not final authority.
+
+Authoritative sources remain:
+
+    current repo files
+    current local config schemas
+    actual command output
+    Git commits
+    validation results
+    support snapshots
+    explicit Marc approvals or corrections
+
+Memory retrieval should never silently override those sources.
+
+## Initial implementation phases
+
+Phase M1: implementation charter and schema docs.
+
+Phase M2: local memory scaffold plus CLI `memory init` and `memory status`.
+
+Phase M3: read-only Telegram `/memory_status`.
+
+Phase M4: explicit low-risk event ledger commands.
+
+Phase M5: integrate one proven workflow, likely weather-report, to record
+low-risk events.
+
+Phase M6: milestone summaries.
+
+Phase M7: facts and corrections.
+
+Phase M8: pending proposal review queue.
+
+Phase M9: LLM-assisted memory candidate generation with Marc approval.
+
+Automatic capture should not begin until the memory root, status commands,
+event schema, review expectations, and safety boundaries are implemented and
+tested.

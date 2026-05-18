@@ -332,3 +332,14 @@ This remains read-only and limited to approved MarcBot-related units.
 Telegram text.
 
 It is provider-contact-free and does not fetch a new forecast.
+
+### Future memory status
+
+`/memory_status` is the planned read-only Telegram command for MarcBot memory
+visibility.
+
+Initial behavior should show memory root status, event counts, fact counts,
+summary counts, and pending proposal counts.
+
+It must not write memory, approve proposals, fetch arbitrary files, expose
+secrets, or contact model providers.
