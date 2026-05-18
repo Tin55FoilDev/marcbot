@@ -27,6 +27,7 @@ from marcbot.llm_client import run_openai_compatible_completion
 from marcbot.llm_config import load_llm_config
 from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
+from marcbot.memory_store import format_memory_status_message
 from marcbot.report_sender import format_weather_report_for_telegram
 from marcbot.report_status import format_report_status_message
 from marcbot.service_status import format_service_report
@@ -473,6 +474,24 @@ async def send_weather_report_command(update: Update, context: ContextTypes.DEFA
 
     if update.message is not None:
         await update.message.reply_text(message)
+
+
+
+async def memory_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /memory_status."""
+
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /memory_status from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /memory_status for chat_id=%s", chat_id)
+
+    if update.message is not None:
+        await update.message.reply_text(format_memory_status_message())
 
 
 async def weather_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1036,6 +1055,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/backup_status - show latest MarcBot app-level backup status\n"
         "/timer_status - show MarcBot scheduled timer status\n"
         "/weather_status - show latest weather report status\n"
+        "/memory_status - show local memory status\n"
         "/send_weather_report - resend the latest weather report as text\n"
         "/report_status - show latest daily status report status\n"
         "/report_status source <project> - show latest source monitor summary\n"
@@ -1118,6 +1138,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("backup_status", backup_status_command))
     application.add_handler(CommandHandler("timer_status", timer_status_command))
     application.add_handler(CommandHandler("weather_status", weather_status_command))
+    application.add_handler(CommandHandler("memory_status", memory_status_command))
     application.add_handler(CommandHandler("send_weather_report", send_weather_report_command))
     application.add_handler(CommandHandler("report_status", report_status_command))
     application.add_handler(CommandHandler("send_source_artifact", send_source_artifact_command))

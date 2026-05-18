@@ -352,3 +352,10 @@ Initial memory CLI commands:
     python -m marcbot memory status
 
 These commands are local, provider-contact-free, and do not use LLMs.
+
+### Memory status
+
+`/memory_status` shows local MarcBot memory status.
+
+It is read-only and provider-contact-free. It does not write memory, approve
+memory proposals, inspect arbitrary paths, or contact model providers.

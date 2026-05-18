@@ -713,3 +713,16 @@ The initial memory scaffold provides:
 
 This milestone does not write events, facts, summaries, proposals, or
 corrections beyond the initial scaffold files.
+
+## Implemented M3 Telegram memory status
+
+The read-only Telegram command:
+
+    /memory_status
+
+shows the same provider-free memory status as:
+
+    python -m marcbot memory status
+
+It does not write memory, approve proposals, inspect arbitrary paths, or contact
+model providers.
