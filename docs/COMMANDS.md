@@ -316,3 +316,12 @@ workflow status.
 It is provider-contact-free and does not fetch a new forecast.
 
 Use `/timer_status` for systemd timer status.
+
+### Weather timer visibility
+
+`/timer_status` includes the approved weather report timer:
+
+    marcbot-weather-report.timer
+    marcbot-weather-report.service
+
+This remains read-only and limited to approved MarcBot-related units.

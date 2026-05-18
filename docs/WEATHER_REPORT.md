@@ -307,3 +307,11 @@ It does not fetch weather, send reports, contact model providers, or inspect
 arbitrary files.
 
 Use `/timer_status` for systemd timer status.
+
+## Timer status visibility
+
+The weather-report timer is included in MarcBot's approved `/timer_status`
+allowlist.
+
+This lets Telegram show the weather timer and service state without exposing
+arbitrary systemd unit inspection.

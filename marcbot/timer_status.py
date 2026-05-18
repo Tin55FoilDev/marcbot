@@ -22,6 +22,11 @@ APPROVED_TIMERS: tuple[tuple[str, str, str], ...] = (
         "marcbot-daily-status-report-send.timer",
         "marcbot-daily-status-report-send.service",
     ),
+    (
+        "Weather report timer",
+        "marcbot-weather-report.timer",
+        "marcbot-weather-report.service",
+    ),
 )
 
 TIMER_FIELDS: tuple[str, ...] = (
