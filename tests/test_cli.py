@@ -1533,3 +1533,18 @@ def test_memory_summary_show_command(capsys, monkeypatch) -> None:
         captured.out
         == "MarcBot memory summary\nName: 2026-05-18-memory-foundation-through-m6.md\n"
     )
+
+def test_memory_search_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_search_results",
+        lambda query, limit: f"MarcBot memory search\nQuery: {query}\nLimit: {limit}",
+    )
+
+    result = cli.main(["memory", "search", "weather", "--limit", "5"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory search\nQuery: weather\nLimit: 5\n"

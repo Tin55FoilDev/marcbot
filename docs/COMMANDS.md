@@ -457,3 +457,12 @@ Read-only memory detail commands:
     python -m marcbot memory summary show --name <summary-file-name>
 
 These commands are CLI-only and provider-contact-free.
+
+### Memory search
+
+Read-only memory search command:
+
+    python -m marcbot memory search <query>
+
+The command searches local memory files by case-insensitive substring. It is
+CLI-only and provider-contact-free.

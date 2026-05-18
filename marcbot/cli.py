@@ -42,6 +42,7 @@ from marcbot.memory_store import (
     format_memory_fact_list,
     format_memory_proposal_detail,
     format_memory_proposal_list,
+    format_memory_search_results,
     format_memory_status_message,
     format_memory_summary_detail,
     format_memory_summary_list,
@@ -386,6 +387,12 @@ def build_parser() -> argparse.ArgumentParser:
     memory_subparsers = memory_parser.add_subparsers(dest="memory_command")
     memory_subparsers.add_parser("init", help="initialize local memory store")
     memory_subparsers.add_parser("status", help="show local memory store status")
+    memory_search_parser = memory_subparsers.add_parser(
+        "search",
+        help="search local memory files",
+    )
+    memory_search_parser.add_argument("query")
+    memory_search_parser.add_argument("--limit", type=int, default=20)
     memory_event_parser = memory_subparsers.add_parser(
         "event",
         help="add or list explicit memory events",
@@ -1076,6 +1083,9 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             if args.memory_command == "status":
                 print(format_memory_status_message())
+                return 0
+            if args.memory_command == "search":
+                print(format_memory_search_results(args.query, limit=args.limit))
                 return 0
             if args.memory_command == "event":
                 if args.memory_event_command == "add":

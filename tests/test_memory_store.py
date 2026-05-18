@@ -972,3 +972,63 @@ def test_format_memory_summary_detail_rejects_path_name(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="name must be a file name"):
         format_memory_summary_detail(root=tmp_path, name="../bad.md")
+
+def test_search_memory_finds_matches(tmp_path: Path) -> None:
+    from marcbot.memory_store import search_memory
+
+    init_root = tmp_path
+    (init_root / "facts").mkdir()
+    (init_root / "facts" / "weather.toml").write_text(
+        'statement = "Weather report runs daily."\n',
+        encoding="utf-8",
+    )
+
+    results = search_memory("weather", root=init_root)
+
+    assert len(results) == 1
+    assert results[0].path.name == "weather.toml"
+    assert results[0].line_number == 1
+    assert results[0].line == 'statement = "Weather report runs daily."'
+
+
+def test_search_memory_is_case_insensitive(tmp_path: Path) -> None:
+    from marcbot.memory_store import search_memory
+
+    (tmp_path / "summaries").mkdir()
+    (tmp_path / "summaries" / "summary.md").write_text(
+        "Weather Workflow\n",
+        encoding="utf-8",
+    )
+
+    results = search_memory("weather workflow", root=tmp_path)
+
+    assert len(results) == 1
+
+
+def test_search_memory_ignores_unsupported_suffix(tmp_path: Path) -> None:
+    from marcbot.memory_store import search_memory
+
+    (tmp_path / "exports").mkdir()
+    (tmp_path / "exports" / "secret.txt").write_text(
+        "weather",
+        encoding="utf-8",
+    )
+
+    assert search_memory("weather", root=tmp_path) == ()
+
+
+def test_format_memory_search_results(tmp_path: Path) -> None:
+    from marcbot.memory_store import format_memory_search_results
+
+    (tmp_path / "events").mkdir()
+    (tmp_path / "events" / "2026-05.jsonl").write_text(
+        '{"summary": "Weather report sent."}\n',
+        encoding="utf-8",
+    )
+
+    message = format_memory_search_results("weather", root=tmp_path)
+
+    assert "MarcBot memory search" in message
+    assert "Query: weather" in message
+    assert "events/2026-05.jsonl:1:" in message
+    assert "Provider contact: no" in message

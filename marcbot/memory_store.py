@@ -1598,3 +1598,98 @@ def format_memory_summary_detail(
 
     return "\n".join(lines)
 
+SEARCHABLE_MEMORY_SUFFIXES: tuple[str, ...] = (
+    ".jsonl",
+    ".json",
+    ".toml",
+    ".md",
+)
+
+
+@dataclass(frozen=True)
+class MemorySearchResult:
+    # One read-only memory search result.
+
+    path: Path
+    line_number: int
+    line: str
+
+    def format_one_line(self, root: Path) -> str:
+        try:
+            relative = self.path.relative_to(root)
+        except ValueError:
+            relative = self.path
+
+        return f"{relative}:{self.line_number}: {self.line}"
+
+
+def search_memory(
+    query: str,
+    *,
+    root: Path = MEMORY_ROOT,
+    limit: int = 20,
+) -> tuple[MemorySearchResult, ...]:
+    safe_query = _validate_nonempty_text(query, "query").lower()
+
+    if limit < 1 or limit > 200:
+        raise ValueError("limit must be from 1 to 200")
+
+    if not root.is_dir():
+        return ()
+
+    results: list[MemorySearchResult] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        if path.suffix not in SEARCHABLE_MEMORY_SUFFIXES:
+            continue
+
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+
+        for line_number, line in enumerate(lines, start=1):
+            if safe_query in line.lower():
+                excerpt = line.strip()
+                if len(excerpt) > 240:
+                    excerpt = excerpt[:237] + "..."
+                results.append(
+                    MemorySearchResult(
+                        path=path,
+                        line_number=line_number,
+                        line=excerpt,
+                    )
+                )
+                if len(results) >= limit:
+                    return tuple(results)
+
+    return tuple(results)
+
+
+def format_memory_search_results(
+    query: str,
+    *,
+    root: Path = MEMORY_ROOT,
+    limit: int = 20,
+) -> str:
+    results = search_memory(query, root=root, limit=limit)
+
+    lines = [
+        "MarcBot memory search",
+        f"Root: {root}",
+        f"Query: {query}",
+        f"Limit: {limit}",
+    ]
+
+    if not results:
+        lines.append("No matches found.")
+        lines.append("Provider contact: no")
+        return "\n".join(lines)
+
+    for result in results:
+        lines.append(f"- {result.format_one_line(root)}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
+

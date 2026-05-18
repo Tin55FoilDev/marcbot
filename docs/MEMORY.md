@@ -943,3 +943,23 @@ Summary detail retrieval accepts only a file name under the memory summaries
 directory. It does not accept arbitrary paths.
 
 These commands are read-only and provider-contact-free.
+
+## Implemented M10 read-only memory search
+
+Memory now supports simple read-only text search.
+
+Command:
+
+    python -m marcbot memory search <query>
+
+Search behavior:
+
+- searches only `/srv/marcbot/memory`
+- searches known memory file types: `.jsonl`, `.json`, `.toml`, `.md`
+- performs case-insensitive substring matching
+- returns relative path, line number, and matching line excerpt
+- does not accept arbitrary root paths
+- does not write memory
+- does not contact model providers
+
+This is intentionally simple. LLM-assisted search or embeddings are deferred.
