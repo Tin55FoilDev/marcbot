@@ -427,3 +427,15 @@ Explicit fact proposal approval command:
 
 Initial approval supports fact proposals only. It is CLI-only and
 provider-contact-free.
+
+### Richer memory status counts
+
+`/memory_status` and `python -m marcbot memory status` show proposal counts by
+status:
+
+    pending proposals
+    approved proposals
+    rejected proposals
+
+This helps distinguish outstanding review work from preserved approved/rejected
+proposal history.

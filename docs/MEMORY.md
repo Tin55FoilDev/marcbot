@@ -898,3 +898,19 @@ Approval behavior:
 
 Approval remains CLI-only and provider-contact-free. Event and summary proposal
 approval are deferred.
+
+## Implemented M8C richer memory status visibility
+
+The read-only memory status output now reports proposal counts by review status.
+
+`python -m marcbot memory status` and `/memory_status` show:
+
+    proposal files
+    pending proposals
+    approved proposals
+    rejected proposals
+
+This avoids confusing approved or rejected proposal records with still-pending
+review work.
+
+The command remains provider-contact-free and read-only.
