@@ -326,3 +326,18 @@ resends the latest existing weather report as cleaned Telegram text.
 
 It does not fetch a new forecast, send a file attachment, contact model
 providers, or accept arbitrary paths.
+
+## Memory integration
+
+The scheduled weather workflow records a low-risk memory event after successful
+completion.
+
+The combined command:
+
+    python -m marcbot weather-report run-send-text
+
+records a `workflow_completed` event only after it successfully generates the
+report artifact and sends the cleaned Telegram text message.
+
+This creates useful operational history without enabling broad automatic memory
+capture.

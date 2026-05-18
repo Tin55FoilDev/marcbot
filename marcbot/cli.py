@@ -985,6 +985,33 @@ def main(argv: list[str] | None = None) -> int:
                 config = load_config()
                 send_result = send_latest_weather_report_text(config)
                 print(send_result.message)
+                memory_result = add_memory_event(
+                    event_type="workflow_completed",
+                    project="weather-report",
+                    summary="Weather report generated and sent to Telegram as cleaned text.",
+                    source="weather_report_run_send_text",
+                    confidence="high",
+                    details=(
+                        "The weather-report run-send-text workflow fetched the configured "
+                        "forecast, wrote a Markdown artifact, and sent the latest weather "
+                        "report to Telegram as cleaned text."
+                    ),
+                    resolution=(
+                        "Generated artifact and completed Telegram text delivery using the "
+                        "configured MarcBot Telegram settings."
+                    ),
+                    verification="Command completed successfully with no exception.",
+                    follow_up=(
+                        "Use /weather_status for latest artifact status, /timer_status for "
+                        "scheduled timer health, and /send_weather_report to resend the "
+                        "latest report manually."
+                    ),
+                    related_files=(str(report_result.path),),
+                    related_commands=(
+                        "python -m marcbot weather-report run-send-text",
+                    ),
+                )
+                print(memory_result.message)
                 return 0
             parser.error("weather-report requires a subcommand")
 

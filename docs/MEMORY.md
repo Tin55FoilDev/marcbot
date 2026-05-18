@@ -755,3 +755,28 @@ activity list.
 
 This milestone remains explicit and CLI-only. It does not perform automatic
 capture and does not expose memory writes through Telegram.
+
+## Implemented M5 first workflow memory integration
+
+The first controlled automatic memory write is integrated with the weather-report
+workflow.
+
+The command:
+
+    python -m marcbot weather-report run-send-text
+
+now records a low-risk `workflow_completed` memory event after successful report
+generation and Telegram text delivery.
+
+The event includes:
+
+- project: `weather-report`
+- summary of the completed workflow
+- generated report artifact path
+- command used
+- verification that the command completed successfully
+- follow-up guidance for `/weather_status`, `/timer_status`, and
+  `/send_weather_report`
+
+This is intentionally narrow. It does not enable broad automatic memory capture,
+Telegram memory writes, proposal approval, or LLM-assisted memory generation.

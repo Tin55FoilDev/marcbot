@@ -1027,20 +1027,28 @@ def test_weather_report_run_send_text_writes_and_sends(
             report_label="weather text",
         )
 
+    def fake_add_memory_event(**kwargs):
+        calls.append("memory")
+        from marcbot.memory_store import add_memory_event
+
+        return add_memory_event(root=tmp_path / "memory", **kwargs)
+
     monkeypatch.setattr(cli, "write_weather_report", fake_write_weather_report)
     monkeypatch.setattr(
         cli,
         "send_latest_weather_report_text",
         fake_send_latest_weather_report_text,
     )
+    monkeypatch.setattr(cli, "add_memory_event", fake_add_memory_event)
 
     result = cli.main(["weather-report", "run-send-text"])
     captured = capsys.readouterr()
 
     assert result == 0
-    assert calls == ["write", "send"]
+    assert calls == ["write", "send", "memory"]
     assert f"Weather report written: {report_path}" in captured.out
     assert "Sent latest weather text report:" in captured.out
+    assert "Memory event added:" in captured.out
 
 def test_memory_init_command(capsys, monkeypatch, tmp_path) -> None:
     import marcbot.cli as cli
