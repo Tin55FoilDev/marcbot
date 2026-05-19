@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 
 from marcbot.memory_sqlite import (
     SCHEMA_VERSION,
+    format_memory_sqlite_counts,
     format_memory_sqlite_status,
     get_memory_sqlite_status,
+    get_sqlite_memory_counts,
+    import_file_memory_to_sqlite,
     initialize_memory_sqlite,
 )
 
@@ -75,4 +79,158 @@ def test_format_memory_sqlite_status(tmp_path: Path) -> None:
     assert f"Path: {db_path}" in message
     assert "Exists: yes" in message
     assert f"Schema version: {SCHEMA_VERSION}" in message
+    assert "Provider contact: no" in message
+
+
+
+def test_import_file_memory_to_sqlite_imports_records(tmp_path: Path) -> None:
+    memory_root = tmp_path / "memory"
+    db_path = tmp_path / "memory.sqlite3"
+
+    (memory_root / "events").mkdir(parents=True)
+    (memory_root / "facts").mkdir()
+    (memory_root / "summaries").mkdir()
+    (memory_root / "pending").mkdir()
+    (memory_root / "corrections").mkdir()
+
+    (memory_root / "events" / "2026-05.jsonl").write_text(
+        json.dumps(
+            {
+                "timestamp": "2026-05-19T00:00:00+00:00",
+                "type": "workflow_completed",
+                "project": "test",
+                "summary": "Workflow completed.",
+                "source": "test",
+                "confidence": "high",
+                "related_files": ["artifact.md"],
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    (memory_root / "facts" / "test-fact.toml").write_text(
+        '\n'.join(
+            [
+                'id = "test-fact"',
+                'statement = "A test fact."',
+                'category = "test"',
+                'project = "test"',
+                'source = "test"',
+                'created_at = "2026-05-19T00:00:00+00:00"',
+                'updated_at = "2026-05-19T00:00:00+00:00"',
+                'confidence = "high"',
+                'status = "active"',
+                'details = "Useful detail."',
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    (memory_root / "summaries" / "test-summary.md").write_text(
+        "---\n"
+        'title = "Test summary"\n'
+        'project = "test"\n'
+        'source = "test"\n'
+        'created_at = "2026-05-19T00:00:00+00:00"\n'
+        "---\n"
+        "# Test summary\n\n"
+        "Body text.\n",
+        encoding="utf-8",
+    )
+
+    (memory_root / "pending" / "test-proposal.json").write_text(
+        json.dumps(
+            {
+                "id": "test-proposal",
+                "created_at": "2026-05-19T00:00:00+00:00",
+                "proposed_type": "fact",
+                "proposed_statement": "A proposed fact.",
+                "source": "test",
+                "rationale": "Test.",
+                "risk_level": "low",
+                "status": "pending",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    (memory_root / "corrections" / "2026-05.jsonl").write_text(
+        json.dumps(
+            {
+                "timestamp": "2026-05-19T00:00:00+00:00",
+                "type": "fact_rejected",
+                "fact_id": "old-fact",
+                "reason": "Test.",
+                "source": "test",
+                "confidence": "high",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = import_file_memory_to_sqlite(
+        source_root=memory_root,
+        database_path=db_path,
+    )
+
+    assert result.event_count == 1
+    assert result.fact_count == 1
+    assert result.summary_count == 1
+    assert result.proposal_count == 1
+    assert result.correction_count == 1
+
+    counts = get_sqlite_memory_counts(path=db_path)
+
+    assert counts["events"] == 1
+    assert counts["facts"] == 1
+    assert counts["summaries"] == 1
+    assert counts["proposals"] == 1
+    assert counts["corrections"] == 1
+    assert counts["import_runs"] == 1
+
+
+def test_import_file_memory_to_sqlite_rebuilds_imported_tables(tmp_path: Path) -> None:
+    memory_root = tmp_path / "memory"
+    db_path = tmp_path / "memory.sqlite3"
+
+    (memory_root / "events").mkdir(parents=True)
+    (memory_root / "events" / "2026-05.jsonl").write_text(
+        json.dumps(
+            {
+                "timestamp": "2026-05-19T00:00:00+00:00",
+                "type": "workflow_completed",
+                "summary": "First.",
+                "source": "test",
+                "confidence": "high",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    import_file_memory_to_sqlite(source_root=memory_root, database_path=db_path)
+    import_file_memory_to_sqlite(source_root=memory_root, database_path=db_path)
+
+    counts = get_sqlite_memory_counts(path=db_path)
+
+    assert counts["events"] == 1
+    assert counts["import_runs"] == 2
+
+
+def test_format_memory_sqlite_counts(tmp_path: Path) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+
+    message = format_memory_sqlite_counts(path=db_path)
+
+    assert "MarcBot memory SQLite counts" in message
+    assert "- events: 0" in message
     assert "Provider contact: no" in message

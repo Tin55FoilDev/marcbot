@@ -294,3 +294,22 @@ Initial support includes:
 - tests for schema creation and idempotency
 
 This does not import file memory yet and does not change runtime memory behavior.
+
+## Implemented S3 file-memory import
+
+SQLite import support can rebuild the imported SQLite view from the file memory
+source of truth.
+
+Current behavior:
+
+- initializes schema if needed
+- clears imported memory tables
+- imports events from JSONL
+- imports facts from TOML
+- imports summaries from Markdown metadata/body
+- imports proposals from JSON
+- imports corrections from JSONL
+- records each import in `import_runs`
+- preserves file memory as source of truth
+
+Runtime memory reads and writes still use file memory.
