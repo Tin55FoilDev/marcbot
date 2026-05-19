@@ -724,3 +724,20 @@ Centralization keeps later SQLite correction sync safer because all correction
 ledger appends can use one hook instead of duplicating sync logic across fact and
 proposal transition functions.
 
+
+## Implemented incremental correction row helper
+
+MarcBot now has a SQLite helper for inserting one memory correction row into the
+imported SQLite view.
+
+The helper:
+
+- initializes the SQLite schema if needed
+- inserts one correction row
+- stores source file and source line metadata
+- is duplicate-safe using source file plus source line
+- does not change file memory
+- does not switch runtime reads or writes to SQLite
+
+This prepares the centralized correction append helper for file-first SQLite
+sync.

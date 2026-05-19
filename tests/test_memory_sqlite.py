@@ -566,3 +566,101 @@ def test_upsert_memory_summary_row_rejects_missing_file(tmp_path: Path) -> None:
             summary_path=tmp_path / "missing.md",
             database_path=tmp_path / "memory.sqlite3",
         )
+
+
+def test_insert_memory_correction_row_inserts_one_correction(tmp_path: Path) -> None:
+    import sqlite3
+
+    from marcbot.memory_sqlite import insert_memory_correction_row
+
+    db_path = tmp_path / "memory.sqlite3"
+    correction = {
+        "timestamp": "2026-05-19T01:45:00+00:00",
+        "type": "fact_rejected",
+        "fact_id": "old-fact",
+        "previous_status": "active",
+        "reason": "Test.",
+        "source": "test",
+        "confidence": "high",
+    }
+
+    inserted = insert_memory_correction_row(
+        correction=correction,
+        source_file=tmp_path / "corrections" / "2026-05.jsonl",
+        source_line=1,
+        database_path=db_path,
+        imported_at="2026-05-19T01:46:00+00:00",
+    )
+
+    assert inserted is True
+
+    with sqlite3.connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT timestamp, type, fact_id, previous_status, reason, source,
+                   confidence, raw_json, source_file, source_line
+            FROM memory_corrections
+            """
+        ).fetchone()
+
+    assert row[0] == "2026-05-19T01:45:00+00:00"
+    assert row[1] == "fact_rejected"
+    assert row[2] == "old-fact"
+    assert row[3] == "active"
+    assert row[4] == "Test."
+    assert row[5] == "test"
+    assert row[6] == "high"
+    assert '"type": "fact_rejected"' in row[7]
+    assert row[8].endswith("2026-05.jsonl")
+    assert row[9] == 1
+
+
+def test_insert_memory_correction_row_is_duplicate_safe(tmp_path: Path) -> None:
+    from marcbot.memory_sqlite import (
+        get_sqlite_memory_counts,
+        insert_memory_correction_row,
+    )
+
+    db_path = tmp_path / "memory.sqlite3"
+    source_file = tmp_path / "corrections" / "2026-05.jsonl"
+    correction = {
+        "timestamp": "2026-05-19T01:45:00+00:00",
+        "type": "fact_rejected",
+        "fact_id": "old-fact",
+    }
+
+    first = insert_memory_correction_row(
+        correction=correction,
+        source_file=source_file,
+        source_line=1,
+        database_path=db_path,
+    )
+    second = insert_memory_correction_row(
+        correction=correction,
+        source_file=source_file,
+        source_line=1,
+        database_path=db_path,
+    )
+
+    counts = get_sqlite_memory_counts(path=db_path)
+
+    assert first is True
+    assert second is False
+    assert counts["corrections"] == 1
+
+
+def test_insert_memory_correction_row_rejects_bad_source_line(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_sqlite import insert_memory_correction_row
+
+    with pytest.raises(ValueError, match="source_line must be 1 or greater"):
+        insert_memory_correction_row(
+            correction={
+                "timestamp": "2026-05-19T01:45:00+00:00",
+                "type": "fact_rejected",
+            },
+            source_file=tmp_path / "corrections" / "2026-05.jsonl",
+            source_line=0,
+            database_path=tmp_path / "memory.sqlite3",
+        )

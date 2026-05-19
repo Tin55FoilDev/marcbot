@@ -190,7 +190,8 @@ CREATE TABLE IF NOT EXISTS memory_corrections (
     raw_json TEXT NOT NULL,
     source_file TEXT NOT NULL,
     source_line INTEGER NOT NULL,
-    imported_at TEXT NOT NULL
+    imported_at TEXT NOT NULL,
+    UNIQUE(source_file, source_line)
 );
 
 CREATE INDEX IF NOT EXISTS idx_memory_corrections_timestamp
@@ -1019,3 +1020,84 @@ def upsert_memory_summary_row(
         connection.commit()
 
     return True
+
+
+def insert_memory_correction_row(
+    *,
+    correction: dict[str, object],
+    source_file: Path,
+    source_line: int,
+    database_path: Path = DEFAULT_MEMORY_DB_PATH,
+    imported_at: str | None = None,
+) -> bool:
+    """Insert one memory correction row into SQLite.
+
+    Returns True if a row was inserted, False if the same source file/line was
+    already present.
+    """
+    if source_line < 1:
+        raise ValueError("source_line must be 1 or greater")
+
+    initialize_memory_sqlite(path=database_path)
+    row_imported_at = imported_at or _utc_now_text()
+    raw_json = json.dumps(correction, sort_keys=True)
+
+    with _connect(database_path) as connection:
+        existing = connection.execute(
+            """
+            SELECT 1
+            FROM memory_corrections
+            WHERE source_file = ? AND source_line = ?
+            LIMIT 1
+            """,
+            (str(source_file), source_line),
+        ).fetchone()
+
+        if existing is not None:
+            return False
+
+        cursor = connection.execute(
+            """
+            INSERT INTO memory_corrections(
+                timestamp,
+                type,
+                fact_id,
+                old_fact_id,
+                new_fact_id,
+                proposal_id,
+                created_type,
+                created_id,
+                previous_status,
+                reason,
+                source,
+                confidence,
+                raw_json,
+                source_file,
+                source_line,
+                imported_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                str(correction["timestamp"]),
+                str(correction["type"]),
+                correction.get("fact_id"),
+                correction.get("old_fact_id"),
+                correction.get("new_fact_id"),
+                correction.get("proposal_id"),
+                correction.get("created_type"),
+                correction.get("created_id"),
+                correction.get("previous_status"),
+                correction.get("reason"),
+                correction.get("source"),
+                correction.get("confidence"),
+                raw_json,
+                str(source_file),
+                source_line,
+                row_imported_at,
+            ),
+        )
+        connection.commit()
+
+    return cursor.rowcount == 1
+
