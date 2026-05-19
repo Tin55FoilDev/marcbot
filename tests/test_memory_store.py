@@ -1721,3 +1721,62 @@ def test_reject_memory_fact_syncs_fact_row_before_correction(
         ("correction", "fact_rejected"),
     ]
 
+
+def test_supersede_memory_fact_syncs_old_new_fact_rows_before_correction(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_fact, supersede_memory_fact
+
+    calls = []
+
+    def fake_sync_memory_fact_to_sqlite_if_available(*, fact_path):
+        calls.append(("fact", fact_path.name))
+
+    def fake_append_memory_correction(*, root, timestamp, correction):
+        calls.append(("correction", correction["type"]))
+        return root / "corrections" / "2026-05.jsonl"
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_fact_to_sqlite_if_available",
+        fake_sync_memory_fact_to_sqlite_if_available,
+    )
+    monkeypatch.setattr(
+        memory_store,
+        "_append_memory_correction",
+        fake_append_memory_correction,
+    )
+
+    add_memory_fact(
+        root=tmp_path,
+        fact_id="old-fact",
+        statement="Old fact.",
+        category="test",
+        source="test",
+        confidence="high",
+        timestamp=datetime(2026, 5, 19, 2, 40, tzinfo=UTC),
+    )
+    calls.clear()
+
+    supersede_memory_fact(
+        root=tmp_path,
+        fact_id="old-fact",
+        new_fact_id="new-fact",
+        statement="New fact.",
+        reason="Updated for test.",
+        source="test",
+        confidence="high",
+        timestamp=datetime(2026, 5, 19, 2, 45, tzinfo=UTC),
+    )
+
+    assert calls == [
+        ("fact", "old-fact.toml"),
+        ("fact", "new-fact.toml"),
+        ("correction", "fact_superseded"),
+    ]
+

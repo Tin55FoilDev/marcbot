@@ -827,3 +827,18 @@ transactions. If SQLite sync fails after a file write, the command raises a
 clear error and the full `memory sqlite import` command can rebuild the SQLite
 view from file memory.
 
+## Implemented fact supersession SQLite sync
+
+Memory fact supersession now uses file-first SQLite sync.
+
+When `supersede_memory_fact` updates the old fact TOML file, MarcBot upserts the
+old fact row into SQLite with superseded metadata. When it creates the new fact
+TOML file, MarcBot upserts the new active fact row into SQLite. The centralized
+correction append helper then syncs the fact-superseded correction row into
+SQLite.
+
+The file updates and correction append remain the authoritative memory
+transactions. If SQLite sync fails after a file write, the command raises a
+clear error and the full `memory sqlite import` command can rebuild the SQLite
+view from file memory.
+

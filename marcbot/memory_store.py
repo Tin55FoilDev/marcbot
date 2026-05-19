@@ -1017,6 +1017,7 @@ def supersede_memory_fact(
     old_data["superseded_by"] = safe_new_id
     old_data["superseded_reason"] = _validate_nonempty_text(reason, "reason")
     _write_simple_toml(old_path, old_data)
+    _sync_memory_fact_to_sqlite_if_available(fact_path=old_path)
 
     new_values = {
         "id": safe_new_id,
@@ -1037,6 +1038,7 @@ def supersede_memory_fact(
         new_values["details"] = new_details
 
     _write_simple_toml(new_path, new_values)
+    _sync_memory_fact_to_sqlite_if_available(fact_path=new_path)
 
     correction = {
         "timestamp": timestamp_text,
