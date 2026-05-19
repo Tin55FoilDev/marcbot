@@ -1056,3 +1056,145 @@ def test_format_memory_status_message_includes_sqlite_section(tmp_path: Path) ->
     assert "- database:" in message
     assert "Provider contact: no" in message
 
+
+
+def test_add_memory_event_syncs_sqlite_when_available(monkeypatch, tmp_path: Path) -> None:
+    from marcbot.memory_store import add_memory_event
+
+    calls = []
+
+    def fake_sync_memory_event_to_sqlite_if_available(*, event, source_file, source_line):
+        calls.append(
+            {
+                "event": event,
+                "source_file": source_file,
+                "source_line": source_line,
+            }
+        )
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_event_to_sqlite_if_available",
+        fake_sync_memory_event_to_sqlite_if_available,
+    )
+
+    result = add_memory_event(
+        root=tmp_path,
+        event_type="workflow_completed",
+        summary="Workflow completed.",
+        source="test",
+        confidence="high",
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["event"].summary == "Workflow completed."
+    assert calls[0]["source_file"] == result.path
+    assert calls[0]["source_line"] == 1
+
+
+def test_add_memory_event_sqlite_sync_source_line_increments(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from marcbot.memory_store import add_memory_event
+
+    source_lines = []
+
+    def fake_sync_memory_event_to_sqlite_if_available(*, event, source_file, source_line):
+        source_lines.append(source_line)
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_event_to_sqlite_if_available",
+        fake_sync_memory_event_to_sqlite_if_available,
+    )
+
+    add_memory_event(
+        root=tmp_path,
+        event_type="workflow_completed",
+        summary="First.",
+        source="test",
+        confidence="high",
+    )
+    add_memory_event(
+        root=tmp_path,
+        event_type="workflow_completed",
+        summary="Second.",
+        source="test",
+        confidence="high",
+    )
+
+    assert source_lines == [1, 2]
+
+
+def test_sqlite_event_sync_skips_when_database_missing(monkeypatch, tmp_path: Path) -> None:
+    from marcbot.memory_store import (
+        MemoryEvent,
+        _sync_memory_event_to_sqlite_if_available,
+    )
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return False
+
+    def fail_insert(**kwargs):
+        raise AssertionError("insert should not be called")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "insert_memory_event_row", fail_insert)
+
+    event = MemoryEvent(
+        timestamp="2026-05-19T01:30:00+00:00",
+        type="workflow_completed",
+        summary="Workflow completed.",
+        source="test",
+        confidence="high",
+    )
+
+    _sync_memory_event_to_sqlite_if_available(
+        event=event,
+        source_file=tmp_path / "events" / "2026-05.jsonl",
+        source_line=1,
+    )
+
+
+def test_sqlite_event_sync_raises_clear_error(monkeypatch, tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_store import (
+        MemoryEvent,
+        _sync_memory_event_to_sqlite_if_available,
+    )
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return True
+
+    def fail_insert(**kwargs):
+        raise ValueError("boom")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "insert_memory_event_row", fail_insert)
+
+    event = MemoryEvent(
+        timestamp="2026-05-19T01:30:00+00:00",
+        type="workflow_completed",
+        summary="Workflow completed.",
+        source="test",
+        confidence="high",
+    )
+
+    with pytest.raises(RuntimeError, match="SQLite memory event sync failed: boom"):
+        _sync_memory_event_to_sqlite_if_available(
+            event=event,
+            source_file=tmp_path / "events" / "2026-05.jsonl",
+            source_line=1,
+        )

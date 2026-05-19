@@ -395,8 +395,19 @@ def add_memory_event(
     )
 
     path = _event_path_for_timestamp(root, event.timestamp)
+    source_line = 1
+    if path.is_file():
+        with path.open(encoding="utf-8") as existing_file:
+            source_line = sum(1 for line in existing_file if line.strip()) + 1
+
     with path.open("a", encoding="utf-8") as file_obj:
         file_obj.write(json.dumps(event.to_dict(), sort_keys=True) + "\n")
+
+    _sync_memory_event_to_sqlite_if_available(
+        event=event,
+        source_file=path,
+        source_line=source_line,
+    )
 
     return MemoryEventAddResult(path=path, event=event)
 
@@ -1737,4 +1748,27 @@ def format_memory_search_results(
 
     lines.append("Provider contact: no")
     return "\n".join(lines)
+
+
+def _sync_memory_event_to_sqlite_if_available(
+    *,
+    event: MemoryEvent,
+    source_file: Path,
+    source_line: int,
+) -> None:
+    """Sync one appended memory event to SQLite when the database exists."""
+    try:
+        from marcbot.memory_sqlite import DEFAULT_MEMORY_DB_PATH, insert_memory_event_row
+
+        if not DEFAULT_MEMORY_DB_PATH.is_file():
+            return
+
+        insert_memory_event_row(
+            event=event,
+            source_file=source_file,
+            source_line=source_line,
+            database_path=DEFAULT_MEMORY_DB_PATH,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"SQLite memory event sync failed: {exc}") from exc
 

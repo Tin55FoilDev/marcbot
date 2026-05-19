@@ -457,3 +457,16 @@ The helper:
 - does not switch runtime reads or writes to SQLite
 
 This is preparation for wiring file-first event writes to SQLite sync.
+
+## Implemented S9 event-write SQLite sync
+
+Memory event writes now use file-first SQLite sync.
+
+When `add_memory_event` appends an event to the JSONL file, it then checks
+whether the SQLite database exists. If the database exists, MarcBot inserts the
+single appended event row into SQLite using the event source file and source
+line. If the database does not exist, SQLite sync is skipped.
+
+The file write remains the authoritative memory transaction. If SQLite sync
+fails after the file write, the command raises a clear error and the full
+`memory sqlite import` command can rebuild the SQLite view from file memory.
