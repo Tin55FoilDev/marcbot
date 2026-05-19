@@ -20,6 +20,14 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.5 - SQLite incremental memory sync baseline
+
+- Completed SQLite incremental sync for current memory write paths.
+- File memory remains the source of truth; SQLite remains an indexed/queryable view.
+- Added validated incremental sync for events, summaries, facts, proposals, and corrections.
+- Kept provider contact disabled for memory status, import, validation, and sync operations.
+
+
 ### Documentation
 
 ### Changed

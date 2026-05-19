@@ -4,7 +4,7 @@ MarcBot is Marc's personal-only Telegram bot and automation project.
 
 It is intended to replace the reliable subset of OpenClaw workflows with a smaller, safer, more testable system that Marc can maintain over time.
 
-Current baseline: **MarcBot 0.3.4**.
+Current baseline: **MarcBot 0.3.5**.
 
 Project direction: see `docs/PROJECT_DIRECTION.md` for the long-term target: a personal Telegram-facing OpenClaw replacement for chat, commands, workflows, local models, and frontier model profiles.
 
@@ -65,7 +65,7 @@ MarcBot currently includes:
 
 ## Session restart support
 
-MarcBot 0.3.4 adds source-monitor artifact visibility, safe artifact IDs, bounded Telegram artifact retrieval, and CLI-only latest-report summarization.
+MarcBot 0.3.5 adds source-monitor artifact visibility, safe artifact IDs, bounded Telegram artifact retrieval, and CLI-only latest-report summarization.
 
 Important files/commands:
 
