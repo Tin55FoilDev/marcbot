@@ -481,3 +481,19 @@ root:
 This prevents tests, temporary memory roots, and ad-hoc imports from polluting
 the production SQLite database. Temporary roots remain file-only unless a test
 explicitly calls SQLite helpers with a temporary database path.
+
+## Implemented incremental summary row helper
+
+MarcBot now has a SQLite helper for inserting or replacing one memory summary
+row in the imported SQLite view.
+
+The helper:
+
+- initializes the SQLite schema if needed
+- reads one Markdown summary file
+- parses summary metadata and body
+- upserts one SQLite row by summary filename
+- does not change file memory
+- does not switch runtime reads or writes to SQLite
+
+This prepares summary writes for file-first SQLite sync.

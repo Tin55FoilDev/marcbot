@@ -466,3 +466,103 @@ def test_insert_memory_event_row_rejects_bad_source_line(tmp_path: Path) -> None
             source_line=0,
             database_path=tmp_path / "memory.sqlite3",
         )
+
+
+def test_upsert_memory_summary_row_inserts_summary(tmp_path: Path) -> None:
+    import sqlite3
+
+    from marcbot.memory_sqlite import upsert_memory_summary_row
+
+    db_path = tmp_path / "memory.sqlite3"
+    summary_path = tmp_path / "summaries" / "test-summary.md"
+    summary_path.parent.mkdir()
+    summary_path.write_text(
+        "---\n"
+        'title: "Test summary"\n'
+        'created_at: "2026-05-19T01:30:00+00:00"\n'
+        'source: "test"\n'
+        'project: "marcbot-memory"\n'
+        "---\n"
+        "# Test summary\n\n"
+        "Body text.\n",
+        encoding="utf-8",
+    )
+
+    inserted = upsert_memory_summary_row(
+        summary_path=summary_path,
+        database_path=db_path,
+        imported_at="2026-05-19T01:31:00+00:00",
+    )
+
+    assert inserted is True
+
+    with sqlite3.connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT name, title, project, source, created_at, body, source_file
+            FROM memory_summaries
+            """
+        ).fetchone()
+
+    assert row[0] == "test-summary.md"
+    assert row[1] == "Test summary"
+    assert row[2] == "marcbot-memory"
+    assert row[3] == "test"
+    assert row[4] == "2026-05-19T01:30:00+00:00"
+    assert row[5] == "# Test summary\n\nBody text."
+    assert row[6].endswith("test-summary.md")
+
+
+def test_upsert_memory_summary_row_replaces_existing_summary(tmp_path: Path) -> None:
+    import sqlite3
+
+    from marcbot.memory_sqlite import upsert_memory_summary_row
+
+    db_path = tmp_path / "memory.sqlite3"
+    summary_path = tmp_path / "summaries" / "test-summary.md"
+    summary_path.parent.mkdir()
+    summary_path.write_text(
+        "---\n"
+        'title: "Old title"\n'
+        'created_at: "2026-05-19T01:30:00+00:00"\n'
+        'source: "test"\n'
+        "---\n"
+        "Old body.\n",
+        encoding="utf-8",
+    )
+
+    upsert_memory_summary_row(summary_path=summary_path, database_path=db_path)
+
+    summary_path.write_text(
+        "---\n"
+        'title: "New title"\n'
+        'created_at: "2026-05-19T01:30:00+00:00"\n'
+        'source: "test"\n'
+        "---\n"
+        "New body.\n",
+        encoding="utf-8",
+    )
+
+    upsert_memory_summary_row(summary_path=summary_path, database_path=db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT title, body
+            FROM memory_summaries
+            """
+        ).fetchall()
+
+    assert rows == [("New title", "New body.")]
+
+
+def test_upsert_memory_summary_row_rejects_missing_file(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_sqlite import upsert_memory_summary_row
+
+    with pytest.raises(FileNotFoundError, match="memory summary file not found"):
+        upsert_memory_summary_row(
+            summary_path=tmp_path / "missing.md",
+            database_path=tmp_path / "memory.sqlite3",
+        )

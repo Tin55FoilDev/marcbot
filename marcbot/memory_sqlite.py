@@ -962,3 +962,60 @@ def insert_memory_event_row(
 
     return cursor.rowcount == 1
 
+
+
+def upsert_memory_summary_row(
+    *,
+    summary_path: Path,
+    database_path: Path = DEFAULT_MEMORY_DB_PATH,
+    imported_at: str | None = None,
+) -> bool:
+    """Insert or replace one memory summary row in SQLite.
+
+    Returns True after the summary row is present.
+    """
+    if not summary_path.is_file():
+        raise FileNotFoundError(f"memory summary file not found: {summary_path}")
+
+    initialize_memory_sqlite(path=database_path)
+    row_imported_at = imported_at or _utc_now_text()
+    text = summary_path.read_text(encoding="utf-8")
+    metadata = _parse_summary_metadata(text)
+
+    with _connect(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO memory_summaries(
+                name,
+                title,
+                project,
+                source,
+                created_at,
+                body,
+                source_file,
+                imported_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                title = excluded.title,
+                project = excluded.project,
+                source = excluded.source,
+                created_at = excluded.created_at,
+                body = excluded.body,
+                source_file = excluded.source_file,
+                imported_at = excluded.imported_at
+            """,
+            (
+                summary_path.name,
+                metadata.get("title", summary_path.stem),
+                metadata.get("project"),
+                metadata.get("source", "unknown"),
+                metadata.get("created_at", "unknown"),
+                _summary_body(text),
+                str(summary_path),
+                row_imported_at,
+            ),
+        )
+        connection.commit()
+
+    return True
