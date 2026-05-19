@@ -1780,3 +1780,71 @@ def test_supersede_memory_fact_syncs_old_new_fact_rows_before_correction(
         ("correction", "fact_superseded"),
     ]
 
+
+def test_approve_memory_proposal_syncs_proposal_fact_and_correction(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_proposal, approve_memory_proposal
+
+    calls = []
+
+    def fake_sync_memory_proposal_to_sqlite_if_available(*, proposal_path):
+        calls.append(("proposal", proposal_path.name))
+
+    def fake_sync_memory_fact_to_sqlite_if_available(*, fact_path):
+        calls.append(("fact", fact_path.name))
+
+    def fake_append_memory_correction(*, root, timestamp, correction):
+        calls.append(("correction", correction["type"]))
+        return root / "corrections" / "2026-05.jsonl"
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_proposal_to_sqlite_if_available",
+        fake_sync_memory_proposal_to_sqlite_if_available,
+    )
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_fact_to_sqlite_if_available",
+        fake_sync_memory_fact_to_sqlite_if_available,
+    )
+    monkeypatch.setattr(
+        memory_store,
+        "_append_memory_correction",
+        fake_append_memory_correction,
+    )
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        proposed_type="fact",
+        proposed_statement="A proposed fact.",
+        source="test",
+        rationale="Test rationale.",
+        risk_level="low",
+        timestamp=datetime(2026, 5, 19, 3, 0, tzinfo=UTC),
+    )
+    calls.clear()
+
+    approve_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        source="test",
+        review_reason="Approved for test.",
+        fact_id="approved-test-fact",
+        category="test",
+        confidence="high",
+        timestamp=datetime(2026, 5, 19, 3, 5, tzinfo=UTC),
+    )
+
+    assert calls == [
+        ("fact", "approved-test-fact.toml"),
+        ("proposal", "test-proposal.json"),
+        ("correction", "proposal_approved"),
+    ]
+

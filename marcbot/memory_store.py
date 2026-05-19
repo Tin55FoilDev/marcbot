@@ -1525,6 +1525,7 @@ def approve_memory_proposal(
         path=proposal_path,
     )
     _write_memory_proposal(proposal_path, approved)
+    _sync_memory_proposal_to_sqlite_if_available(proposal_path=proposal_path)
 
     correction = {
         "timestamp": timestamp_text,

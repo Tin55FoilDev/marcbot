@@ -842,3 +842,18 @@ transactions. If SQLite sync fails after a file write, the command raises a
 clear error and the full `memory sqlite import` command can rebuild the SQLite
 view from file memory.
 
+## Implemented proposal approval SQLite sync
+
+Memory proposal approval now uses file-first SQLite sync.
+
+When `approve_memory_proposal` approves a proposal, MarcBot creates the approved
+fact through `add_memory_fact`, which syncs the new fact row into SQLite. MarcBot
+then writes the approved proposal JSON file and upserts the approved proposal row
+into SQLite. The centralized correction append helper then syncs the
+proposal-approved correction row into SQLite.
+
+The file writes and correction append remain the authoritative memory
+transactions. If SQLite sync fails after a file write, the command raises a
+clear error and the full `memory sqlite import` command can rebuild the SQLite
+view from file memory.
+
