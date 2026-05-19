@@ -1356,3 +1356,63 @@ def test_memory_status_command_is_registered() -> None:
     }
 
     assert "memory_status" in command_names
+
+def test_memory_events_command_authorized_replies(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_memory_event_list",
+        lambda limit: f"MarcBot memory events\nLimit: {limit}",
+    )
+
+    asyncio.run(telegram_bot.memory_events_command(update, context))
+
+    assert message.replies == ["MarcBot memory events\nLimit: 8"]
+
+
+def test_memory_events_command_rejects_unauthorized() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=999),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_events_command(update, context))
+
+    assert message.replies
+

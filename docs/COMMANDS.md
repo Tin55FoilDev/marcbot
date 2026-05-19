@@ -475,3 +475,4 @@ with clear success boundaries.
 Automatic memory writes are limited to low-risk events. Facts, proposal review,
 fact correction, and security-sensitive memory changes remain explicit CLI
 operations.
+| `/memory_events` | Show recent local memory events. | Read-only; provider-contact-free. |

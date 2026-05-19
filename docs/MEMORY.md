@@ -1126,3 +1126,14 @@ The app-level backup archive also includes `/srv/marcbot/memory`.
 The backup completion event is recorded after archive creation, so that specific
 event is included in a later backup rather than the archive it describes. This
 avoids recording a successful backup before the backup has actually completed.
+
+## Telegram read-only memory events
+
+MarcBot now exposes recent memory events through Telegram with:
+
+    /memory_events
+
+This command is read-only, limited to authorized Telegram chats, and shows a
+compact recent event list. It does not search memory, write memory, approve
+proposals, correct facts, or contact providers.
+
