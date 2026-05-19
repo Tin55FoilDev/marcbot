@@ -355,3 +355,89 @@ and whether the current imported view validates against file memory.
 
 File memory remains the source of truth.
 
+
+## Planned production SQLite sync model
+
+SQLite should eventually stay current as memory is written, but not by running a
+full rebuild import after every memory write.
+
+The preferred production model is file-first incremental sync:
+
+1. Write the file-memory record first.
+2. If the file write succeeds, update SQLite for that specific record.
+3. If the SQLite update fails, do not remove or rewrite the file-memory record.
+4. Surface the SQLite failure clearly.
+5. Keep full `memory sqlite import` as a rebuild/recovery command.
+6. Keep `memory sqlite validate` as the drift detection command.
+
+## Source of truth
+
+Until a future milestone explicitly changes this:
+
+    file memory remains the source of truth
+    SQLite remains an indexed/queryable view
+
+This means a file write is the authoritative memory transaction.
+
+## Why not full import after every write?
+
+Running a full import after each memory write is simple but not ideal:
+
+- it is inefficient as memory grows
+- it rewrites unrelated tables
+- it creates more lock/contention opportunities
+- it makes small writes slower
+- it hides which specific record caused a sync issue
+
+Full import remains useful for rebuilds, recovery, migrations, and validation,
+but not as the normal per-write sync mechanism.
+
+## Incremental sync order
+
+For each memory write, the intended order is:
+
+    write file memory
+    sync affected SQLite row or rows
+    optionally validate narrow expectations
+
+The first incremental sync target should be events because events are append-only
+and are already produced by low-risk automatic workflows.
+
+## Phase order
+
+Suggested implementation order:
+
+1. Add SQLite helper to insert one event row from an event object/source metadata.
+2. Add tests for event-row insertion and duplicate-safe behavior.
+3. Wire `add_memory_event` to attempt SQLite sync after the JSONL append.
+4. Keep the full import command available.
+5. Validate that automatic workflow events appear in SQLite without a full import.
+6. Extend the same pattern later to summaries.
+7. Extend later to facts/proposals/corrections only after correction semantics are
+   carefully designed.
+
+## Failure behavior
+
+The first version should be strict:
+
+- if the file-memory write succeeds but SQLite sync fails, the command should
+  return an error
+- the file record remains present
+- `memory sqlite import` can repair the SQLite view
+- the error should be visible rather than silent
+
+This matches MarcBot's preference for stable, testable, explicit behavior.
+
+A future version may allow best-effort SQLite sync for selected low-risk
+scheduled workflows, but only if that behavior is documented and tested.
+
+## Drift handling
+
+If validation reports SQLite drift:
+
+    python -m marcbot memory sqlite import
+    python -m marcbot memory sqlite validate
+
+should repair and confirm the imported view.
+
+Drift is not a data-loss condition as long as file memory is intact.
