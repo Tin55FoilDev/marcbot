@@ -1,3 +1,21 @@
+## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
+
+MarcBot 0.3.4 captures the memory automation and read-only Telegram visibility baseline.
+
+Highlights:
+
+- documented the automatic memory integration policy
+- added an approved automatic workflow memory helper
+- migrated the weather-report workflow to the approved helper
+- added automatic memory events for daily status report generation and Telegram send
+- added automatic memory events for app-level backup completion
+- included `/srv/marcbot/memory` in app-level backups
+- added read-only Telegram memory commands:
+  - `/memory_events`
+  - `/memory_facts`
+- alphabetized Telegram `/help`
+- preserved the provider-contact-free memory boundary
+
 # Changelog
 
 ## Unreleased
