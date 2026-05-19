@@ -482,3 +482,16 @@ operations.
 
 The Telegram `/help` command lists commands alphabetically by command name so the
 growing command list remains easier to scan.
+
+## SQLite memory CLI commands
+
+SQLite memory commands:
+
+    python -m marcbot memory sqlite status
+    python -m marcbot memory sqlite init
+    python -m marcbot memory sqlite import
+    python -m marcbot memory sqlite counts
+    python -m marcbot memory sqlite validate
+
+These commands are CLI-only and provider-contact-free. File memory remains the
+source of truth.

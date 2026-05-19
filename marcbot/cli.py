@@ -30,6 +30,13 @@ from marcbot.llm_file_summary import (
 )
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
+from marcbot.memory_sqlite import (
+    format_memory_sqlite_counts,
+    format_memory_sqlite_status,
+    format_memory_sqlite_validation,
+    import_file_memory_to_sqlite,
+    initialize_memory_sqlite,
+)
 from marcbot.memory_store import (
     add_memory_event,
     add_memory_fact,
@@ -388,6 +395,34 @@ def build_parser() -> argparse.ArgumentParser:
     memory_subparsers = memory_parser.add_subparsers(dest="memory_command")
     memory_subparsers.add_parser("init", help="initialize local memory store")
     memory_subparsers.add_parser("status", help="show local memory store status")
+    memory_sqlite_parser = memory_subparsers.add_parser(
+        "sqlite",
+        help="manage imported SQLite memory view",
+    )
+    memory_sqlite_subparsers = memory_sqlite_parser.add_subparsers(
+        dest="memory_sqlite_command",
+    )
+    memory_sqlite_subparsers.add_parser(
+        "status",
+        help="show SQLite memory database status",
+    )
+    memory_sqlite_subparsers.add_parser(
+        "init",
+        help="initialize SQLite memory database schema",
+    )
+    memory_sqlite_subparsers.add_parser(
+        "import",
+        help="import file memory into SQLite",
+    )
+    memory_sqlite_subparsers.add_parser(
+        "counts",
+        help="show imported SQLite memory counts",
+    )
+    memory_sqlite_subparsers.add_parser(
+        "validate",
+        help="validate SQLite import against file memory",
+    )
+
     memory_search_parser = memory_subparsers.add_parser(
         "search",
         help="search local memory files",
@@ -1085,6 +1120,25 @@ def main(argv: list[str] | None = None) -> int:
             if args.memory_command == "status":
                 print(format_memory_status_message())
                 return 0
+            if args.memory_command == "sqlite":
+                if args.memory_sqlite_command == "status":
+                    print(format_memory_sqlite_status())
+                    return 0
+                if args.memory_sqlite_command == "init":
+                    result = initialize_memory_sqlite()
+                    print(result.message)
+                    return 0
+                if args.memory_sqlite_command == "import":
+                    result = import_file_memory_to_sqlite()
+                    print(result.message)
+                    return 0
+                if args.memory_sqlite_command == "counts":
+                    print(format_memory_sqlite_counts())
+                    return 0
+                if args.memory_sqlite_command == "validate":
+                    print(format_memory_sqlite_validation())
+                    return 0
+                parser.error("memory sqlite requires a subcommand")
             if args.memory_command == "search":
                 print(format_memory_search_results(args.query, limit=args.limit))
                 return 0

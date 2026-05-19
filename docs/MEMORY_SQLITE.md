@@ -331,3 +331,16 @@ The validation result reports file counts, SQLite counts, per-table OK/MISMATCH,
 overall validity, and provider-contact-free status.
 
 File memory remains the source of truth.
+
+## Implemented S5 SQLite CLI commands
+
+MarcBot now exposes controlled SQLite memory commands:
+
+    python -m marcbot memory sqlite status
+    python -m marcbot memory sqlite init
+    python -m marcbot memory sqlite import
+    python -m marcbot memory sqlite counts
+    python -m marcbot memory sqlite validate
+
+These commands keep file memory as the source of truth. SQLite remains an
+imported/indexed view. Commands are CLI-only and provider-contact-free.

@@ -1639,3 +1639,96 @@ def test_daily_status_report_send_records_memory_event(capsys, monkeypatch, tmp_
     assert calls[0]["event_type"] == "report_sent"
     assert calls[0]["project"] == "daily-status-report"
     assert calls[0]["related_files"] == (report_path,)
+
+def test_memory_sqlite_status_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_sqlite_status",
+        lambda: "MarcBot memory SQLite\nProvider contact: no",
+    )
+
+    result = cli.main(["memory", "sqlite", "status"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory SQLite\nProvider contact: no\n"
+
+
+def test_memory_sqlite_init_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_sqlite import MemorySqliteInitResult
+
+    monkeypatch.setattr(
+        cli,
+        "initialize_memory_sqlite",
+        lambda: MemorySqliteInitResult(path=tmp_path / "memory.sqlite3", schema_version=1),
+    )
+
+    result = cli.main(["memory", "sqlite", "init"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory SQLite initialized:" in captured.out
+    assert "schema version 1" in captured.out
+
+
+def test_memory_sqlite_import_command(capsys, monkeypatch, tmp_path) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_sqlite import MemorySqliteImportResult
+
+    monkeypatch.setattr(
+        cli,
+        "import_file_memory_to_sqlite",
+        lambda: MemorySqliteImportResult(
+            path=tmp_path / "memory.sqlite3",
+            source_root=tmp_path / "memory",
+            event_count=1,
+            fact_count=2,
+            summary_count=3,
+            proposal_count=4,
+            correction_count=5,
+        ),
+    )
+
+    result = cli.main(["memory", "sqlite", "import"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory SQLite import complete:" in captured.out
+    assert "events=1" in captured.out
+    assert "corrections=5" in captured.out
+
+
+def test_memory_sqlite_counts_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_sqlite_counts",
+        lambda: "MarcBot memory SQLite counts\nProvider contact: no",
+    )
+
+    result = cli.main(["memory", "sqlite", "counts"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory SQLite counts\nProvider contact: no\n"
+
+
+def test_memory_sqlite_validate_command(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_sqlite_validation",
+        lambda: "MarcBot memory SQLite validation\nOverall: valid\nProvider contact: no",
+    )
+
+    result = cli.main(["memory", "sqlite", "validate"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory SQLite validation" in captured.out
+    assert "Overall: valid" in captured.out
