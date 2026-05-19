@@ -1258,6 +1258,25 @@ def _write_memory_proposal(path: Path, proposal: MemoryProposal) -> None:
     )
 
 
+def _sync_memory_proposal_to_sqlite_if_available(*, proposal_path: Path) -> None:
+    """Sync one real memory proposal to SQLite when the database exists."""
+    if not _path_is_under(MEMORY_ROOT, proposal_path):
+        return
+
+    try:
+        from marcbot.memory_sqlite import DEFAULT_MEMORY_DB_PATH, upsert_memory_proposal_row
+
+        if not DEFAULT_MEMORY_DB_PATH.is_file():
+            return
+
+        upsert_memory_proposal_row(
+            proposal_path=proposal_path,
+            database_path=DEFAULT_MEMORY_DB_PATH,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"SQLite memory proposal sync failed: {exc}") from exc
+
+
 def add_memory_proposal(
     *,
     proposal_id: str,
@@ -1298,6 +1317,7 @@ def add_memory_proposal(
         path=path,
     )
     _write_memory_proposal(path, proposal)
+    _sync_memory_proposal_to_sqlite_if_available(proposal_path=path)
 
     return MemoryProposalAddResult(path=path, proposal=proposal)
 
@@ -1396,6 +1416,7 @@ def reject_memory_proposal(
         path=path,
     )
     _write_memory_proposal(path, rejected)
+    _sync_memory_proposal_to_sqlite_if_available(proposal_path=path)
 
     return MemoryProposalRejectResult(path=path, proposal_id=safe_id)
 

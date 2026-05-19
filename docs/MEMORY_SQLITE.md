@@ -770,3 +770,18 @@ The helper:
 - does not switch runtime reads or writes to SQLite
 
 This prepares proposal add/reject paths for file-first SQLite sync.
+
+## Implemented proposal add/reject SQLite sync
+
+Memory proposal add and reject now use file-first SQLite sync.
+
+When `add_memory_proposal` writes a proposal JSON file, it then checks whether
+the proposal path is under the real memory root and whether the SQLite database
+exists. If both are true, MarcBot upserts that proposal row into SQLite.
+
+When `reject_memory_proposal` updates a proposal JSON file, it upserts the
+updated rejected proposal row into SQLite.
+
+Proposal approval remains separate because approval also creates a fact and may
+interact with correction records.
+

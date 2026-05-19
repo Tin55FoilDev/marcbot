@@ -1471,3 +1471,120 @@ def test_sqlite_correction_sync_raises_clear_error(monkeypatch) -> None:
             source_file=Path("/srv/marcbot/memory/corrections/2026-05.jsonl"),
             source_line=1,
         )
+
+
+def test_add_memory_proposal_syncs_sqlite_when_available(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from marcbot.memory_store import add_memory_proposal
+
+    calls = []
+
+    def fake_sync_memory_proposal_to_sqlite_if_available(*, proposal_path):
+        calls.append(proposal_path)
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_proposal_to_sqlite_if_available",
+        fake_sync_memory_proposal_to_sqlite_if_available,
+    )
+
+    result = add_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        proposed_type="fact",
+        proposed_statement="A proposed fact.",
+        source="test",
+        rationale="Test rationale.",
+        risk_level="low",
+    )
+
+    assert calls == [result.path]
+
+
+def test_reject_memory_proposal_syncs_sqlite_when_available(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from marcbot.memory_store import add_memory_proposal, reject_memory_proposal
+
+    calls = []
+
+    def fake_sync_memory_proposal_to_sqlite_if_available(*, proposal_path):
+        calls.append(proposal_path)
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_proposal_to_sqlite_if_available",
+        fake_sync_memory_proposal_to_sqlite_if_available,
+    )
+
+    added = add_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        proposed_type="fact",
+        proposed_statement="A proposed fact.",
+        source="test",
+        rationale="Test rationale.",
+        risk_level="low",
+    )
+    reject_memory_proposal(
+        root=tmp_path,
+        proposal_id="test-proposal",
+        source="test",
+        reason="Rejected for test.",
+    )
+
+    assert calls == [added.path, added.path]
+
+
+def test_sqlite_proposal_sync_skips_non_default_memory_root(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from marcbot.memory_store import _sync_memory_proposal_to_sqlite_if_available
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return True
+
+    def fail_upsert(**kwargs):
+        raise AssertionError("temporary proposal roots must not sync to real SQLite")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "upsert_memory_proposal_row", fail_upsert)
+
+    _sync_memory_proposal_to_sqlite_if_available(
+        proposal_path=tmp_path / "pending" / "test-proposal.json",
+    )
+
+
+def test_sqlite_proposal_sync_raises_clear_error(monkeypatch) -> None:
+    import pytest
+
+    from marcbot.memory_store import _sync_memory_proposal_to_sqlite_if_available
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return True
+
+    def fail_upsert(**kwargs):
+        raise ValueError("boom")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "upsert_memory_proposal_row", fail_upsert)
+
+    with pytest.raises(RuntimeError, match="SQLite memory proposal sync failed: boom"):
+        _sync_memory_proposal_to_sqlite_if_available(
+            proposal_path=Path("/srv/marcbot/memory/pending/test-proposal.json"),
+        )
+
