@@ -1148,3 +1148,6 @@ active facts. It does not search memory, show corrections, expose rejected or
 superseded facts, write memory, approve proposals, correct facts, or contact
 providers.
 
+## SQLite memory design
+
+SQLite migration planning is documented in `docs/MEMORY_SQLITE.md`.

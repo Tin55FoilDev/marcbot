@@ -224,3 +224,5 @@ MarcBot has several design and operations documents. To avoid duplicate or confl
 When updating docs, prefer linking to the authoritative document instead of duplicating detailed command lists, configuration inventories, or roadmap text in multiple places.
 
 - `docs/CHAT_MODE.md` defines the first bounded Telegram chat-mode design target.
+
+Memory SQLite design: see `docs/MEMORY_SQLITE.md`.
