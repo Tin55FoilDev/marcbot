@@ -1475,3 +1475,32 @@ def test_memory_facts_command_rejects_unauthorized() -> None:
 
     assert message.replies
 
+def test_help_command_lists_commands_alphabetically() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.help_command(update, context))
+
+    lines = message.replies[0].splitlines()[1:]
+    commands = [line.split(" ", 1)[0] for line in lines]
+
+    assert commands == sorted(commands)
+

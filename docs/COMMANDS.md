@@ -477,3 +477,8 @@ fact correction, and security-sensitive memory changes remain explicit CLI
 operations.
 | `/memory_events` | Show recent local memory events. | Read-only; provider-contact-free. |
 | `/memory_facts` | Show active local memory facts. | Read-only; provider-contact-free. |
+
+## Telegram help ordering
+
+The Telegram `/help` command lists commands alphabetically by command name so the
+growing command list remains easier to scan.
