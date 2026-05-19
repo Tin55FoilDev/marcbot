@@ -918,8 +918,21 @@ def _append_memory_correction(
     """Append one correction ledger record to file memory."""
     correction_path = _correction_path_for_timestamp(root, timestamp)
     correction_path.parent.mkdir(parents=True, exist_ok=True)
+
+    source_line = 1
+    if correction_path.is_file():
+        with correction_path.open(encoding="utf-8") as existing_file:
+            source_line = sum(1 for line in existing_file if line.strip()) + 1
+
     with correction_path.open("a", encoding="utf-8") as file_obj:
         file_obj.write(json.dumps(correction, sort_keys=True) + "\n")
+
+    _sync_memory_correction_to_sqlite_if_available(
+        correction=correction,
+        source_file=correction_path,
+        source_line=source_line,
+    )
+
     return correction_path
 
 
@@ -1825,4 +1838,33 @@ def _sync_memory_summary_to_sqlite_if_available(*, summary_path: Path) -> None:
         )
     except Exception as exc:
         raise RuntimeError(f"SQLite memory summary sync failed: {exc}") from exc
+
+
+def _sync_memory_correction_to_sqlite_if_available(
+    *,
+    correction: dict[str, object],
+    source_file: Path,
+    source_line: int,
+) -> None:
+    """Sync one real memory correction to SQLite when the database exists."""
+    if not _path_is_under(MEMORY_ROOT, source_file):
+        return
+
+    try:
+        from marcbot.memory_sqlite import (
+            DEFAULT_MEMORY_DB_PATH,
+            insert_memory_correction_row,
+        )
+
+        if not DEFAULT_MEMORY_DB_PATH.is_file():
+            return
+
+        insert_memory_correction_row(
+            correction=correction,
+            source_file=source_file,
+            source_line=source_line,
+            database_path=DEFAULT_MEMORY_DB_PATH,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"SQLite memory correction sync failed: {exc}") from exc
 

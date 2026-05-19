@@ -741,3 +741,16 @@ The helper:
 
 This prepares the centralized correction append helper for file-first SQLite
 sync.
+
+## Implemented correction-write SQLite sync
+
+Correction ledger writes now use file-first SQLite sync.
+
+When `_append_memory_correction` appends a correction JSONL record, it then checks
+whether the correction path is under the real memory root and whether the SQLite
+database exists. If both are true, MarcBot inserts that correction row into
+SQLite using the correction source file and source line.
+
+The file append remains the authoritative memory transaction. If SQLite sync
+fails after the file write, the command raises a clear error and the full
+`memory sqlite import` command can rebuild the SQLite view from file memory.

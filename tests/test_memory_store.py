@@ -1326,3 +1326,148 @@ def test_append_memory_correction_writes_jsonl(tmp_path: Path) -> None:
     assert data["type"] == "test_correction"
     assert data["reason"] == "Test."
 
+
+
+def test_append_memory_correction_syncs_sqlite_when_available(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from marcbot.memory_store import _append_memory_correction
+
+    calls = []
+
+    def fake_sync_memory_correction_to_sqlite_if_available(
+        *,
+        correction,
+        source_file,
+        source_line,
+    ):
+        calls.append(
+            {
+                "correction": correction,
+                "source_file": source_file,
+                "source_line": source_line,
+            }
+        )
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_correction_to_sqlite_if_available",
+        fake_sync_memory_correction_to_sqlite_if_available,
+    )
+
+    correction_path = _append_memory_correction(
+        root=tmp_path,
+        timestamp="2026-05-19T01:45:00+00:00",
+        correction={
+            "timestamp": "2026-05-19T01:45:00+00:00",
+            "type": "test_correction",
+        },
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["correction"]["type"] == "test_correction"
+    assert calls[0]["source_file"] == correction_path
+    assert calls[0]["source_line"] == 1
+
+
+def test_append_memory_correction_sync_source_line_increments(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from marcbot.memory_store import _append_memory_correction
+
+    source_lines = []
+
+    def fake_sync_memory_correction_to_sqlite_if_available(
+        *,
+        correction,
+        source_file,
+        source_line,
+    ):
+        source_lines.append(source_line)
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_correction_to_sqlite_if_available",
+        fake_sync_memory_correction_to_sqlite_if_available,
+    )
+
+    _append_memory_correction(
+        root=tmp_path,
+        timestamp="2026-05-19T01:45:00+00:00",
+        correction={
+            "timestamp": "2026-05-19T01:45:00+00:00",
+            "type": "first",
+        },
+    )
+    _append_memory_correction(
+        root=tmp_path,
+        timestamp="2026-05-19T01:46:00+00:00",
+        correction={
+            "timestamp": "2026-05-19T01:46:00+00:00",
+            "type": "second",
+        },
+    )
+
+    assert source_lines == [1, 2]
+
+
+def test_sqlite_correction_sync_skips_non_default_memory_root(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from marcbot.memory_store import _sync_memory_correction_to_sqlite_if_available
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return True
+
+    def fail_insert(**kwargs):
+        raise AssertionError("temporary correction roots must not sync to real SQLite")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "insert_memory_correction_row", fail_insert)
+
+    _sync_memory_correction_to_sqlite_if_available(
+        correction={
+            "timestamp": "2026-05-19T01:45:00+00:00",
+            "type": "test_correction",
+        },
+        source_file=tmp_path / "corrections" / "2026-05.jsonl",
+        source_line=1,
+    )
+
+
+def test_sqlite_correction_sync_raises_clear_error(monkeypatch) -> None:
+    import pytest
+
+    from marcbot.memory_store import _sync_memory_correction_to_sqlite_if_available
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return True
+
+    def fail_insert(**kwargs):
+        raise ValueError("boom")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "insert_memory_correction_row", fail_insert)
+
+    with pytest.raises(RuntimeError, match="SQLite memory correction sync failed: boom"):
+        _sync_memory_correction_to_sqlite_if_available(
+            correction={
+                "timestamp": "2026-05-19T01:45:00+00:00",
+                "type": "test_correction",
+            },
+            source_file=Path("/srv/marcbot/memory/corrections/2026-05.jsonl"),
+            source_line=1,
+        )
