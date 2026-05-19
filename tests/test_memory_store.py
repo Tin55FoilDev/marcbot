@@ -1303,3 +1303,26 @@ def test_sqlite_summary_sync_raises_clear_error(monkeypatch) -> None:
         _sync_memory_summary_to_sqlite_if_available(
             summary_path=Path("/srv/marcbot/memory/summaries/test-summary.md"),
         )
+
+def test_append_memory_correction_writes_jsonl(tmp_path: Path) -> None:
+    import json
+
+    from marcbot.memory_store import _append_memory_correction
+
+    correction_path = _append_memory_correction(
+        root=tmp_path,
+        timestamp="2026-05-19T01:30:00+00:00",
+        correction={
+            "timestamp": "2026-05-19T01:30:00+00:00",
+            "type": "test_correction",
+            "reason": "Test.",
+        },
+    )
+
+    assert correction_path == tmp_path / "corrections" / "2026-05.jsonl"
+
+    data = json.loads(correction_path.read_text(encoding="utf-8"))
+
+    assert data["type"] == "test_correction"
+    assert data["reason"] == "Test."
+

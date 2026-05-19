@@ -714,3 +714,13 @@ Until a future milestone explicitly changes this:
 
 Runtime reads should not switch to SQLite until incremental sync for all active
 write paths is complete and validated.
+
+## Correction append centralization
+
+Correction JSONL writes are now centralized through a memory-store helper before
+SQLite correction sync is added.
+
+Centralization keeps later SQLite correction sync safer because all correction
+ledger appends can use one hook instead of duplicating sync logic across fact and
+proposal transition functions.
+

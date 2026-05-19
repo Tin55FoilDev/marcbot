@@ -909,6 +909,20 @@ def _correction_path_for_timestamp(root: Path, timestamp: str) -> Path:
     return root / "corrections" / f"{timestamp[:7]}.jsonl"
 
 
+def _append_memory_correction(
+    *,
+    root: Path,
+    timestamp: str,
+    correction: dict[str, object],
+) -> Path:
+    """Append one correction ledger record to file memory."""
+    correction_path = _correction_path_for_timestamp(root, timestamp)
+    correction_path.parent.mkdir(parents=True, exist_ok=True)
+    with correction_path.open("a", encoding="utf-8") as file_obj:
+        file_obj.write(json.dumps(correction, sort_keys=True) + "\n")
+    return correction_path
+
+
 def _memory_fact_from_path(path: Path) -> MemoryFact:
     data = _read_simple_toml(path)
     return MemoryFact(
@@ -991,7 +1005,6 @@ def supersede_memory_fact(
 
     _write_simple_toml(new_path, new_values)
 
-    correction_path = _correction_path_for_timestamp(root, timestamp_text)
     correction = {
         "timestamp": timestamp_text,
         "type": "fact_superseded",
@@ -1001,8 +1014,11 @@ def supersede_memory_fact(
         "source": _validate_nonempty_text(source, "source"),
         "confidence": _validate_confidence(confidence),
     }
-    with correction_path.open("a", encoding="utf-8") as file_obj:
-        file_obj.write(json.dumps(correction, sort_keys=True) + "\n")
+    correction_path = _append_memory_correction(
+        root=root,
+        timestamp=timestamp_text,
+        correction=correction,
+    )
 
     return MemoryFactSupersedeResult(
         old_path=old_path,
@@ -1060,7 +1076,6 @@ def reject_memory_fact(
     data["rejected_source"] = safe_source
     _write_simple_toml(path, data)
 
-    correction_path = _correction_path_for_timestamp(root, timestamp_text)
     correction = {
         "timestamp": timestamp_text,
         "type": "fact_rejected",
@@ -1070,8 +1085,11 @@ def reject_memory_fact(
         "source": safe_source,
         "confidence": safe_confidence,
     }
-    with correction_path.open("a", encoding="utf-8") as file_obj:
-        file_obj.write(json.dumps(correction, sort_keys=True) + "\n")
+    correction_path = _append_memory_correction(
+        root=root,
+        timestamp=timestamp_text,
+        correction=correction,
+    )
 
     return MemoryFactRejectResult(
         path=path,
@@ -1451,7 +1469,6 @@ def approve_memory_proposal(
     )
     _write_memory_proposal(proposal_path, approved)
 
-    correction_path = _correction_path_for_timestamp(root, timestamp_text)
     correction = {
         "timestamp": timestamp_text,
         "type": "proposal_approved",
@@ -1462,8 +1479,11 @@ def approve_memory_proposal(
         "reason": safe_reason,
         "confidence": _validate_confidence(confidence),
     }
-    with correction_path.open("a", encoding="utf-8") as file_obj:
-        file_obj.write(json.dumps(correction, sort_keys=True) + "\n")
+    _append_memory_correction(
+        root=root,
+        timestamp=timestamp_text,
+        correction=correction,
+    )
 
     return MemoryProposalApproveResult(
         proposal_path=proposal_path,
