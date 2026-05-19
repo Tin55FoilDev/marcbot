@@ -1087,7 +1087,7 @@ def test_memory_status_command(capsys, monkeypatch) -> None:
     monkeypatch.setattr(
         cli,
         "format_memory_status_message",
-        lambda: "MarcBot memory\nProvider contact: no",
+        lambda include_sqlite=False: "MarcBot memory\nProvider contact: no",
     )
 
     result = cli.main(["memory", "status"])
@@ -1732,3 +1732,21 @@ def test_memory_sqlite_validate_command(capsys, monkeypatch) -> None:
     assert result == 0
     assert "MarcBot memory SQLite validation" in captured.out
     assert "Overall: valid" in captured.out
+
+def test_memory_status_command_includes_sqlite(capsys, monkeypatch) -> None:
+    import marcbot.cli as cli
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_status_message",
+        lambda include_sqlite=False: (
+            f"MarcBot memory\ninclude_sqlite={include_sqlite}"
+        ),
+    )
+
+    result = cli.main(["memory", "status"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out == "MarcBot memory\ninclude_sqlite=True\n"
+

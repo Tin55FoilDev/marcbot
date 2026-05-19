@@ -1118,7 +1118,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(result.message)
                 return 0
             if args.memory_command == "status":
-                print(format_memory_status_message())
+                print(format_memory_status_message(include_sqlite=True))
                 return 0
             if args.memory_command == "sqlite":
                 if args.memory_sqlite_command == "status":

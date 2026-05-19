@@ -211,9 +211,54 @@ def get_memory_status(root: Path = MEMORY_ROOT) -> MemoryStatus:
     )
 
 
-def format_memory_status_message(root: Path = MEMORY_ROOT) -> str:
+def format_memory_status_message(
+    root: Path = MEMORY_ROOT,
+    include_sqlite: bool = False,
+) -> str:
     """Return a Telegram/CLI friendly memory status message."""
-    return get_memory_status(root=root).format_message()
+    message = get_memory_status(root=root).format_message()
+
+    if not include_sqlite:
+        return message
+
+    try:
+        from marcbot.memory_sqlite import (
+            DEFAULT_MEMORY_DB_PATH,
+            get_memory_sqlite_status,
+            validate_memory_sqlite_import,
+        )
+
+        sqlite_status = get_memory_sqlite_status(path=DEFAULT_MEMORY_DB_PATH)
+        if not sqlite_status.exists:
+            sqlite_lines = [
+                "",
+                "SQLite:",
+                "- database: missing",
+                "- schema version: unknown",
+                "- imported view: not available",
+            ]
+        else:
+            validation = validate_memory_sqlite_import(
+                source_root=root,
+                database_path=DEFAULT_MEMORY_DB_PATH,
+            )
+            imported_status = "valid" if validation.valid else "invalid"
+            sqlite_lines = [
+                "",
+                "SQLite:",
+                "- database: present",
+                f"- schema version: {sqlite_status.schema_version}",
+                f"- imported view: {imported_status}",
+            ]
+    except Exception as exc:
+        sqlite_lines = [
+            "",
+            "SQLite:",
+            "- status: warning",
+            f"- error: {exc}",
+        ]
+
+    return message + "\n" + "\n".join(sqlite_lines)
 
 @dataclass(frozen=True)
 class MemoryEvent:

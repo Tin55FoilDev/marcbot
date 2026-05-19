@@ -344,3 +344,14 @@ MarcBot now exposes controlled SQLite memory commands:
 
 These commands keep file memory as the source of truth. SQLite remains an
 imported/indexed view. Commands are CLI-only and provider-contact-free.
+
+## SQLite visibility in memory status
+
+`python -m marcbot memory status` now includes a passive SQLite section.
+
+The status command does not import, rebuild, or switch memory behavior. It only
+reports whether the SQLite database is present, which schema version is present,
+and whether the current imported view validates against file memory.
+
+File memory remains the source of truth.
+

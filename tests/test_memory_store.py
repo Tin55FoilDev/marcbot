@@ -1032,3 +1032,27 @@ def test_format_memory_search_results(tmp_path: Path) -> None:
     assert "Query: weather" in message
     assert "events/2026-05.jsonl:1:" in message
     assert "Provider contact: no" in message
+
+def test_format_memory_status_message_omits_sqlite_by_default(tmp_path: Path) -> None:
+    from marcbot.memory_store import format_memory_status_message, init_memory_store
+
+    init_memory_store(root=tmp_path)
+
+    message = format_memory_status_message(root=tmp_path)
+
+    assert "MarcBot memory" in message
+    assert "SQLite:" not in message
+
+
+def test_format_memory_status_message_includes_sqlite_section(tmp_path: Path) -> None:
+    from marcbot.memory_store import format_memory_status_message, init_memory_store
+
+    init_memory_store(root=tmp_path)
+
+    message = format_memory_status_message(root=tmp_path, include_sqlite=True)
+
+    assert "MarcBot memory" in message
+    assert "SQLite:" in message
+    assert "- database:" in message
+    assert "Provider contact: no" in message
+

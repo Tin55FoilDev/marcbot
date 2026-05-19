@@ -1151,3 +1151,14 @@ providers.
 ## SQLite memory design
 
 SQLite migration planning is documented in `docs/MEMORY_SQLITE.md`.
+
+## SQLite status visibility
+
+The CLI memory status command now includes passive SQLite visibility:
+
+    python -m marcbot memory status
+
+This reports the SQLite database presence, schema version, and whether the
+imported view validates against file memory. It does not import or switch runtime
+memory behavior.
+
