@@ -277,3 +277,20 @@ Possible future phases:
 - embeddings or LLM-assisted proposal generation
 
 Those are intentionally deferred.
+
+## Implemented S2 schema initialization
+
+MarcBot now includes a SQLite schema initialization module:
+
+    marcbot/memory_sqlite.py
+
+Initial support includes:
+
+- database path definition
+- schema version metadata
+- table creation
+- index creation
+- read-only SQLite status formatting
+- tests for schema creation and idempotency
+
+This does not import file memory yet and does not change runtime memory behavior.
