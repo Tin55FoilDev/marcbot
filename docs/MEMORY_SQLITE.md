@@ -509,3 +509,208 @@ exists. If both are true, MarcBot upserts that summary row into SQLite.
 The file write remains the authoritative memory transaction. If SQLite sync
 fails after the file write, the command raises a clear error and the full
 `memory sqlite import` command can rebuild the SQLite view from file memory.
+
+## Planned SQLite sync for facts, proposals, and corrections
+
+Events and summaries now have file-first incremental SQLite sync. Facts,
+proposals, and corrections need a more careful design because they involve
+durable state transitions.
+
+File memory remains the source of truth.
+
+## Fact sync model
+
+Facts are stored as TOML files under:
+
+    /srv/marcbot/memory/facts
+
+SQLite table:
+
+    memory_facts
+
+Fact writes should use file-first upsert semantics:
+
+1. Write or update the TOML fact file.
+2. If the file path is under the real memory root and SQLite exists, upsert that
+   one fact row into SQLite.
+3. If SQLite sync fails, raise a clear error after the file write.
+4. Repair drift with:
+
+       python -m marcbot memory sqlite import
+       python -m marcbot memory sqlite validate
+
+### Fact add
+
+`add_memory_fact` writes a new TOML fact file.
+
+SQLite sync should upsert the new fact row keyed by fact ID.
+
+Expected result:
+
+    file facts count increases by 1
+    SQLite facts count increases by 1
+    validation remains valid
+
+### Fact supersession
+
+`supersede_memory_fact` changes the old fact and creates a new fact.
+
+SQLite sync should:
+
+1. upsert the old fact row after its status/metadata changes
+2. upsert the new fact row after creation
+3. insert the related correction ledger row
+
+Expected result:
+
+    file fact count increases by 1
+    SQLite fact count increases by 1
+    old fact row status becomes superseded
+    new fact row status becomes active
+    correction count increases by 1
+    validation remains valid
+
+### Fact rejection
+
+`reject_memory_fact` changes an existing fact status.
+
+SQLite sync should:
+
+1. upsert the rejected fact row after its status/metadata changes
+2. insert the related correction ledger row
+
+Expected result:
+
+    file fact count unchanged
+    SQLite fact count unchanged
+    fact row status becomes rejected
+    correction count increases by 1
+    validation remains valid
+
+## Proposal sync model
+
+Proposals are stored as JSON files under:
+
+    /srv/marcbot/memory/pending
+
+SQLite table:
+
+    memory_proposals
+
+Proposal writes should use file-first upsert semantics.
+
+### Proposal add
+
+`add_memory_proposal` writes a pending proposal JSON file.
+
+SQLite sync should upsert that proposal row keyed by proposal ID.
+
+Expected result:
+
+    file proposal count increases by 1
+    SQLite proposal count increases by 1
+    validation remains valid
+
+### Proposal approval
+
+`approve_memory_proposal` changes a proposal status, creates a fact, and writes
+a correction ledger record.
+
+SQLite sync should:
+
+1. upsert the approved proposal row
+2. upsert the created fact row
+3. insert the related correction ledger row
+
+Expected result:
+
+    proposal count unchanged
+    proposal status becomes approved
+    fact count increases by 1
+    correction count increases by 1
+    validation remains valid
+
+### Proposal rejection
+
+`reject_memory_proposal` changes a proposal status and writes a correction
+ledger record.
+
+SQLite sync should:
+
+1. upsert the rejected proposal row
+2. insert the related correction ledger row
+
+Expected result:
+
+    proposal count unchanged
+    proposal status becomes rejected
+    correction count increases by 1
+    validation remains valid
+
+## Correction sync model
+
+Corrections are JSONL records under:
+
+    /srv/marcbot/memory/corrections
+
+SQLite table:
+
+    memory_corrections
+
+Corrections are append-only ledger records. They should use source file plus
+source line duplicate protection, the same pattern as memory events.
+
+Correction sync should:
+
+1. append JSONL correction record to file memory first
+2. insert the one correction row into SQLite if SQLite exists
+3. skip sync for temporary roots outside `/srv/marcbot/memory`
+4. raise a clear error if SQLite sync fails after the file write
+
+Expected result:
+
+    file correction record count increases by 1
+    SQLite correction row count increases by 1
+    validation remains valid
+
+## Recommended implementation order
+
+The safest implementation order is:
+
+1. Add SQLite helper to upsert one fact row from a TOML fact file.
+2. Add SQLite helper to upsert one proposal row from a JSON proposal file.
+3. Add SQLite helper to insert one correction row from JSON data/source metadata.
+4. Wire `add_memory_fact`.
+5. Wire `add_memory_proposal`.
+6. Wire correction append helper, if correction writing is centralized.
+7. Wire fact supersession/rejection.
+8. Wire proposal approval/rejection.
+9. Validate each transition with production-path tests.
+
+Do not implement all transitions in one large patch.
+
+## Centralization requirement
+
+Before wiring correction sync, inspect whether correction JSONL writes are
+centralized. If correction writes are duplicated across multiple functions, first
+refactor them into one helper so SQLite correction sync has a single safe hook.
+
+## Testing requirements
+
+Each transition should have tests that confirm:
+
+- file write still happens first
+- SQLite sync happens only for real `/srv/marcbot/memory` paths
+- temporary roots do not pollute the real SQLite database
+- SQLite drift can be repaired with full import
+- validation remains valid after production-path writes
+
+## Production boundary
+
+Until a future milestone explicitly changes this:
+
+    file memory remains source of truth
+    SQLite remains indexed/queryable view
+
+Runtime reads should not switch to SQLite until incremental sync for all active
+write paths is complete and validated.
