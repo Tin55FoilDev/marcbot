@@ -801,3 +801,15 @@ The helper:
 - does not switch runtime reads or writes to SQLite
 
 This prepares fact add/reject/supersession paths for file-first SQLite sync.
+
+## Implemented fact add SQLite sync
+
+Memory fact add now uses file-first SQLite sync.
+
+When `add_memory_fact` writes a fact TOML file, it then checks whether the fact
+path is under the real memory root and whether the SQLite database exists. If
+both are true, MarcBot upserts that fact row into SQLite.
+
+Fact rejection, supersession, and proposal approval remain separate because they
+involve existing-record state changes and, in some cases, correction records.
+

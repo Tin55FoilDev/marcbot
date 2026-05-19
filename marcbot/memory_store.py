@@ -814,6 +814,7 @@ def add_memory_fact(
         values["details"] = fact.details
 
     _write_simple_toml(path, values)
+    _sync_memory_fact_to_sqlite_if_available(fact_path=path)
     return MemoryFactAddResult(path=path, fact=fact)
 
 
@@ -934,6 +935,25 @@ def _append_memory_correction(
     )
 
     return correction_path
+
+
+def _sync_memory_fact_to_sqlite_if_available(*, fact_path: Path) -> None:
+    """Sync one real memory fact to SQLite when the database exists."""
+    if not _path_is_under(MEMORY_ROOT, fact_path):
+        return
+
+    try:
+        from marcbot.memory_sqlite import DEFAULT_MEMORY_DB_PATH, upsert_memory_fact_row
+
+        if not DEFAULT_MEMORY_DB_PATH.is_file():
+            return
+
+        upsert_memory_fact_row(
+            fact_path=fact_path,
+            database_path=DEFAULT_MEMORY_DB_PATH,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"SQLite memory fact sync failed: {exc}") from exc
 
 
 def _memory_fact_from_path(path: Path) -> MemoryFact:
