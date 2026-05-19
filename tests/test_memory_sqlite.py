@@ -355,3 +355,114 @@ def test_format_memory_sqlite_validation(tmp_path: Path) -> None:
     assert "- events: files=0 sqlite=0 OK" in message
     assert "Overall: valid" in message
     assert "Provider contact: no" in message
+
+
+def test_insert_memory_event_row_inserts_one_event(tmp_path: Path) -> None:
+    import sqlite3
+
+    from marcbot.memory_sqlite import insert_memory_event_row
+    from marcbot.memory_store import MemoryEvent
+
+    db_path = tmp_path / "memory.sqlite3"
+    event = MemoryEvent(
+        timestamp="2026-05-19T01:00:00+00:00",
+        type="workflow_completed",
+        summary="Workflow completed.",
+        source="test",
+        confidence="high",
+        project="test-project",
+        details="Detailed event.",
+        verification="Verified.",
+        related_files=("artifact.md",),
+        related_commands=("python -m marcbot test",),
+    )
+
+    inserted = insert_memory_event_row(
+        event=event,
+        source_file=tmp_path / "events" / "2026-05.jsonl",
+        source_line=1,
+        database_path=db_path,
+        imported_at="2026-05-19T01:01:00+00:00",
+    )
+
+    assert inserted is True
+
+    with sqlite3.connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT timestamp, type, project, summary, source, confidence,
+                   details, verification, related_files_json,
+                   related_commands_json, source_file, source_line
+            FROM memory_events
+            """
+        ).fetchone()
+
+    assert row[0] == "2026-05-19T01:00:00+00:00"
+    assert row[1] == "workflow_completed"
+    assert row[2] == "test-project"
+    assert row[3] == "Workflow completed."
+    assert row[4] == "test"
+    assert row[5] == "high"
+    assert row[6] == "Detailed event."
+    assert row[7] == "Verified."
+    assert row[8] == '["artifact.md"]'
+    assert row[9] == '["python -m marcbot test"]'
+    assert row[10].endswith("2026-05.jsonl")
+    assert row[11] == 1
+
+
+def test_insert_memory_event_row_is_duplicate_safe(tmp_path: Path) -> None:
+    from marcbot.memory_sqlite import get_sqlite_memory_counts, insert_memory_event_row
+    from marcbot.memory_store import MemoryEvent
+
+    db_path = tmp_path / "memory.sqlite3"
+    source_file = tmp_path / "events" / "2026-05.jsonl"
+    event = MemoryEvent(
+        timestamp="2026-05-19T01:00:00+00:00",
+        type="workflow_completed",
+        summary="Workflow completed.",
+        source="test",
+        confidence="high",
+    )
+
+    first = insert_memory_event_row(
+        event=event,
+        source_file=source_file,
+        source_line=1,
+        database_path=db_path,
+    )
+    second = insert_memory_event_row(
+        event=event,
+        source_file=source_file,
+        source_line=1,
+        database_path=db_path,
+    )
+
+    counts = get_sqlite_memory_counts(path=db_path)
+
+    assert first is True
+    assert second is False
+    assert counts["events"] == 1
+
+
+def test_insert_memory_event_row_rejects_bad_source_line(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_sqlite import insert_memory_event_row
+    from marcbot.memory_store import MemoryEvent
+
+    event = MemoryEvent(
+        timestamp="2026-05-19T01:00:00+00:00",
+        type="workflow_completed",
+        summary="Workflow completed.",
+        source="test",
+        confidence="high",
+    )
+
+    with pytest.raises(ValueError, match="source_line must be 1 or greater"):
+        insert_memory_event_row(
+            event=event,
+            source_file=tmp_path / "events" / "2026-05.jsonl",
+            source_line=0,
+            database_path=tmp_path / "memory.sqlite3",
+        )

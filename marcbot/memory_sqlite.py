@@ -86,7 +86,8 @@ CREATE TABLE IF NOT EXISTS memory_events (
     related_commits_json TEXT NOT NULL DEFAULT '[]',
     source_file TEXT NOT NULL,
     source_line INTEGER NOT NULL,
-    imported_at TEXT NOT NULL
+    imported_at TEXT NOT NULL,
+    UNIQUE(source_file, source_line)
 );
 
 CREATE INDEX IF NOT EXISTS idx_memory_events_timestamp
@@ -877,3 +878,74 @@ def format_memory_sqlite_validation(
         source_root=source_root,
         database_path=database_path,
     ).format_message()
+
+
+def insert_memory_event_row(
+    *,
+    event: object,
+    source_file: Path,
+    source_line: int,
+    database_path: Path = DEFAULT_MEMORY_DB_PATH,
+    imported_at: str | None = None,
+) -> bool:
+    """Insert one memory event row into SQLite.
+
+    Returns True if a row was inserted, False if the same source file/line was
+    already present.
+    """
+    if source_line < 1:
+        raise ValueError("source_line must be 1 or greater")
+
+    initialize_memory_sqlite(path=database_path)
+    row_imported_at = imported_at or _utc_now_text()
+
+    with _connect(database_path) as connection:
+        cursor = connection.execute(
+            """
+            INSERT OR IGNORE INTO memory_events(
+                timestamp,
+                type,
+                project,
+                summary,
+                source,
+                confidence,
+                details,
+                cause,
+                resolution,
+                verification,
+                follow_up,
+                related_files_json,
+                related_commands_json,
+                related_artifacts_json,
+                related_commits_json,
+                source_file,
+                source_line,
+                imported_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                str(event.timestamp),
+                str(event.type),
+                event.project,
+                str(event.summary),
+                str(event.source),
+                str(event.confidence),
+                event.details,
+                event.cause,
+                event.resolution,
+                event.verification,
+                event.follow_up,
+                json.dumps(list(event.related_files), sort_keys=True),
+                json.dumps(list(event.related_commands), sort_keys=True),
+                json.dumps(list(event.related_artifacts), sort_keys=True),
+                json.dumps(list(event.related_commits), sort_keys=True),
+                str(source_file),
+                source_line,
+                row_imported_at,
+            ),
+        )
+        connection.commit()
+
+    return cursor.rowcount == 1
+

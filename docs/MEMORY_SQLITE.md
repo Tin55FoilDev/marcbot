@@ -441,3 +441,19 @@ If validation reports SQLite drift:
 should repair and confirm the imported view.
 
 Drift is not a data-loss condition as long as file memory is intact.
+
+## Implemented S8 incremental event row helper
+
+MarcBot now has a SQLite helper for inserting one memory event row into the
+imported SQLite view.
+
+The helper:
+
+- initializes the SQLite schema if needed
+- inserts one event row
+- stores source file and source line metadata
+- is duplicate-safe using source file plus source line
+- does not change file memory
+- does not switch runtime reads or writes to SQLite
+
+This is preparation for wiring file-first event writes to SQLite sync.
