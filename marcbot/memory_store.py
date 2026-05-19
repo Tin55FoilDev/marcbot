@@ -1108,6 +1108,7 @@ def reject_memory_fact(
     data["rejected_reason"] = safe_reason
     data["rejected_source"] = safe_source
     _write_simple_toml(path, data)
+    _sync_memory_fact_to_sqlite_if_available(fact_path=path)
 
     correction = {
         "timestamp": timestamp_text,

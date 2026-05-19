@@ -1665,3 +1665,59 @@ def test_sqlite_fact_sync_raises_clear_error(monkeypatch) -> None:
             fact_path=Path("/srv/marcbot/memory/facts/test-fact.toml"),
         )
 
+
+def test_reject_memory_fact_syncs_fact_row_before_correction(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_fact, reject_memory_fact
+
+    calls = []
+
+    def fake_sync_memory_fact_to_sqlite_if_available(*, fact_path):
+        calls.append(("fact", fact_path.name))
+
+    def fake_append_memory_correction(*, root, timestamp, correction):
+        calls.append(("correction", correction["type"]))
+        return root / "corrections" / "2026-05.jsonl"
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_fact_to_sqlite_if_available",
+        fake_sync_memory_fact_to_sqlite_if_available,
+    )
+    monkeypatch.setattr(
+        memory_store,
+        "_append_memory_correction",
+        fake_append_memory_correction,
+    )
+
+    add_memory_fact(
+        root=tmp_path,
+        fact_id="test-fact",
+        statement="A test fact.",
+        category="test",
+        source="test",
+        confidence="high",
+        timestamp=datetime(2026, 5, 19, 2, 30, tzinfo=UTC),
+    )
+    calls.clear()
+
+    reject_memory_fact(
+        root=tmp_path,
+        fact_id="test-fact",
+        reason="Rejected for test.",
+        source="test",
+        confidence="high",
+        timestamp=datetime(2026, 5, 19, 2, 35, tzinfo=UTC),
+    )
+
+    assert calls == [
+        ("fact", "test-fact.toml"),
+        ("correction", "fact_rejected"),
+    ]
+

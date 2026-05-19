@@ -813,3 +813,17 @@ both are true, MarcBot upserts that fact row into SQLite.
 Fact rejection, supersession, and proposal approval remain separate because they
 involve existing-record state changes and, in some cases, correction records.
 
+## Implemented fact rejection SQLite sync
+
+Memory fact rejection now uses file-first SQLite sync.
+
+When `reject_memory_fact` updates a fact TOML file to rejected status, MarcBot
+upserts the changed fact row into SQLite before appending the correction record.
+The centralized correction append helper then syncs the correction row into
+SQLite.
+
+The file update and correction append remain the authoritative memory
+transactions. If SQLite sync fails after a file write, the command raises a
+clear error and the full `memory sqlite import` command can rebuild the SQLite
+view from file memory.
+
