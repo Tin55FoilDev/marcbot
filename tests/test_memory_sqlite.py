@@ -803,3 +803,139 @@ def test_upsert_memory_proposal_row_rejects_missing_file(tmp_path: Path) -> None
             proposal_path=tmp_path / "missing.json",
             database_path=tmp_path / "memory.sqlite3",
         )
+
+
+def test_upsert_memory_fact_row_inserts_fact(tmp_path: Path) -> None:
+    import sqlite3
+
+    from marcbot.memory_sqlite import upsert_memory_fact_row
+
+    db_path = tmp_path / "memory.sqlite3"
+    fact_path = tmp_path / "facts" / "test-fact.toml"
+    fact_path.parent.mkdir()
+    fact_path.write_text(
+        '\n'.join(
+            [
+                'id = "test-fact"',
+                'statement = "A test fact."',
+                'category = "test"',
+                'project = "marcbot-memory"',
+                'source = "test"',
+                'created_at = "2026-05-19T02:15:00+00:00"',
+                'updated_at = "2026-05-19T02:15:00+00:00"',
+                'confidence = "high"',
+                'status = "active"',
+                'details = "Useful detail."',
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    inserted = upsert_memory_fact_row(
+        fact_path=fact_path,
+        database_path=db_path,
+        imported_at="2026-05-19T02:16:00+00:00",
+    )
+
+    assert inserted is True
+
+    with sqlite3.connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT id, statement, category, project, source, created_at,
+                   updated_at, confidence, status, details, source_file
+            FROM memory_facts
+            """
+        ).fetchone()
+
+    assert row[0] == "test-fact"
+    assert row[1] == "A test fact."
+    assert row[2] == "test"
+    assert row[3] == "marcbot-memory"
+    assert row[4] == "test"
+    assert row[5] == "2026-05-19T02:15:00+00:00"
+    assert row[6] == "2026-05-19T02:15:00+00:00"
+    assert row[7] == "high"
+    assert row[8] == "active"
+    assert row[9] == "Useful detail."
+    assert row[10].endswith("test-fact.toml")
+
+
+def test_upsert_memory_fact_row_replaces_existing_fact(tmp_path: Path) -> None:
+    import sqlite3
+
+    from marcbot.memory_sqlite import upsert_memory_fact_row
+
+    db_path = tmp_path / "memory.sqlite3"
+    fact_path = tmp_path / "facts" / "test-fact.toml"
+    fact_path.parent.mkdir()
+    fact_path.write_text(
+        '\n'.join(
+            [
+                'id = "test-fact"',
+                'statement = "Old fact."',
+                'category = "test"',
+                'source = "test"',
+                'created_at = "2026-05-19T02:15:00+00:00"',
+                'updated_at = "2026-05-19T02:15:00+00:00"',
+                'confidence = "high"',
+                'status = "active"',
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    upsert_memory_fact_row(fact_path=fact_path, database_path=db_path)
+
+    fact_path.write_text(
+        '\n'.join(
+            [
+                'id = "test-fact"',
+                'statement = "Updated fact."',
+                'category = "test"',
+                'source = "test"',
+                'created_at = "2026-05-19T02:15:00+00:00"',
+                'updated_at = "2026-05-19T02:20:00+00:00"',
+                'confidence = "high"',
+                'status = "rejected"',
+                'rejected_at = "2026-05-19T02:20:00+00:00"',
+                'rejected_reason = "Rejected for test."',
+                'rejected_source = "test"',
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    upsert_memory_fact_row(fact_path=fact_path, database_path=db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT id, statement, status, rejected_reason
+            FROM memory_facts
+            """
+        ).fetchall()
+
+    assert rows == [
+        (
+            "test-fact",
+            "Updated fact.",
+            "rejected",
+            "Rejected for test.",
+        )
+    ]
+
+
+def test_upsert_memory_fact_row_rejects_missing_file(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_sqlite import upsert_memory_fact_row
+
+    with pytest.raises(FileNotFoundError, match="memory fact file not found"):
+        upsert_memory_fact_row(
+            fact_path=tmp_path / "missing.toml",
+            database_path=tmp_path / "memory.sqlite3",
+        )

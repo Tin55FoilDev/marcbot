@@ -1175,3 +1175,89 @@ def upsert_memory_proposal_row(
         connection.commit()
 
     return True
+
+
+def upsert_memory_fact_row(
+    *,
+    fact_path: Path,
+    database_path: Path = DEFAULT_MEMORY_DB_PATH,
+    imported_at: str | None = None,
+) -> bool:
+    """Insert or replace one memory fact row in SQLite.
+
+    Returns True after the fact row is present.
+    """
+    if not fact_path.is_file():
+        raise FileNotFoundError(f"memory fact file not found: {fact_path}")
+
+    initialize_memory_sqlite(path=database_path)
+    row_imported_at = imported_at or _utc_now_text()
+    data = tomllib.loads(fact_path.read_text(encoding="utf-8"))
+
+    with _connect(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO memory_facts(
+                id,
+                statement,
+                category,
+                project,
+                source,
+                created_at,
+                updated_at,
+                confidence,
+                status,
+                details,
+                supersedes,
+                superseded_by,
+                superseded_reason,
+                rejected_at,
+                rejected_reason,
+                rejected_source,
+                source_file,
+                imported_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                statement = excluded.statement,
+                category = excluded.category,
+                project = excluded.project,
+                source = excluded.source,
+                created_at = excluded.created_at,
+                updated_at = excluded.updated_at,
+                confidence = excluded.confidence,
+                status = excluded.status,
+                details = excluded.details,
+                supersedes = excluded.supersedes,
+                superseded_by = excluded.superseded_by,
+                superseded_reason = excluded.superseded_reason,
+                rejected_at = excluded.rejected_at,
+                rejected_reason = excluded.rejected_reason,
+                rejected_source = excluded.rejected_source,
+                source_file = excluded.source_file,
+                imported_at = excluded.imported_at
+            """,
+            (
+                str(data["id"]),
+                str(data["statement"]),
+                str(data["category"]),
+                data.get("project"),
+                str(data["source"]),
+                str(data["created_at"]),
+                str(data["updated_at"]),
+                str(data["confidence"]),
+                str(data["status"]),
+                data.get("details"),
+                data.get("supersedes"),
+                data.get("superseded_by"),
+                data.get("superseded_reason"),
+                data.get("rejected_at"),
+                data.get("rejected_reason"),
+                data.get("rejected_source"),
+                str(fact_path),
+                row_imported_at,
+            ),
+        )
+        connection.commit()
+
+    return True

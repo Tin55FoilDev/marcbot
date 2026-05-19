@@ -785,3 +785,19 @@ updated rejected proposal row into SQLite.
 Proposal approval remains separate because approval also creates a fact and may
 interact with correction records.
 
+
+## Implemented incremental fact row helper
+
+MarcBot now has a SQLite helper for inserting or replacing one memory fact row
+in the imported SQLite view.
+
+The helper:
+
+- initializes the SQLite schema if needed
+- reads one fact TOML file
+- upserts one SQLite row by fact ID
+- handles status changes such as active to rejected or superseded
+- does not change file memory
+- does not switch runtime reads or writes to SQLite
+
+This prepares fact add/reject/supersession paths for file-first SQLite sync.
