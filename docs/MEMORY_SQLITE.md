@@ -313,3 +313,21 @@ Current behavior:
 - preserves file memory as source of truth
 
 Runtime memory reads and writes still use file memory.
+
+## Implemented S4 SQLite import validation
+
+SQLite validation can now compare file-memory record counts with imported
+SQLite row counts.
+
+Validation compares:
+
+- events
+- facts
+- summaries
+- proposals
+- corrections
+
+The validation result reports file counts, SQLite counts, per-table OK/MISMATCH,
+overall validity, and provider-contact-free status.
+
+File memory remains the source of truth.

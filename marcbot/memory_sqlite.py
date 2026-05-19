@@ -768,3 +768,112 @@ def format_memory_sqlite_counts(
             "Provider contact: no",
         ]
     )
+
+
+@dataclass(frozen=True)
+class MemorySqliteValidationResult:
+    """Validation result comparing file memory counts to SQLite row counts."""
+
+    source_root: Path
+    database_path: Path
+    file_counts: dict[str, int]
+    sqlite_counts: dict[str, int]
+
+    @property
+    def valid(self) -> bool:
+        for key in ("events", "facts", "summaries", "proposals", "corrections"):
+            if self.file_counts[key] != self.sqlite_counts[key]:
+                return False
+        return True
+
+    def format_message(self) -> str:
+        lines = [
+            "MarcBot memory SQLite validation",
+            f"Source root: {self.source_root}",
+            f"Database: {self.database_path}",
+            "",
+            "Counts:",
+        ]
+
+        for key in ("events", "facts", "summaries", "proposals", "corrections"):
+            file_count = self.file_counts[key]
+            sqlite_count = self.sqlite_counts[key]
+            status = "OK" if file_count == sqlite_count else "MISMATCH"
+            lines.append(
+                f"- {key}: files={file_count} sqlite={sqlite_count} {status}"
+            )
+
+        lines.extend(
+            [
+                "",
+                f"Overall: {'valid' if self.valid else 'invalid'}",
+                "Provider contact: no",
+            ]
+        )
+        return "\n".join(lines)
+
+
+def _count_jsonl_records(directory: Path) -> int:
+    if not directory.is_dir():
+        return 0
+
+    count = 0
+    for path in sorted(directory.glob("*.jsonl")):
+        with path.open(encoding="utf-8") as file_obj:
+            count += sum(1 for line in file_obj if line.strip())
+    return count
+
+
+def get_file_memory_record_counts(
+    root: Path = MEMORY_ROOT,
+) -> dict[str, int]:
+    """Return source file-memory record counts."""
+    facts_dir = root / "facts"
+    summaries_dir = root / "summaries"
+    pending_dir = root / "pending"
+
+    return {
+        "events": _count_jsonl_records(root / "events"),
+        "facts": (
+            sum(1 for path in facts_dir.glob("*.toml") if path.is_file())
+            if facts_dir.is_dir()
+            else 0
+        ),
+        "summaries": (
+            sum(1 for path in summaries_dir.glob("*.md") if path.is_file())
+            if summaries_dir.is_dir()
+            else 0
+        ),
+        "proposals": (
+            sum(1 for path in pending_dir.glob("*.json") if path.is_file())
+            if pending_dir.is_dir()
+            else 0
+        ),
+        "corrections": _count_jsonl_records(root / "corrections"),
+    }
+
+
+def validate_memory_sqlite_import(
+    *,
+    source_root: Path = MEMORY_ROOT,
+    database_path: Path = DEFAULT_MEMORY_DB_PATH,
+) -> MemorySqliteValidationResult:
+    """Compare file memory counts against imported SQLite counts."""
+    return MemorySqliteValidationResult(
+        source_root=source_root,
+        database_path=database_path,
+        file_counts=get_file_memory_record_counts(root=source_root),
+        sqlite_counts=get_sqlite_memory_counts(path=database_path),
+    )
+
+
+def format_memory_sqlite_validation(
+    *,
+    source_root: Path = MEMORY_ROOT,
+    database_path: Path = DEFAULT_MEMORY_DB_PATH,
+) -> str:
+    """Format SQLite import validation."""
+    return validate_memory_sqlite_import(
+        source_root=source_root,
+        database_path=database_path,
+    ).format_message()

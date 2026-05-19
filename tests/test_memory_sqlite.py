@@ -234,3 +234,124 @@ def test_format_memory_sqlite_counts(tmp_path: Path) -> None:
     assert "MarcBot memory SQLite counts" in message
     assert "- events: 0" in message
     assert "Provider contact: no" in message
+
+
+def test_get_file_memory_record_counts(tmp_path: Path) -> None:
+    memory_root = tmp_path / "memory"
+    (memory_root / "events").mkdir(parents=True)
+    (memory_root / "facts").mkdir()
+    (memory_root / "summaries").mkdir()
+    (memory_root / "pending").mkdir()
+    (memory_root / "corrections").mkdir()
+
+    (memory_root / "events" / "2026-05.jsonl").write_text(
+        '{"summary": "one"}\n\n{"summary": "two"}\n',
+        encoding="utf-8",
+    )
+    (memory_root / "facts" / "one.toml").write_text('id = "one"\n', encoding="utf-8")
+    (memory_root / "summaries" / "one.md").write_text("# One\n", encoding="utf-8")
+    (memory_root / "pending" / "one.json").write_text("{}\n", encoding="utf-8")
+    (memory_root / "corrections" / "2026-05.jsonl").write_text(
+        '{"type": "one"}\n',
+        encoding="utf-8",
+    )
+
+    from marcbot.memory_sqlite import get_file_memory_record_counts
+
+    counts = get_file_memory_record_counts(root=memory_root)
+
+    assert counts == {
+        "events": 2,
+        "facts": 1,
+        "summaries": 1,
+        "proposals": 1,
+        "corrections": 1,
+    }
+
+
+def test_validate_memory_sqlite_import_reports_valid(tmp_path: Path) -> None:
+    import json
+
+    from marcbot.memory_sqlite import (
+        import_file_memory_to_sqlite,
+        validate_memory_sqlite_import,
+    )
+
+    memory_root = tmp_path / "memory"
+    db_path = tmp_path / "memory.sqlite3"
+
+    (memory_root / "events").mkdir(parents=True)
+    (memory_root / "events" / "2026-05.jsonl").write_text(
+        json.dumps(
+            {
+                "timestamp": "2026-05-19T00:00:00+00:00",
+                "type": "workflow_completed",
+                "summary": "Workflow completed.",
+                "source": "test",
+                "confidence": "high",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    import_file_memory_to_sqlite(source_root=memory_root, database_path=db_path)
+
+    result = validate_memory_sqlite_import(
+        source_root=memory_root,
+        database_path=db_path,
+    )
+
+    assert result.valid is True
+    assert result.file_counts["events"] == 1
+    assert result.sqlite_counts["events"] == 1
+
+
+def test_validate_memory_sqlite_import_reports_invalid(tmp_path: Path) -> None:
+    from marcbot.memory_sqlite import (
+        initialize_memory_sqlite,
+        validate_memory_sqlite_import,
+    )
+
+    memory_root = tmp_path / "memory"
+    db_path = tmp_path / "memory.sqlite3"
+
+    (memory_root / "events").mkdir(parents=True)
+    (memory_root / "events" / "2026-05.jsonl").write_text(
+        '{"timestamp": "2026-05-19T00:00:00+00:00"}\n',
+        encoding="utf-8",
+    )
+    initialize_memory_sqlite(path=db_path)
+
+    result = validate_memory_sqlite_import(
+        source_root=memory_root,
+        database_path=db_path,
+    )
+
+    assert result.valid is False
+    assert result.file_counts["events"] == 1
+    assert result.sqlite_counts["events"] == 0
+
+
+def test_format_memory_sqlite_validation(tmp_path: Path) -> None:
+    from marcbot.memory_sqlite import (
+        format_memory_sqlite_validation,
+        initialize_memory_sqlite,
+    )
+
+    memory_root = tmp_path / "memory"
+    db_path = tmp_path / "memory.sqlite3"
+
+    memory_root.mkdir()
+    initialize_memory_sqlite(path=db_path)
+
+    message = format_memory_sqlite_validation(
+        source_root=memory_root,
+        database_path=db_path,
+    )
+
+    assert "MarcBot memory SQLite validation" in message
+    assert "- events: files=0 sqlite=0 OK" in message
+    assert "Overall: valid" in message
+    assert "Provider contact: no" in message
