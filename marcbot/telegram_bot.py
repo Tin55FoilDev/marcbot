@@ -29,6 +29,7 @@ from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.memory_store import (
     format_memory_event_list,
+    format_memory_fact_list,
     format_memory_status_message,
 )
 from marcbot.report_sender import format_weather_report_for_telegram
@@ -478,6 +479,23 @@ async def send_weather_report_command(update: Update, context: ContextTypes.DEFA
     if update.message is not None:
         await update.message.reply_text(message)
 
+
+
+async def memory_facts_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /memory_facts."""
+
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /memory_facts from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /memory_facts for chat_id=%s", chat_id)
+
+    if update.message is not None:
+        await update.message.reply_text(format_memory_fact_list(status="active", limit=8))
 
 
 async def memory_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1076,6 +1094,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/timer_status - show MarcBot scheduled timer status\n"
         "/weather_status - show latest weather report status\n"
         "/memory_events - show recent local memory events\n"
+        "/memory_facts - show active local memory facts\n"
         "/memory_status - show local memory status\n"
         "/send_weather_report - resend the latest weather report as text\n"
         "/report_status - show latest daily status report status\n"
@@ -1160,6 +1179,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("timer_status", timer_status_command))
     application.add_handler(CommandHandler("weather_status", weather_status_command))
     application.add_handler(CommandHandler("memory_events", memory_events_command))
+    application.add_handler(CommandHandler("memory_facts", memory_facts_command))
     application.add_handler(CommandHandler("memory_status", memory_status_command))
     application.add_handler(CommandHandler("send_weather_report", send_weather_report_command))
     application.add_handler(CommandHandler("report_status", report_status_command))

@@ -1137,3 +1137,14 @@ This command is read-only, limited to authorized Telegram chats, and shows a
 compact recent event list. It does not search memory, write memory, approve
 proposals, correct facts, or contact providers.
 
+## Telegram read-only memory facts
+
+MarcBot now exposes active memory facts through Telegram with:
+
+    /memory_facts
+
+This command is read-only, limited to authorized Telegram chats, and shows only
+active facts. It does not search memory, show corrections, expose rejected or
+superseded facts, write memory, approve proposals, correct facts, or contact
+providers.
+
