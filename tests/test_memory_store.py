@@ -1231,3 +1231,75 @@ def test_sqlite_event_sync_skips_non_default_memory_root(monkeypatch, tmp_path: 
         source_file=tmp_path / "events" / "2026-05.jsonl",
         source_line=1,
     )
+
+
+def test_add_memory_summary_syncs_sqlite_when_available(monkeypatch, tmp_path: Path) -> None:
+    from marcbot.memory_store import add_memory_summary
+
+    calls = []
+
+    def fake_sync_memory_summary_to_sqlite_if_available(*, summary_path):
+        calls.append(summary_path)
+
+    import marcbot.memory_store as memory_store
+
+    monkeypatch.setattr(
+        memory_store,
+        "_sync_memory_summary_to_sqlite_if_available",
+        fake_sync_memory_summary_to_sqlite_if_available,
+    )
+
+    result = add_memory_summary(
+        root=tmp_path,
+        title="Test summary",
+        body="Useful body.",
+        source="test",
+    )
+
+    assert calls == [result.path]
+
+
+def test_sqlite_summary_sync_skips_non_default_memory_root(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from marcbot.memory_store import _sync_memory_summary_to_sqlite_if_available
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return True
+
+    def fail_upsert(**kwargs):
+        raise AssertionError("temporary summary roots must not sync to real SQLite")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "upsert_memory_summary_row", fail_upsert)
+
+    _sync_memory_summary_to_sqlite_if_available(
+        summary_path=tmp_path / "summaries" / "test-summary.md",
+    )
+
+
+def test_sqlite_summary_sync_raises_clear_error(monkeypatch) -> None:
+    import pytest
+
+    from marcbot.memory_store import _sync_memory_summary_to_sqlite_if_available
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return True
+
+    def fail_upsert(**kwargs):
+        raise ValueError("boom")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "upsert_memory_summary_row", fail_upsert)
+
+    with pytest.raises(RuntimeError, match="SQLite memory summary sync failed: boom"):
+        _sync_memory_summary_to_sqlite_if_available(
+            summary_path=Path("/srv/marcbot/memory/summaries/test-summary.md"),
+        )

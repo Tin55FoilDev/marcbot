@@ -497,3 +497,15 @@ The helper:
 - does not switch runtime reads or writes to SQLite
 
 This prepares summary writes for file-first SQLite sync.
+
+## Implemented summary-write SQLite sync
+
+Memory summary writes now use file-first SQLite sync.
+
+When `add_memory_summary` writes a Markdown summary file, it then checks whether
+the summary path is under the real memory root and whether the SQLite database
+exists. If both are true, MarcBot upserts that summary row into SQLite.
+
+The file write remains the authoritative memory transaction. If SQLite sync
+fails after the file write, the command raises a clear error and the full
+`memory sqlite import` command can rebuild the SQLite view from file memory.

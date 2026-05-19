@@ -590,6 +590,9 @@ def add_memory_summary(
     metadata_lines.extend(["---", "", f"# {safe_title}", "", safe_body.rstrip(), ""])
 
     path.write_text("\n".join(metadata_lines), encoding="utf-8")
+
+    _sync_memory_summary_to_sqlite_if_available(summary_path=path)
+
     return MemorySummaryAddResult(path=path)
 
 
@@ -1783,4 +1786,23 @@ def _sync_memory_event_to_sqlite_if_available(
         )
     except Exception as exc:
         raise RuntimeError(f"SQLite memory event sync failed: {exc}") from exc
+
+
+def _sync_memory_summary_to_sqlite_if_available(*, summary_path: Path) -> None:
+    """Sync one real memory summary to SQLite when the database exists."""
+    if not _path_is_under(MEMORY_ROOT, summary_path):
+        return
+
+    try:
+        from marcbot.memory_sqlite import DEFAULT_MEMORY_DB_PATH, upsert_memory_summary_row
+
+        if not DEFAULT_MEMORY_DB_PATH.is_file():
+            return
+
+        upsert_memory_summary_row(
+            summary_path=summary_path,
+            database_path=DEFAULT_MEMORY_DB_PATH,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"SQLite memory summary sync failed: {exc}") from exc
 
