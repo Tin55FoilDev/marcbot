@@ -900,9 +900,22 @@ def insert_memory_event_row(
     row_imported_at = imported_at or _utc_now_text()
 
     with _connect(database_path) as connection:
+        existing = connection.execute(
+            """
+            SELECT 1
+            FROM memory_events
+            WHERE source_file = ? AND source_line = ?
+            LIMIT 1
+            """,
+            (str(source_file), source_line),
+        ).fetchone()
+
+        if existing is not None:
+            return False
+
         cursor = connection.execute(
             """
-            INSERT OR IGNORE INTO memory_events(
+            INSERT INTO memory_events(
                 timestamp,
                 type,
                 project,

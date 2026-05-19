@@ -1750,13 +1750,25 @@ def format_memory_search_results(
     return "\n".join(lines)
 
 
+def _path_is_under(parent: Path, child: Path) -> bool:
+    """Return whether child is within parent after path resolution."""
+    try:
+        child.resolve().relative_to(parent.resolve())
+    except ValueError:
+        return False
+    return True
+
+
 def _sync_memory_event_to_sqlite_if_available(
     *,
     event: MemoryEvent,
     source_file: Path,
     source_line: int,
 ) -> None:
-    """Sync one appended memory event to SQLite when the database exists."""
+    """Sync one appended real memory event to SQLite when the database exists."""
+    if not _path_is_under(MEMORY_ROOT, source_file):
+        return
+
     try:
         from marcbot.memory_sqlite import DEFAULT_MEMORY_DB_PATH, insert_memory_event_row
 

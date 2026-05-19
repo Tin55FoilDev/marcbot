@@ -470,3 +470,14 @@ line. If the database does not exist, SQLite sync is skipped.
 The file write remains the authoritative memory transaction. If SQLite sync
 fails after the file write, the command raises a clear error and the full
 `memory sqlite import` command can rebuild the SQLite view from file memory.
+
+## Event sync root guard
+
+Incremental SQLite event sync only runs for event files under the real memory
+root:
+
+    /srv/marcbot/memory
+
+This prevents tests, temporary memory roots, and ad-hoc imports from polluting
+the production SQLite database. Temporary roots remain file-only unless a test
+explicitly calls SQLite helpers with a temporary database path.

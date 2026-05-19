@@ -1195,6 +1195,39 @@ def test_sqlite_event_sync_raises_clear_error(monkeypatch, tmp_path: Path) -> No
     with pytest.raises(RuntimeError, match="SQLite memory event sync failed: boom"):
         _sync_memory_event_to_sqlite_if_available(
             event=event,
-            source_file=tmp_path / "events" / "2026-05.jsonl",
+            source_file=Path("/srv/marcbot/memory/events/2026-05.jsonl"),
             source_line=1,
         )
+
+
+def test_sqlite_event_sync_skips_non_default_memory_root(monkeypatch, tmp_path: Path) -> None:
+    from marcbot.memory_store import (
+        MemoryEvent,
+        _sync_memory_event_to_sqlite_if_available,
+    )
+
+    class FakePath:
+        def is_file(self) -> bool:
+            return True
+
+    def fail_insert(**kwargs):
+        raise AssertionError("temporary memory roots must not sync to real SQLite")
+
+    import marcbot.memory_sqlite as memory_sqlite
+
+    monkeypatch.setattr(memory_sqlite, "DEFAULT_MEMORY_DB_PATH", FakePath())
+    monkeypatch.setattr(memory_sqlite, "insert_memory_event_row", fail_insert)
+
+    event = MemoryEvent(
+        timestamp="2026-05-19T01:30:00+00:00",
+        type="workflow_completed",
+        summary="Workflow completed.",
+        source="test",
+        confidence="high",
+    )
+
+    _sync_memory_event_to_sqlite_if_available(
+        event=event,
+        source_file=tmp_path / "events" / "2026-05.jsonl",
+        source_line=1,
+    )
