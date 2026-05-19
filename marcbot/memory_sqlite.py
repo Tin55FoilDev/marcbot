@@ -1101,3 +1101,77 @@ def insert_memory_correction_row(
 
     return cursor.rowcount == 1
 
+
+
+def upsert_memory_proposal_row(
+    *,
+    proposal_path: Path,
+    database_path: Path = DEFAULT_MEMORY_DB_PATH,
+    imported_at: str | None = None,
+) -> bool:
+    """Insert or replace one memory proposal row in SQLite.
+
+    Returns True after the proposal row is present.
+    """
+    if not proposal_path.is_file():
+        raise FileNotFoundError(f"memory proposal file not found: {proposal_path}")
+
+    initialize_memory_sqlite(path=database_path)
+    row_imported_at = imported_at or _utc_now_text()
+    data = json.loads(proposal_path.read_text(encoding="utf-8"))
+
+    with _connect(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO memory_proposals(
+                id,
+                created_at,
+                proposed_type,
+                proposed_statement,
+                source,
+                rationale,
+                risk_level,
+                status,
+                project,
+                details,
+                reviewed_at,
+                review_reason,
+                source_file,
+                imported_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                created_at = excluded.created_at,
+                proposed_type = excluded.proposed_type,
+                proposed_statement = excluded.proposed_statement,
+                source = excluded.source,
+                rationale = excluded.rationale,
+                risk_level = excluded.risk_level,
+                status = excluded.status,
+                project = excluded.project,
+                details = excluded.details,
+                reviewed_at = excluded.reviewed_at,
+                review_reason = excluded.review_reason,
+                source_file = excluded.source_file,
+                imported_at = excluded.imported_at
+            """,
+            (
+                str(data["id"]),
+                str(data["created_at"]),
+                str(data["proposed_type"]),
+                str(data["proposed_statement"]),
+                str(data["source"]),
+                str(data["rationale"]),
+                str(data["risk_level"]),
+                str(data["status"]),
+                data.get("project"),
+                data.get("details"),
+                data.get("reviewed_at"),
+                data.get("review_reason"),
+                str(proposal_path),
+                row_imported_at,
+            ),
+        )
+        connection.commit()
+
+    return True

@@ -664,3 +664,142 @@ def test_insert_memory_correction_row_rejects_bad_source_line(tmp_path: Path) ->
             source_line=0,
             database_path=tmp_path / "memory.sqlite3",
         )
+
+
+def test_upsert_memory_proposal_row_inserts_proposal(tmp_path: Path) -> None:
+    import sqlite3
+
+    from marcbot.memory_sqlite import upsert_memory_proposal_row
+
+    db_path = tmp_path / "memory.sqlite3"
+    proposal_path = tmp_path / "pending" / "test-proposal.json"
+    proposal_path.parent.mkdir()
+    proposal_path.write_text(
+        json.dumps(
+            {
+                "id": "test-proposal",
+                "created_at": "2026-05-19T02:00:00+00:00",
+                "proposed_type": "fact",
+                "proposed_statement": "A proposed fact.",
+                "source": "test",
+                "rationale": "Test rationale.",
+                "risk_level": "low",
+                "status": "pending",
+                "project": "marcbot-memory",
+                "details": "Useful detail.",
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    inserted = upsert_memory_proposal_row(
+        proposal_path=proposal_path,
+        database_path=db_path,
+        imported_at="2026-05-19T02:01:00+00:00",
+    )
+
+    assert inserted is True
+
+    with sqlite3.connect(db_path) as connection:
+        row = connection.execute(
+            """
+            SELECT id, created_at, proposed_type, proposed_statement, source,
+                   rationale, risk_level, status, project, details, source_file
+            FROM memory_proposals
+            """
+        ).fetchone()
+
+    assert row[0] == "test-proposal"
+    assert row[1] == "2026-05-19T02:00:00+00:00"
+    assert row[2] == "fact"
+    assert row[3] == "A proposed fact."
+    assert row[4] == "test"
+    assert row[5] == "Test rationale."
+    assert row[6] == "low"
+    assert row[7] == "pending"
+    assert row[8] == "marcbot-memory"
+    assert row[9] == "Useful detail."
+    assert row[10].endswith("test-proposal.json")
+
+
+def test_upsert_memory_proposal_row_replaces_existing_proposal(tmp_path: Path) -> None:
+    import sqlite3
+
+    from marcbot.memory_sqlite import upsert_memory_proposal_row
+
+    db_path = tmp_path / "memory.sqlite3"
+    proposal_path = tmp_path / "pending" / "test-proposal.json"
+    proposal_path.parent.mkdir()
+    proposal_path.write_text(
+        json.dumps(
+            {
+                "id": "test-proposal",
+                "created_at": "2026-05-19T02:00:00+00:00",
+                "proposed_type": "fact",
+                "proposed_statement": "A proposed fact.",
+                "source": "test",
+                "rationale": "Test rationale.",
+                "risk_level": "low",
+                "status": "pending",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    upsert_memory_proposal_row(proposal_path=proposal_path, database_path=db_path)
+
+    proposal_path.write_text(
+        json.dumps(
+            {
+                "id": "test-proposal",
+                "created_at": "2026-05-19T02:00:00+00:00",
+                "proposed_type": "fact",
+                "proposed_statement": "A proposed fact.",
+                "source": "test",
+                "rationale": "Test rationale.",
+                "risk_level": "low",
+                "status": "rejected",
+                "reviewed_at": "2026-05-19T02:05:00+00:00",
+                "review_reason": "Rejected for test.",
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    upsert_memory_proposal_row(proposal_path=proposal_path, database_path=db_path)
+
+    with sqlite3.connect(db_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT id, status, reviewed_at, review_reason
+            FROM memory_proposals
+            """
+        ).fetchall()
+
+    assert rows == [
+        (
+            "test-proposal",
+            "rejected",
+            "2026-05-19T02:05:00+00:00",
+            "Rejected for test.",
+        )
+    ]
+
+
+def test_upsert_memory_proposal_row_rejects_missing_file(tmp_path: Path) -> None:
+    import pytest
+
+    from marcbot.memory_sqlite import upsert_memory_proposal_row
+
+    with pytest.raises(FileNotFoundError, match="memory proposal file not found"):
+        upsert_memory_proposal_row(
+            proposal_path=tmp_path / "missing.json",
+            database_path=tmp_path / "memory.sqlite3",
+        )

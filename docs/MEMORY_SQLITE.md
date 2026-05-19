@@ -754,3 +754,19 @@ SQLite using the correction source file and source line.
 The file append remains the authoritative memory transaction. If SQLite sync
 fails after the file write, the command raises a clear error and the full
 `memory sqlite import` command can rebuild the SQLite view from file memory.
+
+## Implemented incremental proposal row helper
+
+MarcBot now has a SQLite helper for inserting or replacing one memory proposal
+row in the imported SQLite view.
+
+The helper:
+
+- initializes the SQLite schema if needed
+- reads one proposal JSON file
+- upserts one SQLite row by proposal ID
+- handles status changes such as pending to rejected
+- does not change file memory
+- does not switch runtime reads or writes to SQLite
+
+This prepares proposal add/reject paths for file-first SQLite sync.
