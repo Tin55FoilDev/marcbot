@@ -1419,6 +1419,7 @@ Telegram read-only visibility:
 
 ```text
 /memory_profiles
+/memory_context <profile>
 ```
 python -m marcbot memory context --profile weather-report
 python -m marcbot memory context --profile source-monitor

@@ -527,3 +527,16 @@ Current profiles include:
 
 - `weather-report`
 - `source-monitor`
+
+### Telegram memory context visibility
+
+`/memory_context <profile>` shows bounded local memory context for a
+deterministic memory context profile. It is read-only and
+provider-contact-free.
+
+Examples:
+
+```text
+/memory_context weather-report
+/memory_context source-monitor
+```
