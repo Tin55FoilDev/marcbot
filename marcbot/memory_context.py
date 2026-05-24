@@ -39,6 +39,34 @@ DEFAULT_MEMORY_CONTEXT_PROFILES: dict[str, MemoryContextProfile] = {
 
 
 
+
+def memory_context_profiles_to_dict() -> dict[str, object]:
+    profiles = []
+    for name in sorted(DEFAULT_MEMORY_CONTEXT_PROFILES):
+        profile = DEFAULT_MEMORY_CONTEXT_PROFILES[name]
+        profiles.append(
+            {
+                "name": profile.name,
+                "query": profile.query,
+                "project": profile.project,
+                "limits": {
+                    "facts": profile.facts_limit,
+                    "summaries": profile.summaries_limit,
+                    "events": profile.events_limit,
+                },
+            }
+        )
+
+    return {
+        "provider_contact": False,
+        "profiles": profiles,
+    }
+
+
+def format_memory_context_profiles_json() -> str:
+    return json.dumps(memory_context_profiles_to_dict(), indent=2, sort_keys=True)
+
+
 def format_memory_context_profiles() -> str:
     lines = ["MarcBot memory context profiles", ""]
 

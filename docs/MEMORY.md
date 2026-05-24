@@ -1385,6 +1385,7 @@ The first profile is `weather-report`:
 
 ```bash
 python -m marcbot memory profiles
+python -m marcbot memory profiles --format json
 python -m marcbot memory context --profile weather-report
 python -m marcbot memory context --profile weather-report --format json
 ```

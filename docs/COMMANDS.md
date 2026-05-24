@@ -512,5 +512,8 @@ contact to report configured providers, profiles, tasks, and route validity.
 profiles such as `weather-report`. The command is read-only and
 provider-contact-free.
 
+`python -m marcbot memory profiles --format json` returns the same profile
+catalog as structured JSON for future workflow automation.
+
 `python -m marcbot memory context --profile weather-report` assembles
 bounded local memory context using that profile.

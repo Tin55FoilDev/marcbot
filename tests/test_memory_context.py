@@ -392,3 +392,22 @@ def test_format_memory_context_profiles_lists_weather_profile() -> None:
     assert "limits: facts=5 summaries=2 events=5" in message
     assert "Provider contact: no" in message
 
+
+
+def test_format_memory_context_profiles_json_is_structured() -> None:
+    import json
+
+    from marcbot.memory_context import format_memory_context_profiles_json
+
+    payload = json.loads(format_memory_context_profiles_json())
+
+    assert payload["provider_contact"] is False
+    assert payload["profiles"][0]["name"] == "weather-report"
+    assert payload["profiles"][0]["query"] == "weather"
+    assert payload["profiles"][0]["project"] is None
+    assert payload["profiles"][0]["limits"] == {
+        "facts": 5,
+        "summaries": 2,
+        "events": 5,
+    }
+
