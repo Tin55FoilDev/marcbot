@@ -20,6 +20,13 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.12 - Memory context profiles
+
+- Added deterministic memory context profiles, starting with `weather-report`.
+- Added `python -m marcbot memory profiles` and `--format json` for profile discovery.
+- Added shared memory profile resolution for direct memory context, LLM file summaries, and source-monitor summaries.
+- Added `--memory-profile` support for LLM file summaries and source-monitor summary commands.
+- Clarified the distinct reference roles of `weather-report` and `source-monitor` in memory workflow integration.
 ## 0.3.11 - Memory context prompt controls and source-monitor integration
 
 - Clarified the memory-context prompt boundary for LLM file summaries.
