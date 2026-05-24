@@ -20,6 +20,11 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.6 - SQLite-backed memory fact reads
+
+- Added `python -m marcbot memory sqlite facts` for bounded, read-only SQLite-backed memory fact listing/query.
+- Supports status, category, project, text query, and limit filters against the imported SQLite memory view.
+- Preserves file memory as the source of truth and keeps memory operations provider-contact-free.
 ## 0.3.5 - SQLite incremental memory sync baseline
 
 - Completed SQLite incremental sync for current memory write paths.
