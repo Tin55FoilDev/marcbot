@@ -291,3 +291,15 @@ bounded context size, and clear provider-contact boundaries.
 Initial integration should stay CLI-only. Telegram or free-form chat
 integration should wait until the CLI workflow path is stable, tested, and
 documented.
+
+## Model prompt use of assembled memory
+
+Workflows that pass assembled memory context to an LLM should include clear
+instructions about how the model should treat the context.
+
+The workflow should not simply append raw memory and hope the model handles
+it correctly. It should provide a bounded memory section and short rules
+for relevance, priority, warnings, and conflict handling.
+
+This keeps deterministic retrieval separate from model reasoning while
+allowing the model to benefit from project history and durable facts.

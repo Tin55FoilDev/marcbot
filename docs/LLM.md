@@ -650,3 +650,19 @@ This applies to:
 `python -m marcbot llm status --verbose` remains provider-contact-free.
 It reports local configuration validity and does not need provider secrets
 to contact LM Studio.
+
+## Memory context prompt boundary
+
+LLM prompts that include MarcBot memory context should clearly label the
+memory block and instruct the model how to use it.
+
+The memory block should state that:
+
+- the context was retrieved locally by MarcBot;
+- the context is bounded and may be incomplete;
+- active facts should be preferred over summaries and recent events;
+- warnings should be considered before relying on the context;
+- the model should not invent memory outside the supplied block.
+
+This prompt boundary is especially important as MarcBot moves from manual
+memory inspection toward selected workflow-level automatic memory retrieval.

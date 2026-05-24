@@ -1335,3 +1335,26 @@ Validated behavior:
 
 The live run also confirmed that provider-contact LLM commands need the
 LM Studio environment secret loaded in the shell before execution.
+
+## Prompt-use rules for memory context
+
+When MarcBot includes retrieved memory context in a model prompt, the prompt
+should make the memory boundary explicit. The model should understand that
+the memory block is local MarcBot context assembled by deterministic code,
+not unrestricted file-system access and not provider-generated truth.
+
+Prompt-use rules:
+
+1. Use supplied memory context only when it is relevant to the requested task.
+2. Prefer active facts over summaries and recent events when they conflict.
+3. Treat warnings from the memory context package as important.
+4. Do not invent memory not present in the supplied context block.
+5. Do not assume recent events are durable facts unless they are also
+   represented as active facts or explicit summaries.
+6. Use corrections, rejected state, and supersession state when present.
+7. Keep memory retrieval separate from provider contact; retrieval should
+   already be complete before the model receives the prompt.
+
+These rules are intended to improve prompt quality before memory context is
+used by more workflows. They keep the model useful while preserving the
+controlled retrieval boundary.
