@@ -8,12 +8,14 @@ from marcbot.memory_sqlite import (
     SCHEMA_VERSION,
     format_memory_sqlite_counts,
     format_memory_sqlite_status,
+    format_sqlite_memory_event_list,
     format_sqlite_memory_fact_list,
     format_sqlite_memory_summary_list,
     get_memory_sqlite_status,
     get_sqlite_memory_counts,
     import_file_memory_to_sqlite,
     initialize_memory_sqlite,
+    query_sqlite_memory_events,
     query_sqlite_memory_facts,
     query_sqlite_memory_summaries,
 )
@@ -1190,3 +1192,155 @@ def test_query_sqlite_memory_summaries_missing_database_returns_empty(
     db_path = tmp_path / "missing.sqlite3"
 
     assert query_sqlite_memory_summaries(path=db_path) == []
+
+
+def _insert_test_sqlite_event(
+    connection,
+    *,
+    timestamp: str,
+    event_type: str,
+    summary: str,
+    project: str | None = None,
+    source: str = "test",
+    details: str | None = None,
+    source_file: str = "/tmp/events.jsonl",
+    source_line: int = 1,
+) -> None:
+    sql = (
+        "INSERT INTO memory_events("
+        "timestamp, type, project, summary, source, confidence, details, cause, "
+        "resolution, verification, follow_up, related_files_json, "
+        "related_commands_json, related_artifacts_json, related_commits_json, "
+        "source_file, source_line, imported_at"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    connection.execute(
+        sql,
+        (
+            timestamp,
+            event_type,
+            project,
+            summary,
+            source,
+            "high",
+            details,
+            None,
+            None,
+            None,
+            None,
+            "[]",
+            "[]",
+            "[]",
+            "[]",
+            source_file,
+            source_line,
+            "2026-05-22T11:00:00+00:00",
+        ),
+    )
+
+
+def test_query_sqlite_memory_events_returns_recent_rows(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_event(
+            connection,
+            timestamp="2026-05-21T10:00:00+00:00",
+            event_type="workflow",
+            summary="Older event",
+            source_line=1,
+        )
+        _insert_test_sqlite_event(
+            connection,
+            timestamp="2026-05-22T10:00:00+00:00",
+            event_type="workflow",
+            summary="Newer event",
+            source_line=2,
+        )
+        connection.commit()
+
+    events = query_sqlite_memory_events(path=db_path, limit=2)
+
+    assert [event.summary for event in events] == ["Newer event", "Older event"]
+
+
+def test_query_sqlite_memory_events_supports_filters_and_query(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_event(
+            connection,
+            timestamp="2026-05-22T10:00:00+00:00",
+            event_type="workflow",
+            summary="SQLite event read capability was validated.",
+            project="marcbot-memory",
+            source="cli",
+            details="Read capability test event.",
+            source_line=1,
+        )
+        _insert_test_sqlite_event(
+            connection,
+            timestamp="2026-05-22T11:00:00+00:00",
+            event_type="other",
+            summary="Unrelated event.",
+            project="other",
+            source="test",
+            source_line=2,
+        )
+        connection.commit()
+
+    events = query_sqlite_memory_events(
+        path=db_path,
+        event_type="workflow",
+        project="marcbot-memory",
+        source="cli",
+        query="validated",
+    )
+
+    assert [event.summary for event in events] == [
+        "SQLite event read capability was validated."
+    ]
+
+
+def test_format_sqlite_memory_event_list_includes_provider_contact_no(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_event(
+            connection,
+            timestamp="2026-05-22T10:00:00+00:00",
+            event_type="workflow",
+            summary="Formatted SQLite events stay local.",
+            project="MarcBot",
+            source="cli",
+            details="Local read only.",
+            source_line=1,
+        )
+        connection.commit()
+
+    message = format_sqlite_memory_event_list(
+        path=db_path,
+        event_type="workflow",
+        project="MarcBot",
+        source="cli",
+        query="local",
+    )
+
+    assert "MarcBot memory SQLite events" in message
+    assert "Formatted SQLite events stay local." in message
+    assert "details: Local read only." in message
+    assert "Provider contact: no" in message
+
+
+def test_query_sqlite_memory_events_missing_database_returns_empty(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "missing.sqlite3"
+
+    assert query_sqlite_memory_events(path=db_path) == []

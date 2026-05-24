@@ -885,3 +885,18 @@ python -m marcbot memory sqlite summaries --project marcbot-memory --limit 5
 This command reads summary metadata and body previews from the imported
 SQLite view only. File memory remains the source of truth, SQLite remains
 a query/index view, and provider contact for memory operations remains `no`.
+
+### SQLite-backed event reads
+
+MarcBot also supports bounded SQLite-backed event listing/query:
+
+```bash
+python -m marcbot memory sqlite events
+python -m marcbot memory sqlite events --query sqlite --limit 5
+python -m marcbot memory sqlite events --project marcbot-memory --limit 5
+python -m marcbot memory sqlite events --type workflow --limit 5
+```
+
+This command reads chronological event records from the imported SQLite
+view only. File memory remains the source of truth, SQLite remains a
+query/index view, and provider contact for memory operations remains `no`.

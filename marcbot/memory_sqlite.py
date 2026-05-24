@@ -1514,3 +1514,155 @@ def format_sqlite_memory_summary_list(
 
     lines.append("Provider contact: no")
     return "\n".join(lines)
+
+
+@dataclass(frozen=True)
+class MemorySqliteEventRow:
+    id: int
+    timestamp: str
+    type: str
+    project: str | None
+    summary: str
+    source: str
+    confidence: str
+    details: str | None
+    source_file: str
+    source_line: int
+
+
+def query_sqlite_memory_events(
+    *,
+    path: Path = DEFAULT_MEMORY_DB_PATH,
+    event_type: str | None = None,
+    project: str | None = None,
+    source: str | None = None,
+    query: str | None = None,
+    limit: int = 20,
+) -> list[MemorySqliteEventRow]:
+    if limit < 1:
+        raise ValueError("limit must be 1 or greater")
+    if not path.is_file():
+        return []
+
+    clauses: list[str] = []
+    params: list[object] = []
+
+    if event_type:
+        clauses.append("type = ?")
+        params.append(event_type)
+    if project:
+        clauses.append("project = ?")
+        params.append(project)
+    if source:
+        clauses.append("source = ?")
+        params.append(source)
+    if query:
+        pattern = f"%{query.lower()}%"
+        clauses.append(
+            "("
+            "lower(type) LIKE ? OR "
+            "lower(coalesce(project, '')) LIKE ? OR "
+            "lower(summary) LIKE ? OR "
+            "lower(source) LIKE ? OR "
+            "lower(coalesce(details, '')) LIKE ? OR "
+            "lower(coalesce(cause, '')) LIKE ? OR "
+            "lower(coalesce(resolution, '')) LIKE ? OR "
+            "lower(coalesce(verification, '')) LIKE ? OR "
+            "lower(coalesce(follow_up, '')) LIKE ?"
+            ")"
+        )
+        params.extend(
+            [
+                pattern,
+                pattern,
+                pattern,
+                pattern,
+                pattern,
+                pattern,
+                pattern,
+                pattern,
+                pattern,
+            ]
+        )
+
+    sql = (
+        "SELECT id, timestamp, type, project, summary, source, confidence, "
+        "details, source_file, source_line FROM memory_events"
+    )
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += " ORDER BY timestamp DESC, id DESC LIMIT ?"
+    params.append(limit)
+
+    with _connect(path) as connection:
+        rows = connection.execute(sql, tuple(params)).fetchall()
+
+    return [
+        MemorySqliteEventRow(
+            id=int(row["id"]),
+            timestamp=str(row["timestamp"]),
+            type=str(row["type"]),
+            project=row["project"],
+            summary=str(row["summary"]),
+            source=str(row["source"]),
+            confidence=str(row["confidence"]),
+            details=row["details"],
+            source_file=str(row["source_file"]),
+            source_line=int(row["source_line"]),
+        )
+        for row in rows
+    ]
+
+
+def format_sqlite_memory_event_list(
+    *,
+    path: Path = DEFAULT_MEMORY_DB_PATH,
+    event_type: str | None = None,
+    project: str | None = None,
+    source: str | None = None,
+    query: str | None = None,
+    limit: int = 20,
+) -> str:
+    events = query_sqlite_memory_events(
+        path=path,
+        event_type=event_type,
+        project=project,
+        source=source,
+        query=query,
+        limit=limit,
+    )
+    lines = [
+        "MarcBot memory SQLite events",
+        f"Path: {path}",
+    ]
+
+    filters = []
+    if event_type:
+        filters.append(f"type={event_type}")
+    if project:
+        filters.append(f"project={project}")
+    if source:
+        filters.append(f"source={source}")
+    if query:
+        filters.append(f"query={query}")
+    if filters:
+        lines.append("Filters: " + ", ".join(filters))
+
+    lines.append(f"Limit: {limit}")
+    lines.append("")
+
+    if not events:
+        lines.append("No matching events.")
+    else:
+        for event in events:
+            project_text = event.project if event.project else "none"
+            lines.append(
+                f"- {event.timestamp} [{event.type}; project={project_text}; "
+                f"source={event.source}]"
+            )
+            lines.append(f"  {event.summary}")
+            if event.details:
+                lines.append(f"  details: {event.details}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
