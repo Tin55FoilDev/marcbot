@@ -1378,7 +1378,35 @@ LLM file-summary commands can consume memory profiles with
 memory profile without repeating query/project/limit flags manually.
 The first supported profile is `weather-report`.
 
-### Memory context profiles
+#
+## Telegram and chat memory direction
+
+Telegram should eventually become a major memory input, but not by saving
+all chat text directly. The target pipeline is:
+
+```text
+Telegram interaction
+  -> bounded memory candidate detection
+  -> classify as event, fact, proposal, correction, summary, or ignore
+  -> apply risk-tier guardrails
+  -> write low-risk events automatically
+  -> propose or queue higher-risk durable facts
+  -> expose read-only audit and correction commands
+```
+
+Telegram memory should include both Marc-side and bot-side context:
+
+- Marc-side: goals, corrections, durable decisions, workflow preferences,
+  and explicit instructions.
+- Bot-side: commands run, artifacts sent, errors observed, retries,
+  workflow completions, and summaries of important sessions.
+
+The mature goal is selective, risk-aware automatic memory capture. MarcBot
+should not require Marc to manually approve every low-risk write, but it
+must remain auditable and correctable, with explicit approval for high-risk
+or sensitive memory.
+
+## Memory context profiles
 
 MarcBot supports deterministic memory context profiles for common workflows.
 The first profile is `weather-report`:
@@ -1406,6 +1434,58 @@ python -m marcbot source-monitor summarize-latest ai --memory-profile source-mon
 
 This keeps profile-backed workflow prompts auditable before LLM execution.
 The `source-monitor` profile maps to project `source-monitor` and query `source-monitor`. It should be used only after durable source-monitor facts exist and SQLite validation confirms those facts are available.
+
+
+## Generic memory target model
+
+MarcBot memory is intended to become a generic, workflow-aware memory
+substrate, not a manual plan-file replacement. The long-term goal is for
+MarcBot to remember useful operational and project context across CLI
+workflows, scheduled jobs, Telegram interactions, LLM-assisted summaries,
+reports, and future chat modes.
+
+The memory system should reduce Marc's burden. It should not create a new
+approval inbox where every low-risk write requires manual review. Instead,
+MarcBot should use a risk-tiered write model:
+
+1. Automatic low-risk events:
+   - workflow completed;
+   - report generated or sent;
+   - backup completed;
+   - source-monitor summary generated;
+   - bounded command failure or recovery observed.
+
+2. Automatic or semi-automatic operational facts when confidence is high:
+   - latest successful workflow run;
+   - repeated failure pattern;
+   - current known artifact location;
+   - stable workflow status facts.
+
+3. Proposed durable facts for review while the system matures:
+   - project direction;
+   - durable preferences;
+   - recurring workflow design decisions;
+   - corrections inferred from conversation.
+
+4. Explicit approval required:
+   - sensitive personal data;
+   - secrets, tokens, credentials, or security-sensitive details;
+   - permission or authority changes;
+   - broad behavioral changes;
+   - ambiguous or low-confidence inferences.
+
+The intended mature behavior is that MarcBot automatically captures routine
+low-risk operational memory, proposes or carefully applies medium-risk
+memory with auditability, and requires explicit approval for high-risk
+memory. This keeps the system useful without making Marc approve every
+routine memory transaction.
+
+This is intentionally stronger than a plan-file memory system. Plan files
+are useful for narrative continuity, but they are manual, stale-prone, hard
+to query, difficult to supersede, and not easy for workflows to consume
+consistently. MarcBot memory should be structured, indexed, correctable,
+auditable, profile-aware, and available to deterministic workflow code
+before model calls.
 
 ## Memory workflow reference roles
 
@@ -1435,14 +1515,14 @@ an explicit LLM summary path, so it is a safe place to validate:
 - prompt budget handling when memory context is added;
 - LLM env loading and retry behavior outside top-level `llm` commands.
 
-Source-monitor does not yet prove useful source-monitor-specific memory
-retrieval, because durable source-monitor facts have not been added. A
-dedicated source-monitor memory profile should wait until those facts
-exist and retrieval returns meaningful context.
+Source-monitor now also proves useful source-monitor-specific memory
+retrieval because durable source-monitor facts exist and the dedicated
+`source-monitor` memory profile returns meaningful local context. It remains
+the reference workflow for memory-aware LLM workflow integration mechanics.
 
 The intended sequence is:
 
 1. Keep `weather-report` as the first useful memory profile.
 2. Keep `source-monitor` as the first memory-aware LLM workflow integration.
-3. Add durable source-monitor facts when the workflow facts are stable.
-4. Add a dedicated source-monitor memory profile only after retrieval is useful.
+3. Keep durable source-monitor facts current as the workflow changes.
+4. Use profile-backed prompt preview before expanding automatic workflow use.

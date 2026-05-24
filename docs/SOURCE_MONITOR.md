@@ -412,15 +412,16 @@ exceeding the configured LLM prompt-size guardrail.
 
 ### Memory profile caution
 
-Source-monitor can consume explicit memory context and memory profiles, but
-a dedicated source-monitor profile should not be added until durable
-source-monitor facts exist. Current source-monitor memory integration is
-primarily a validation of workflow mechanics: bounded retrieval, prompt
-boundary handling, prompt budget handling, provider env loading, and LLM
-summary retry behavior.
+Source-monitor can consume explicit memory context and memory profiles. A
+dedicated `source-monitor` profile now exists because durable source-monitor
+facts have been added and SQLite validation confirms they are available.
+Source-monitor remains the reference workflow for memory-aware LLM mechanics:
+bounded retrieval, prompt boundary handling, prompt budget handling, provider
+env loading, prompt preview, and LLM summary retry behavior.
 
-For now, `--memory-profile weather-report` is mainly useful as a reference
-pattern demonstration, not as source-monitor-specific context.
+`--memory-profile source-monitor` should be used for source-monitor-specific
+context. `--memory-profile weather-report` remains useful as a reference
+pattern demonstration.
 
 ### Source-monitor memory profile
 
@@ -450,3 +451,11 @@ Preview mode builds the exact prompt, including memory context when requested,
 then exits before loading provider secrets, contacting the LLM provider, or
 writing a summary artifact. This is useful when the latest summary artifact
 already exists or when inspecting prompt budget and memory boundaries.
+
+### Telegram memory is future work
+
+Source-monitor memory integration is not the final chat-memory system. It
+is a controlled workflow proving ground. Telegram/chat memory should later
+use a separate risk-aware candidate pipeline so routine low-risk events can
+be captured automatically while durable or sensitive facts remain proposed,
+auditable, correctable, or explicitly approved.

@@ -304,6 +304,30 @@ for relevance, priority, warnings, and conflict handling.
 This keeps deterministic retrieval separate from model reasoning while
 allowing the model to benefit from project history and durable facts.
 
+
+## Generic workflow memory target
+
+Workflow memory should be generic across MarcBot projects. The pattern is:
+
+```text
+workflow event or command
+  -> deterministic memory write or retrieval policy
+  -> structured fact/event/summary/proposal/correction storage
+  -> SQLite-backed indexed read model
+  -> bounded context assembly
+  -> optional LLM prompt use with preview/audit support
+```
+
+Workflows should not depend on free-form plan files as the primary memory
+system. Plan files can document milestones and human-readable project
+context, but workflow memory should be structured, queryable, auditable,
+supersedable, and usable by code.
+
+The autonomy target is risk-tiered. Low-risk operational events can be
+written automatically. Medium-risk durable facts may be proposed or later
+auto-applied with clear audit trails. High-risk or sensitive facts require
+explicit approval.
+
 ## Memory-aware workflow reference roles
 
 Memory-aware workflows should distinguish two validation questions:
@@ -314,9 +338,12 @@ Memory-aware workflows should distinguish two validation questions:
 `weather-report` currently answers the first question. It has durable facts
 and recent events that make `memory context --profile weather-report` useful.
 
-`source-monitor` currently answers the second question. It validates the
+`source-monitor` answers the second question and now also has a dedicated
+memory profile backed by durable source-monitor facts. It validates the
 workflow mechanics for adding retrieved memory to an explicit LLM summary
 without letting the model search files or memory directly.
 
 This distinction prevents MarcBot from adding empty or misleading automatic
-memory profiles before the underlying durable facts exist.
+memory profiles before the underlying durable facts exist. The source-monitor
+profile was added only after durable source-monitor facts were created and
+validated in SQLite.
