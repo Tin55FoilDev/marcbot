@@ -1387,6 +1387,7 @@ The first profile is `weather-report`:
 python -m marcbot memory profiles
 python -m marcbot memory profiles --format json
 python -m marcbot memory context --profile weather-report
+python -m marcbot memory context --profile source-monitor
 python -m marcbot memory context --profile weather-report --format json
 ```
 
@@ -1394,6 +1395,8 @@ The `weather-report` profile maps to a short high-signal query, `weather`,
 with bounded section limits. It intentionally does not set `project` so it
 can retrieve both workflow-specific facts and cross-project reference-pattern
 facts. Retrieval remains local and provider-contact-free.
+
+The `source-monitor` profile maps to project `source-monitor` and query `source-monitor`. It should be used only after durable source-monitor facts exist and SQLite validation confirms those facts are available.
 
 ## Memory workflow reference roles
 

@@ -324,6 +324,7 @@ def test_get_memory_context_profile_rejects_unknown_profile() -> None:
         get_memory_context_profile("missing")
     except ValueError as exc:
         assert "unknown memory context profile: missing" in str(exc)
+        assert "source-monitor" in str(exc)
         assert "weather-report" in str(exc)
     else:
         raise AssertionError("Expected ValueError")
@@ -401,13 +402,30 @@ def test_format_memory_context_profiles_json_is_structured() -> None:
 
     payload = json.loads(format_memory_context_profiles_json())
 
+    profiles = {profile["name"]: profile for profile in payload["profiles"]}
+
     assert payload["provider_contact"] is False
-    assert payload["profiles"][0]["name"] == "weather-report"
-    assert payload["profiles"][0]["query"] == "weather"
-    assert payload["profiles"][0]["project"] is None
-    assert payload["profiles"][0]["limits"] == {
+    assert profiles["weather-report"]["query"] == "weather"
+    assert profiles["weather-report"]["project"] is None
+    assert profiles["weather-report"]["limits"] == {
         "facts": 5,
         "summaries": 2,
         "events": 5,
     }
+    assert profiles["source-monitor"]["query"] == "source-monitor"
+    assert profiles["source-monitor"]["project"] == "source-monitor"
+
+
+
+def test_get_memory_context_profile_source_monitor() -> None:
+    from marcbot.memory_context import get_memory_context_profile
+
+    profile = get_memory_context_profile("source-monitor")
+
+    assert profile.name == "source-monitor"
+    assert profile.query == "source-monitor"
+    assert profile.project == "source-monitor"
+    assert profile.facts_limit == 5
+    assert profile.summaries_limit == 2
+    assert profile.events_limit == 5
 

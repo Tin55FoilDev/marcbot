@@ -421,3 +421,17 @@ summary retry behavior.
 
 For now, `--memory-profile weather-report` is mainly useful as a reference
 pattern demonstration, not as source-monitor-specific context.
+
+### Source-monitor memory profile
+
+After durable source-monitor facts exist, source-monitor summaries may use
+the dedicated source-monitor memory profile:
+
+```bash
+python -m marcbot memory context --profile source-monitor
+python -m marcbot source-monitor summarize-latest ai --memory-profile source-monitor
+python -m marcbot source-monitor run-summary ai --memory-profile source-monitor
+```
+
+The profile maps to project `source-monitor`, query `source-monitor`, and
+bounded memory section limits. Retrieval remains local and provider-contact-free.

@@ -2356,8 +2356,11 @@ def test_memory_profiles_command_outputs_json(capsys) -> None:
     captured = capsys.readouterr()
 
     payload = json.loads(captured.out)
+    profile_names = {profile["name"] for profile in payload["profiles"]}
+
     assert result == 0
     assert payload["provider_contact"] is False
-    assert payload["profiles"][0]["name"] == "weather-report"
+    assert "weather-report" in profile_names
+    assert "source-monitor" in profile_names
     assert captured.err == ""
 

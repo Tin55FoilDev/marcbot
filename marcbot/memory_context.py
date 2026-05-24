@@ -35,6 +35,14 @@ DEFAULT_MEMORY_CONTEXT_PROFILES: dict[str, MemoryContextProfile] = {
         summaries_limit=2,
         events_limit=5,
     ),
+    "source-monitor": MemoryContextProfile(
+        name="source-monitor",
+        query="source-monitor",
+        project="source-monitor",
+        facts_limit=5,
+        summaries_limit=2,
+        events_limit=5,
+    ),
 }
 
 
