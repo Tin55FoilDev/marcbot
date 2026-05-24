@@ -6,6 +6,7 @@ from pathlib import Path
 
 from marcbot.memory_context import (
     build_memory_context,
+    build_memory_context_dict,
     format_memory_context,
     format_memory_context_json,
 )
@@ -225,3 +226,50 @@ def test_format_memory_context_json_is_structured(tmp_path: Path) -> None:
     assert payload["facts"][0]["id"] == "json-fact"
     assert payload["summaries"] == []
     assert payload["events"] == []
+
+
+def test_build_memory_context_dict_is_workflow_facing_contract(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_fact(
+            connection,
+            fact_id="contract-fact",
+            statement="Workflow code can consume memory context as a dict.",
+            project="MarcBot",
+        )
+        _insert_summary(
+            connection,
+            name="contract-summary.md",
+            title="Contract summary",
+            project="MarcBot",
+            body="Structured context contract summary body.",
+        )
+        _insert_event(
+            connection,
+            timestamp="2026-05-22T10:00:00+00:00",
+            event_type="workflow_completed",
+            summary="Structured context contract event.",
+            project="MarcBot",
+        )
+        connection.commit()
+
+    payload = build_memory_context_dict(
+        path=db_path,
+        project="MarcBot",
+        query="contract",
+        facts_limit=2,
+        summaries_limit=2,
+        events_limit=2,
+    )
+
+    assert payload["provider_contact"] is False
+    assert payload["project"] == "MarcBot"
+    assert payload["query"] == "contract"
+    assert payload["limits"] == {"events": 2, "facts": 2, "summaries": 2}
+    assert payload["counts"] == {"events": 1, "facts": 1, "summaries": 1}
+    assert payload["facts"][0]["id"] == "contract-fact"
+    assert payload["summaries"][0]["name"] == "contract-summary.md"
+    assert payload["events"][0]["summary"] == "Structured context contract event."

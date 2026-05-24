@@ -67,6 +67,17 @@ MarcBot currently includes:
 
 MarcBot 0.3.8 adds bounded local memory context assembly from SQLite-backed facts, summaries, and events while keeping memory retrieval provider-contact-free.
 
+
+Memory context helper:
+
+```bash
+python -m marcbot memory context --query "weather report"
+python -m marcbot memory context --project weather-report --query delivery
+python -m marcbot memory context --project weather-report --query delivery --format json
+```
+
+The text format is for human inspection. The JSON format is the stable
+workflow-facing contract for future bounded memory retrieval integration.
 Important files/commands:
 
     docs/SESSION_START.md

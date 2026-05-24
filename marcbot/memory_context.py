@@ -225,6 +225,25 @@ def format_memory_context(
     return "\n".join(lines)
 
 
+def build_memory_context_dict(
+    *,
+    path: Path = DEFAULT_MEMORY_DB_PATH,
+    query: str | None = None,
+    project: str | None = None,
+    facts_limit: int = 5,
+    summaries_limit: int = 3,
+    events_limit: int = 5,
+) -> dict[str, object]:
+    context = build_memory_context(
+        path=path,
+        query=query,
+        project=project,
+        facts_limit=facts_limit,
+        summaries_limit=summaries_limit,
+        events_limit=events_limit,
+    )
+    return memory_context_to_dict(context)
+
 def format_memory_context_json(
     *,
     path: Path = DEFAULT_MEMORY_DB_PATH,
@@ -234,7 +253,7 @@ def format_memory_context_json(
     summaries_limit: int = 3,
     events_limit: int = 5,
 ) -> str:
-    context = build_memory_context(
+    payload = build_memory_context_dict(
         path=path,
         query=query,
         project=project,
@@ -242,4 +261,4 @@ def format_memory_context_json(
         summaries_limit=summaries_limit,
         events_limit=events_limit,
     )
-    return json.dumps(memory_context_to_dict(context), indent=2, sort_keys=True)
+    return json.dumps(payload, indent=2, sort_keys=True)

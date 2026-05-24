@@ -1269,3 +1269,24 @@ how much raw memory to load. Deterministic MarcBot code should enforce:
 This keeps memory useful and flexible while preserving auditability,
 bounded context size, and safety. The model can ask for specific memory;
 MarcBot decides how to retrieve it safely.
+
+### Memory context JSON contract
+
+`python -m marcbot memory context --format json` exposes the first
+structured workflow-facing memory context contract.
+
+Top-level fields:
+
+- `provider_contact`: always `false` for local memory retrieval.
+- `path`: SQLite database path used for the derived query view.
+- `query`: requested topic/query, or `null`.
+- `project`: requested project filter, or `null`.
+- `limits`: independent limits for facts, summaries, and events.
+- `counts`: number of returned facts, summaries, and events.
+- `facts`: active fact records only.
+- `summaries`: matching summary records with full body and preview.
+- `events`: recent matching event records.
+
+Future workflow code should consume the direct Python helper
+`build_memory_context_dict(...)` where possible. The CLI JSON output is
+for inspection, integration testing, and shell-facing workflows.
