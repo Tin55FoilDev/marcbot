@@ -92,6 +92,38 @@ SUMMARY_COMPLETION_ATTEMPTS = 2
 SOURCE_MONITOR_SUMMARY_INPUT_LIMIT = 3000
 
 
+def _build_optional_memory_context_for_prompt(args: argparse.Namespace) -> str:
+    memory_query = getattr(args, "memory_query", None)
+    memory_project = getattr(args, "memory_project", None)
+    if not memory_query and not memory_project:
+        return ""
+
+    return format_memory_context(
+        query=memory_query,
+        project=memory_project,
+        facts_limit=getattr(args, "memory_facts_limit", 5),
+        summaries_limit=getattr(args, "memory_summaries_limit", 3),
+        events_limit=getattr(args, "memory_events_limit", 5),
+    )
+
+
+def _append_optional_memory_context_to_prompt(
+    prompt: str,
+    args: argparse.Namespace,
+) -> str:
+    memory_context = _build_optional_memory_context_for_prompt(args)
+    if not memory_context:
+        return prompt
+
+    return (
+        prompt.rstrip()
+        + "\n\n"
+        + "## Local MarcBot memory context\n"
+        + "\n"
+        + memory_context
+        + "\n"
+    )
+
 def _build_source_monitor_summary_input(
     report_path: Path,
     requested_path: Path,
@@ -381,6 +413,11 @@ def build_parser() -> argparse.ArgumentParser:
         "path",
         help="workspace-relative text file path",
     )
+    llm_summarize_file_parser.add_argument("--memory-query", default=None)
+    llm_summarize_file_parser.add_argument("--memory-project", default=None)
+    llm_summarize_file_parser.add_argument("--memory-facts-limit", type=int, default=5)
+    llm_summarize_file_parser.add_argument("--memory-summaries-limit", type=int, default=3)
+    llm_summarize_file_parser.add_argument("--memory-events-limit", type=int, default=5)
     llm_summarize_file_save_parser = llm_subparsers.add_parser(
         "summarize-file-save",
         help="summarize a workspace file and save the result under the workspace",
@@ -394,6 +431,11 @@ def build_parser() -> argparse.ArgumentParser:
         "output_path",
         help="workspace-relative output file path",
     )
+    llm_summarize_file_save_parser.add_argument("--memory-query", default=None)
+    llm_summarize_file_save_parser.add_argument("--memory-project", default=None)
+    llm_summarize_file_save_parser.add_argument("--memory-facts-limit", type=int, default=5)
+    llm_summarize_file_save_parser.add_argument("--memory-summaries-limit", type=int, default=3)
+    llm_summarize_file_save_parser.add_argument("--memory-events-limit", type=int, default=5)
 
     memory_parser = subparsers.add_parser(
         "memory",
@@ -1070,6 +1112,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.llm_command == "summarize-file":
                 summary_input = load_workspace_summary_input(args.path)
                 prompt = build_summary_prompt(summary_input)
+                prompt = _append_optional_memory_context_to_prompt(prompt, args)
 
                 task_config = load_llm_task_config()
                 task = task_config.tasks.get(args.task)
@@ -1108,6 +1151,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.llm_command == "summarize-file-save":
                 summary_input = load_workspace_summary_input(args.input_path)
                 prompt = build_summary_prompt(summary_input)
+                prompt = _append_optional_memory_context_to_prompt(prompt, args)
                 resolve_workspace_summary_output_path(args.output_path)
 
                 task_config = load_llm_task_config()

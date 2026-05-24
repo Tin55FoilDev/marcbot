@@ -1293,6 +1293,13 @@ Future workflow code should consume the direct Python helper
 `build_memory_context_dict(...)` where possible. The CLI JSON output is
 for inspection, integration testing, and shell-facing workflows.
 
+
+The first controlled workflow integration is opt-in file summarization.
+`llm summarize-file` and `llm summarize-file-save` can explicitly request
+bounded memory context with `--memory-query` and/or `--memory-project`.
+This keeps memory retrieval automatic within that selected workflow only
+when requested, while preserving provider-contact boundaries.
+
 ## Workflow integration boundary
 
 The memory context helper is now suitable as a local workflow-facing API.

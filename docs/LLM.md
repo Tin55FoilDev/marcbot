@@ -594,3 +594,17 @@ the context.
 
 This keeps local memory retrieval auditable and safe while allowing future
 model-assisted workflows to benefit from project history and durable facts.
+
+### Opt-in memory context for file summarization
+
+`llm summarize-file` and `llm summarize-file-save` may include bounded
+local memory context when explicitly requested with memory flags:
+
+```bash
+python -m marcbot llm summarize-file report_summary path.md --memory-query "weather report" --memory-project weather-report
+python -m marcbot llm summarize-file-save report_summary path.md output.md --memory-query "weather report" --memory-project weather-report
+```
+
+Memory context retrieval remains local and provider-contact-free. Provider
+contact still occurs only because the operator explicitly runs an `llm`
+command routed through the configured task/profile.

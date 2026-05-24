@@ -5,7 +5,7 @@ import logging
 import pytest
 
 from marcbot import __version__
-from marcbot.cli import main
+from marcbot.cli import build_parser, main
 from marcbot.errors import MarcBotError
 
 
@@ -1750,3 +1750,51 @@ def test_memory_status_command_includes_sqlite(capsys, monkeypatch) -> None:
     assert result == 0
     assert captured.out == "MarcBot memory\ninclude_sqlite=True\n"
 
+
+def test_summarize_file_accepts_memory_context_flags() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "llm",
+            "summarize-file",
+            "report_summary",
+            "report.md",
+            "--memory-query",
+            "weather report",
+            "--memory-project",
+            "weather-report",
+            "--memory-facts-limit",
+            "2",
+            "--memory-summaries-limit",
+            "1",
+            "--memory-events-limit",
+            "3",
+        ]
+    )
+
+    assert args.memory_query == "weather report"
+    assert args.memory_project == "weather-report"
+    assert args.memory_facts_limit == 2
+    assert args.memory_summaries_limit == 1
+    assert args.memory_events_limit == 3
+
+
+def test_summarize_file_save_accepts_memory_context_flags() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "llm",
+            "summarize-file-save",
+            "report_summary",
+            "report.md",
+            "summary.md",
+            "--memory-query",
+            "sqlite",
+        ]
+    )
+
+    assert args.memory_query == "sqlite"
+    assert args.memory_project is None
+    assert args.memory_facts_limit == 5
+    assert args.memory_summaries_limit == 3
+    assert args.memory_events_limit == 5
