@@ -1396,6 +1396,15 @@ with bounded section limits. It intentionally does not set `project` so it
 can retrieve both workflow-specific facts and cross-project reference-pattern
 facts. Retrieval remains local and provider-contact-free.
 
+
+Source-monitor prompt preview can inspect memory-profile prompts before
+provider contact:
+
+```bash
+python -m marcbot source-monitor summarize-latest ai --memory-profile source-monitor --preview-prompt
+```
+
+This keeps profile-backed workflow prompts auditable before LLM execution.
 The `source-monitor` profile maps to project `source-monitor` and query `source-monitor`. It should be used only after durable source-monitor facts exist and SQLite validation confirms those facts are available.
 
 ## Memory workflow reference roles

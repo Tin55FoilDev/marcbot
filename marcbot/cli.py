@@ -236,7 +236,9 @@ def _write_source_monitor_summary_for_report(
     report_path: Path,
     task_name: str,
     memory_args: argparse.Namespace | None = None,
-) -> Path:
+    preview_prompt: bool = False,
+    preview_prompt_save: str | None = None,
+) -> Path | None:
     """Summarize an existing source-monitor report and save the summary artifact."""
     input_path = report_path.relative_to(WORKSPACE_DIR)
     output_path = input_path.parent.parent / "summaries" / f"{input_path.stem}.summary.md"
@@ -261,6 +263,15 @@ def _write_source_monitor_summary_for_report(
     prompt = build_summary_prompt(summary_input)
     if memory_args is not None:
         prompt = _append_optional_memory_context_to_prompt(prompt, memory_args)
+
+    if preview_prompt_save:
+        saved_path = _save_prompt_preview(prompt, preview_prompt_save)
+        print(f"Saved LLM prompt preview: {saved_path}")
+    if preview_prompt:
+        print(prompt)
+    if preview_prompt or preview_prompt_save:
+        return None
+
     resolve_workspace_summary_output_path(str(output_path))
 
     task_config = load_llm_task_config()
@@ -805,6 +816,8 @@ def build_parser() -> argparse.ArgumentParser:
     source_monitor_run_summary_parser.add_argument(
         "--memory-events-limit", type=int, default=5
     )
+    source_monitor_run_summary_parser.add_argument("--preview-prompt", action="store_true")
+    source_monitor_run_summary_parser.add_argument("--preview-prompt-save", default=None)
     source_monitor_summarize_latest_parser = source_monitor_subparsers.add_parser(
         "summarize-latest",
         help="summarize the latest existing source monitor report",
@@ -832,6 +845,8 @@ def build_parser() -> argparse.ArgumentParser:
     source_monitor_summarize_latest_parser.add_argument(
         "--memory-events-limit", type=int, default=5
     )
+    source_monitor_summarize_latest_parser.add_argument("--preview-prompt", action="store_true")
+    source_monitor_summarize_latest_parser.add_argument("--preview-prompt-save", default=None)
     source_monitor_status_parser = source_monitor_subparsers.add_parser(
         "status", help="show latest saved source monitor artifacts",
     )
@@ -1682,8 +1697,11 @@ def main(argv: list[str] | None = None) -> int:
                     report_path=latest_report,
                     task_name=args.task,
                     memory_args=args,
+                    preview_prompt=args.preview_prompt,
+                    preview_prompt_save=args.preview_prompt_save,
                 )
-                print(f"Source monitor summary written: {written_summary_path}")
+                if written_summary_path is not None:
+                    print(f"Source monitor summary written: {written_summary_path}")
                 return 0
 
             if args.source_monitor_command == "run-summary":
@@ -1695,8 +1713,11 @@ def main(argv: list[str] | None = None) -> int:
                     report_path=result.path,
                     task_name=args.task,
                     memory_args=args,
+                    preview_prompt=args.preview_prompt,
+                    preview_prompt_save=args.preview_prompt_save,
                 )
-                print(f"Source monitor summary written: {written_summary_path}")
+                if written_summary_path is not None:
+                    print(f"Source monitor summary written: {written_summary_path}")
                 return 0
 
             parser.print_help()

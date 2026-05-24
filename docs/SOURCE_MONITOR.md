@@ -435,3 +435,18 @@ python -m marcbot source-monitor run-summary ai --memory-profile source-monitor
 
 The profile maps to project `source-monitor`, query `source-monitor`, and
 bounded memory section limits. Retrieval remains local and provider-contact-free.
+
+### Source-monitor prompt preview
+
+`source-monitor summarize-latest` and `source-monitor run-summary` support
+provider-contact-free prompt preview for the LLM summary prompt:
+
+```bash
+python -m marcbot source-monitor summarize-latest ai --memory-profile source-monitor --preview-prompt
+python -m marcbot source-monitor summarize-latest ai --memory-profile source-monitor --preview-prompt-save manual-tests/source-monitor.prompt.md
+```
+
+Preview mode builds the exact prompt, including memory context when requested,
+then exits before loading provider secrets, contacting the LLM provider, or
+writing a summary artifact. This is useful when the latest summary artifact
+already exists or when inspecting prompt budget and memory boundaries.

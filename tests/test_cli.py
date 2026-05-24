@@ -2364,3 +2364,44 @@ def test_memory_profiles_command_outputs_json(capsys) -> None:
     assert "source-monitor" in profile_names
     assert captured.err == ""
 
+
+
+def test_source_monitor_summarize_latest_accepts_preview_prompt_flags() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "source-monitor",
+            "summarize-latest",
+            "ai",
+            "--memory-profile",
+            "source-monitor",
+            "--preview-prompt",
+            "--preview-prompt-save",
+            "manual-tests/source-monitor.prompt.md",
+        ]
+    )
+
+    assert args.memory_profile == "source-monitor"
+    assert args.preview_prompt is True
+    assert args.preview_prompt_save == "manual-tests/source-monitor.prompt.md"
+
+
+def test_source_monitor_run_summary_accepts_preview_prompt_flags() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "source-monitor",
+            "run-summary",
+            "ai",
+            "--memory-profile",
+            "source-monitor",
+            "--preview-prompt",
+            "--preview-prompt-save",
+            "manual-tests/source-monitor.prompt.md",
+        ]
+    )
+
+    assert args.memory_profile == "source-monitor"
+    assert args.preview_prompt is True
+    assert args.preview_prompt_save == "manual-tests/source-monitor.prompt.md"
+
