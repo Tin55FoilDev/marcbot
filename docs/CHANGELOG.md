@@ -20,6 +20,12 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.15 - Telegram memory proposal command
+
+- Added the authorized Telegram `/memory_propose_fact` command.
+- Created the first Telegram-side memory write path as pending proposals only.
+- Preserved the durable-memory approval boundary: the command does not approve facts.
+- Validated the command live with a pending proposal, SQLite sync, and cleanup rejection.
 ## 0.3.14 - Telegram memory profile visibility
 
 - Added the read-only Telegram `/memory_profiles` command.
