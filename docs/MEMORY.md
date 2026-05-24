@@ -1379,6 +1379,20 @@ memory profile without repeating query/project/limit flags manually.
 The first supported profile is `weather-report`.
 
 #
+
+### Telegram explicit memory proposal
+
+`/memory_propose_fact <project> | <statement>` is the first Telegram-side
+memory write path. It creates a pending fact proposal only; it does not
+approve durable memory. This is the first step toward Telegram memory
+candidate capture while preserving review boundaries.
+
+Example:
+
+```text
+/memory_propose_fact source-monitor | Source-monitor summaries should use explicit memory profiles.
+```
+
 ## Telegram and chat memory direction
 
 Telegram should eventually become a major memory input, but not by saving

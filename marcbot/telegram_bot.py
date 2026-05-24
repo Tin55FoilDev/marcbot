@@ -33,6 +33,7 @@ from marcbot.memory_context import (
     resolve_memory_context_request,
 )
 from marcbot.memory_store import (
+    add_memory_proposal,
     format_memory_event_list,
     format_memory_fact_list,
     format_memory_status_message,
@@ -544,6 +545,82 @@ async def memory_context_command(update: Update, context: ContextTypes.DEFAULT_T
         "Handled /memory_context for chat_id=%s ok=true profile=%s",
         chat_id,
         profile_name,
+    )
+
+
+
+async def memory_propose_fact_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /memory_propose_fact."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /memory_propose_fact from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    raw_text = " ".join(context.args).strip()
+    if " | " not in raw_text:
+        await update.message.reply_text(
+            "Usage: /memory_propose_fact <project> | <statement>"
+        )
+        LOGGER.info(
+            "Handled /memory_propose_fact for chat_id=%s ok=false invalid_format",
+            chat_id,
+        )
+        return
+
+    project, statement = [part.strip() for part in raw_text.split(" | ", 1)]
+    if not project or not statement:
+        await update.message.reply_text(
+            "Usage: /memory_propose_fact <project> | <statement>"
+        )
+        LOGGER.info(
+            "Handled /memory_propose_fact for chat_id=%s ok=false missing_value",
+            chat_id,
+        )
+        return
+
+    proposal_id = (
+        f"telegram-fact-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    )
+
+    try:
+        result = add_memory_proposal(
+            proposal_id=proposal_id,
+            proposed_type="fact",
+            proposed_statement=statement,
+            source="telegram_memory_propose_fact",
+            rationale="Proposed explicitly from an authorized Telegram command.",
+            risk_level="medium",
+            project=project,
+            details=(
+                "Created by /memory_propose_fact. This is a pending proposal, "
+                "not an approved durable fact."
+            ),
+        )
+    except ValueError as exc:
+        await update.message.reply_text(f"Memory proposal failed: {exc}")
+        LOGGER.info(
+            "Handled /memory_propose_fact for chat_id=%s ok=false error=%s",
+            chat_id,
+            exc,
+        )
+        return
+
+    await update.message.reply_text(
+        "Memory proposal added:\n"
+        f"ID: {result.proposal.id}\n"
+        "Status: pending\n"
+        "Provider contact: no"
+    )
+    LOGGER.info(
+        "Handled /memory_propose_fact for chat_id=%s ok=true proposal=%s",
+        chat_id,
+        result.proposal.id,
     )
 
 
@@ -1160,6 +1237,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/memory_events - show recent local memory events\n"
         "/memory_facts - show active local memory facts\n"
         "/memory_profiles - list deterministic memory context profiles\n"
+        "/memory_propose_fact <project> | <statement> - propose a pending memory fact\n"
         "/memory_status - show local memory status\n"
         "/ping - check whether MarcBot is responding\n"
         "/report_status - show latest daily status report status\n"
@@ -1247,6 +1325,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("memory_events", memory_events_command))
     application.add_handler(CommandHandler("memory_facts", memory_facts_command))
     application.add_handler(CommandHandler("memory_context", memory_context_command))
+    application.add_handler(CommandHandler("memory_propose_fact", memory_propose_fact_command))
     application.add_handler(CommandHandler("memory_profiles", memory_profiles_command))
     application.add_handler(CommandHandler("memory_status", memory_status_command))
     application.add_handler(CommandHandler("send_weather_report", send_weather_report_command))

@@ -540,3 +540,17 @@ Examples:
 /memory_context weather-report
 /memory_context source-monitor
 ```
+
+### Telegram memory proposal command
+
+`/memory_propose_fact <project> | <statement>` creates a pending
+memory proposal from Telegram. It does not create an approved durable fact.
+
+Example:
+
+```text
+/memory_propose_fact source-monitor | Source-monitor summaries should use explicit memory profiles.
+```
+
+The command is authorized-chat-only, writes a pending proposal, and remains
+provider-contact-free.
