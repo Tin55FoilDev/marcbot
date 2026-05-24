@@ -36,6 +36,7 @@ from marcbot.memory_store import (
     add_memory_proposal,
     format_memory_event_list,
     format_memory_fact_list,
+    format_memory_proposal_detail,
     format_memory_proposal_list,
     format_memory_status_message,
 )
@@ -549,6 +550,48 @@ async def memory_context_command(update: Update, context: ContextTypes.DEFAULT_T
     )
 
 
+
+
+
+async def memory_proposal_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /memory_proposal."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /memory_proposal from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    proposal_id = context.args[0] if context.args else ""
+    if not proposal_id:
+        await update.message.reply_text("Usage: /memory_proposal <id>")
+        LOGGER.info(
+            "Handled /memory_proposal for chat_id=%s ok=false missing_id",
+            chat_id,
+        )
+        return
+
+    try:
+        message = format_memory_proposal_detail(proposal_id=proposal_id)
+    except ValueError as exc:
+        await update.message.reply_text(f"Memory proposal not found: {exc}")
+        LOGGER.info(
+            "Handled /memory_proposal for chat_id=%s ok=false proposal=%s",
+            chat_id,
+            proposal_id,
+        )
+        return
+
+    await update.message.reply_text(message)
+    LOGGER.info(
+        "Handled /memory_proposal for chat_id=%s ok=true proposal=%s",
+        chat_id,
+        proposal_id,
+    )
 
 
 async def memory_proposals_command(
@@ -1257,6 +1300,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/memory_events - show recent local memory events\n"
         "/memory_facts - show active local memory facts\n"
         "/memory_profiles - list deterministic memory context profiles\n"
+        "/memory_proposal <id> - show one memory proposal\n"
         "/memory_proposals - show pending memory proposals\n"
         "/memory_propose_fact <project> | <statement> - propose a pending memory fact\n"
         "/memory_status - show local memory status\n"
@@ -1347,6 +1391,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("memory_facts", memory_facts_command))
     application.add_handler(CommandHandler("memory_context", memory_context_command))
     application.add_handler(CommandHandler("memory_propose_fact", memory_propose_fact_command))
+    application.add_handler(CommandHandler("memory_proposal", memory_proposal_command))
     application.add_handler(CommandHandler("memory_proposals", memory_proposals_command))
     application.add_handler(CommandHandler("memory_profiles", memory_profiles_command))
     application.add_handler(CommandHandler("memory_status", memory_status_command))

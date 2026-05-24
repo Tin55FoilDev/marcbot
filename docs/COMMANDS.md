@@ -560,3 +560,9 @@ provider-contact-free.
 `/memory_proposals` lists pending memory proposals from Telegram.
 It is read-only and provider-contact-free. It does not approve, reject,
 or modify proposals.
+
+### Telegram memory proposal detail
+
+`/memory_proposal <id>` shows one memory proposal from Telegram.
+It is read-only and provider-contact-free. It does not approve, reject,
+or modify the proposal.

@@ -1381,6 +1381,10 @@ The first supported profile is `weather-report`.
 #
 
 
+
+`/memory_proposal <id>` provides read-only Telegram detail for one
+proposal. It complements `/memory_proposals` and keeps review visibility
+available without adding Telegram approval authority.
 `/memory_proposals` provides read-only Telegram visibility into pending
 memory proposals. It complements `/memory_propose_fact` by letting Marc
 inspect pending proposal state without using the CLI.

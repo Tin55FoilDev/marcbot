@@ -1874,3 +1874,136 @@ def test_memory_proposals_command_rejects_unauthorized_chat() -> None:
     asyncio.run(telegram_bot.memory_proposals_command(update, context))
 
     assert message.replies
+
+
+def test_memory_proposal_command_replies_with_detail(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_memory_proposal_detail",
+        lambda proposal_id: f"MarcBot memory proposal\nID: {proposal_id}\nProvider contact: no",
+    )
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        args=["telegram-fact-20260524-185040"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_proposal_command(update, context))
+
+    assert message.replies == [
+        "MarcBot memory proposal\n"
+        "ID: telegram-fact-20260524-185040\n"
+        "Provider contact: no"
+    ]
+
+
+def test_memory_proposal_command_reports_missing_id() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        args=[],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_proposal_command(update, context))
+
+    assert message.replies == ["Usage: /memory_proposal <id>"]
+
+
+def test_memory_proposal_command_reports_missing_proposal(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    def fake_format_memory_proposal_detail(proposal_id: str) -> str:
+        raise ValueError(f"proposal does not exist: {proposal_id}")
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_memory_proposal_detail",
+        fake_format_memory_proposal_detail,
+    )
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        args=["missing"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_proposal_command(update, context))
+
+    assert message.replies == [
+        "Memory proposal not found: proposal does not exist: missing"
+    ]
+
+
+def test_memory_proposal_command_rejects_unauthorized_chat() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=999),
+        message=message,
+    )
+    context = SimpleNamespace(
+        args=["telegram-fact-20260524-185040"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_proposal_command(update, context))
+
+    assert message.replies
