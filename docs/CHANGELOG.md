@@ -20,6 +20,12 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.10 - LLM provider environment loading
+
+- Provider-contact LLM CLI commands now load `/srv/marcbot/config/llm.env` before contacting configured providers.
+- Verified `llm health local_fast` works without manually sourcing `llm.env`.
+- Preserved `llm status --verbose` as a provider-contact-free local config/status command.
+- Revalidated opt-in memory-context file summarization after the env-loading hardening.
 ## 0.3.9 - Opt-in memory context for LLM file summaries
 
 - Added opt-in memory context flags to `llm summarize-file` and `llm summarize-file-save`.
