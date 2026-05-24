@@ -1896,3 +1896,125 @@ def test_summarize_file_save_preview_prompt_flag_parses() -> None:
     )
 
     assert args.preview_prompt is True
+
+
+def test_summarize_file_preview_prompt_does_not_contact_provider(
+    capsys,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    import marcbot.cli as cli
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    report = workspace / "report.md"
+    report.write_text("# Test report\n\nSummarize me.", encoding="utf-8")
+
+    def load_test_summary_input(path):
+        from marcbot.llm_file_summary import load_workspace_summary_input
+
+        return load_workspace_summary_input(path, workspace_dir=workspace)
+
+    def fail_provider_env_load():
+        raise AssertionError("preview should not load provider env")
+
+    def fail_completion(**kwargs):
+        raise AssertionError("preview should not contact provider")
+
+    monkeypatch.setattr(cli, "load_workspace_summary_input", load_test_summary_input)
+    monkeypatch.setattr(cli, "_load_llm_env_for_provider_contact", fail_provider_env_load)
+    monkeypatch.setattr(cli, "_run_summary_completion_with_retry", fail_completion)
+    monkeypatch.setattr(
+        cli,
+        "format_memory_context",
+        lambda **kwargs: "MarcBot memory context\nProvider contact: no",
+    )
+
+    result = main(
+        [
+            "llm",
+            "summarize-file",
+            "report_summary",
+            "report.md",
+            "--memory-query",
+            "weather",
+            "--memory-project",
+            "weather-report",
+            "--preview-prompt",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Summarize me." in captured.out
+    assert "## Local MarcBot memory context" in captured.out
+    assert "Memory-use rules:" in captured.out
+    assert "MarcBot memory context" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert captured.err == ""
+
+
+def test_summarize_file_save_preview_prompt_does_not_contact_provider(
+    capsys,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    import marcbot.cli as cli
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    report = workspace / "report.md"
+    report.write_text("# Save test report\n\nSummarize and save me.", encoding="utf-8")
+
+    def load_test_summary_input(path):
+        from marcbot.llm_file_summary import load_workspace_summary_input
+
+        return load_workspace_summary_input(path, workspace_dir=workspace)
+
+    def resolve_test_summary_output(path):
+        from marcbot.llm_file_summary import resolve_workspace_summary_output_path
+
+        return resolve_workspace_summary_output_path(path, workspace_dir=workspace)
+
+    def fail_provider_env_load():
+        raise AssertionError("preview should not load provider env")
+
+    def fail_completion(**kwargs):
+        raise AssertionError("preview should not contact provider")
+
+    monkeypatch.setattr(cli, "load_workspace_summary_input", load_test_summary_input)
+    monkeypatch.setattr(
+        cli,
+        "resolve_workspace_summary_output_path",
+        resolve_test_summary_output,
+    )
+    monkeypatch.setattr(cli, "_load_llm_env_for_provider_contact", fail_provider_env_load)
+    monkeypatch.setattr(cli, "_run_summary_completion_with_retry", fail_completion)
+    monkeypatch.setattr(
+        cli,
+        "format_memory_context",
+        lambda **kwargs: "MarcBot memory context\nProvider contact: no",
+    )
+
+    result = main(
+        [
+            "llm",
+            "summarize-file-save",
+            "report_summary",
+            "report.md",
+            "summary.md",
+            "--memory-query",
+            "weather",
+            "--preview-prompt",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Summarize and save me." in captured.out
+    assert "## Local MarcBot memory context" in captured.out
+    assert "Memory-use rules:" in captured.out
+    assert "MarcBot memory context" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert not (workspace / "summary.md").exists()
+    assert captured.err == ""
