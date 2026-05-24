@@ -35,7 +35,7 @@ from marcbot.logging_setup import configure_logging
 from marcbot.memory_context import (
     format_memory_context,
     format_memory_context_json,
-    get_memory_context_profile,
+    resolve_memory_context_request,
 )
 from marcbot.memory_sqlite import (
     format_memory_sqlite_counts,
@@ -108,30 +108,24 @@ def _load_llm_env_for_provider_contact() -> None:
         os.environ[name] = value
 
 def _build_optional_memory_context_for_prompt(args: argparse.Namespace) -> str:
-    memory_profile = getattr(args, "memory_profile", None)
-    memory_query = getattr(args, "memory_query", None)
-    memory_project = getattr(args, "memory_project", None)
-    facts_limit = getattr(args, "memory_facts_limit", 5)
-    summaries_limit = getattr(args, "memory_summaries_limit", 3)
-    events_limit = getattr(args, "memory_events_limit", 5)
+    request = resolve_memory_context_request(
+        profile_name=getattr(args, "memory_profile", None),
+        query=getattr(args, "memory_query", None),
+        project=getattr(args, "memory_project", None),
+        facts_limit=getattr(args, "memory_facts_limit", 5),
+        summaries_limit=getattr(args, "memory_summaries_limit", 3),
+        events_limit=getattr(args, "memory_events_limit", 5),
+    )
 
-    if memory_profile:
-        profile = get_memory_context_profile(memory_profile)
-        memory_query = memory_query if memory_query is not None else profile.query
-        memory_project = memory_project if memory_project is not None else profile.project
-        facts_limit = profile.facts_limit
-        summaries_limit = profile.summaries_limit
-        events_limit = profile.events_limit
-
-    if not memory_query and not memory_project:
+    if not request.query and not request.project:
         return ""
 
     return format_memory_context(
-        query=memory_query,
-        project=memory_project,
-        facts_limit=facts_limit,
-        summaries_limit=summaries_limit,
-        events_limit=events_limit,
+        query=request.query,
+        project=request.project,
+        facts_limit=request.facts_limit,
+        summaries_limit=request.summaries_limit,
+        events_limit=request.events_limit,
     )
 
 
@@ -1333,25 +1327,21 @@ def main(argv: list[str] | None = None) -> int:
                     if args.format == "json"
                     else format_memory_context
                 )
-                query = args.query
-                project = args.project
-                facts_limit = args.facts_limit
-                summaries_limit = args.summaries_limit
-                events_limit = args.events_limit
-                if args.profile:
-                    profile = get_memory_context_profile(args.profile)
-                    query = query if query is not None else profile.query
-                    project = project if project is not None else profile.project
-                    facts_limit = profile.facts_limit
-                    summaries_limit = profile.summaries_limit
-                    events_limit = profile.events_limit
+                request = resolve_memory_context_request(
+                    profile_name=args.profile,
+                    query=args.query,
+                    project=args.project,
+                    facts_limit=args.facts_limit,
+                    summaries_limit=args.summaries_limit,
+                    events_limit=args.events_limit,
+                )
                 print(
                     formatter(
-                        query=query,
-                        project=project,
-                        facts_limit=facts_limit,
-                        summaries_limit=summaries_limit,
-                        events_limit=events_limit,
+                        query=request.query,
+                        project=request.project,
+                        facts_limit=request.facts_limit,
+                        summaries_limit=request.summaries_limit,
+                        events_limit=request.events_limit,
                     )
                 )
                 return 0

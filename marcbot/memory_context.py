@@ -48,6 +48,41 @@ def get_memory_context_profile(name: str) -> MemoryContextProfile:
 
 
 @dataclass(frozen=True)
+class MemoryContextRequest:
+    query: str | None
+    project: str | None
+    facts_limit: int
+    summaries_limit: int
+    events_limit: int
+
+
+def resolve_memory_context_request(
+    *,
+    profile_name: str | None = None,
+    query: str | None = None,
+    project: str | None = None,
+    facts_limit: int = 5,
+    summaries_limit: int = 3,
+    events_limit: int = 5,
+) -> MemoryContextRequest:
+    if profile_name:
+        profile = get_memory_context_profile(profile_name)
+        query = query if query is not None else profile.query
+        project = project if project is not None else profile.project
+        facts_limit = profile.facts_limit
+        summaries_limit = profile.summaries_limit
+        events_limit = profile.events_limit
+
+    return MemoryContextRequest(
+        query=query,
+        project=project,
+        facts_limit=facts_limit,
+        summaries_limit=summaries_limit,
+        events_limit=events_limit,
+    )
+
+
+@dataclass(frozen=True)
 class MemoryContextPackage:
     path: Path
     query: str | None

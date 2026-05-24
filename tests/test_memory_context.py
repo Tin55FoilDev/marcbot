@@ -328,3 +328,53 @@ def test_get_memory_context_profile_rejects_unknown_profile() -> None:
     else:
         raise AssertionError("Expected ValueError")
 
+
+
+def test_resolve_memory_context_request_uses_profile_defaults() -> None:
+    from marcbot.memory_context import resolve_memory_context_request
+
+    request = resolve_memory_context_request(profile_name="weather-report")
+
+    assert request.query == "weather"
+    assert request.project is None
+    assert request.facts_limit == 5
+    assert request.summaries_limit == 2
+    assert request.events_limit == 5
+
+
+def test_resolve_memory_context_request_allows_query_and_project_overrides() -> None:
+    from marcbot.memory_context import resolve_memory_context_request
+
+    request = resolve_memory_context_request(
+        profile_name="weather-report",
+        query="custom",
+        project="weather-report",
+        facts_limit=99,
+        summaries_limit=99,
+        events_limit=99,
+    )
+
+    assert request.query == "custom"
+    assert request.project == "weather-report"
+    assert request.facts_limit == 5
+    assert request.summaries_limit == 2
+    assert request.events_limit == 5
+
+
+def test_resolve_memory_context_request_without_profile_preserves_limits() -> None:
+    from marcbot.memory_context import resolve_memory_context_request
+
+    request = resolve_memory_context_request(
+        query="manual",
+        project="manual-project",
+        facts_limit=7,
+        summaries_limit=4,
+        events_limit=2,
+    )
+
+    assert request.query == "manual"
+    assert request.project == "manual-project"
+    assert request.facts_limit == 7
+    assert request.summaries_limit == 4
+    assert request.events_limit == 2
+
