@@ -92,6 +92,7 @@ LOGGER = logging.getLogger(__name__)
 
 SUMMARY_COMPLETION_ATTEMPTS = 2
 SOURCE_MONITOR_SUMMARY_INPUT_LIMIT = 3000
+SOURCE_MONITOR_SUMMARY_WITH_MEMORY_INPUT_LIMIT = 2000
 
 
 def _save_prompt_preview(prompt: str, output_path: str) -> Path:
@@ -154,11 +155,13 @@ def _append_optional_memory_context_to_prompt(
 def _build_source_monitor_summary_input(
     report_path: Path,
     requested_path: Path,
+    *,
+    input_limit: int = SOURCE_MONITOR_SUMMARY_INPUT_LIMIT,
 ) -> WorkspaceSummaryInput:
     """Build a bounded source-monitor summary input from a generated report."""
 
     report_text = report_path.read_text(encoding="utf-8")
-    if len(report_text) <= SOURCE_MONITOR_SUMMARY_INPUT_LIMIT:
+    if len(report_text) <= input_limit:
         return WorkspaceSummaryInput(
             requested_path=str(requested_path),
             resolved_path=report_path,
@@ -207,8 +210,8 @@ def _build_source_monitor_summary_input(
         "\n\nNote: This is a compacted source-monitor report input. "
         "The original full report remains saved on disk."
     )
-    if len(compact_text) + len(suffix) > SOURCE_MONITOR_SUMMARY_INPUT_LIMIT:
-        compact_text = compact_text[: SOURCE_MONITOR_SUMMARY_INPUT_LIMIT - len(suffix)].rstrip()
+    if len(compact_text) + len(suffix) > input_limit:
+        compact_text = compact_text[: input_limit - len(suffix)].rstrip()
 
     return WorkspaceSummaryInput(
         requested_path=str(requested_path),
@@ -222,13 +225,32 @@ def _write_source_monitor_summary_for_report(
     project_name: str,
     report_path: Path,
     task_name: str,
+    memory_args: argparse.Namespace | None = None,
 ) -> Path:
     """Summarize an existing source-monitor report and save the summary artifact."""
     input_path = report_path.relative_to(WORKSPACE_DIR)
     output_path = input_path.parent.parent / "summaries" / f"{input_path.stem}.summary.md"
 
-    summary_input = _build_source_monitor_summary_input(report_path, input_path)
+    uses_memory_context = bool(
+        memory_args is not None
+        and (
+            getattr(memory_args, "memory_query", None)
+            or getattr(memory_args, "memory_project", None)
+        )
+    )
+    input_limit = (
+        SOURCE_MONITOR_SUMMARY_WITH_MEMORY_INPUT_LIMIT
+        if uses_memory_context
+        else SOURCE_MONITOR_SUMMARY_INPUT_LIMIT
+    )
+    summary_input = _build_source_monitor_summary_input(
+        report_path,
+        input_path,
+        input_limit=input_limit,
+    )
     prompt = build_summary_prompt(summary_input)
+    if memory_args is not None:
+        prompt = _append_optional_memory_context_to_prompt(prompt, memory_args)
     resolve_workspace_summary_output_path(str(output_path))
 
     task_config = load_llm_task_config()
@@ -239,6 +261,7 @@ def _write_source_monitor_summary_for_report(
             f"Unknown LLM task: {task_name}",
         )
 
+    _load_llm_env_for_provider_contact()
     llm_config = load_llm_config()
     profile = llm_config.profiles.get(task.profile)
     if profile is None:
@@ -748,6 +771,17 @@ def build_parser() -> argparse.ArgumentParser:
         default="source_monitor_analysis",
         help="configured LLM task name (default: source_monitor_analysis)",
     )
+    source_monitor_run_summary_parser.add_argument("--memory-query", default=None)
+    source_monitor_run_summary_parser.add_argument("--memory-project", default=None)
+    source_monitor_run_summary_parser.add_argument(
+        "--memory-facts-limit", type=int, default=5
+    )
+    source_monitor_run_summary_parser.add_argument(
+        "--memory-summaries-limit", type=int, default=3
+    )
+    source_monitor_run_summary_parser.add_argument(
+        "--memory-events-limit", type=int, default=5
+    )
     source_monitor_summarize_latest_parser = source_monitor_subparsers.add_parser(
         "summarize-latest",
         help="summarize the latest existing source monitor report",
@@ -762,6 +796,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--task",
         default="source_monitor_analysis",
         help="configured LLM task name (default: source_monitor_analysis)",
+    )
+    source_monitor_summarize_latest_parser.add_argument("--memory-query", default=None)
+    source_monitor_summarize_latest_parser.add_argument("--memory-project", default=None)
+    source_monitor_summarize_latest_parser.add_argument(
+        "--memory-facts-limit", type=int, default=5
+    )
+    source_monitor_summarize_latest_parser.add_argument(
+        "--memory-summaries-limit", type=int, default=3
+    )
+    source_monitor_summarize_latest_parser.add_argument(
+        "--memory-events-limit", type=int, default=5
     )
     source_monitor_status_parser = source_monitor_subparsers.add_parser(
         "status", help="show latest saved source monitor artifacts",
@@ -1595,6 +1640,7 @@ def main(argv: list[str] | None = None) -> int:
                     project_name=args.project,
                     report_path=latest_report,
                     task_name=args.task,
+                    memory_args=args,
                 )
                 print(f"Source monitor summary written: {written_summary_path}")
                 return 0
@@ -1607,6 +1653,7 @@ def main(argv: list[str] | None = None) -> int:
                     project_name=args.project,
                     report_path=result.path,
                     task_name=args.task,
+                    memory_args=args,
                 )
                 print(f"Source monitor summary written: {written_summary_path}")
                 return 0

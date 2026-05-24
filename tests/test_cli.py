@@ -2144,3 +2144,50 @@ def test_summarize_file_save_preview_prompt_save_does_not_validate_summary_outpu
     assert existing_summary.read_text(encoding="utf-8") == "existing summary"
     assert captured.err == ""
 
+
+
+def test_source_monitor_summarize_latest_accepts_memory_context_flags() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "source-monitor",
+            "summarize-latest",
+            "ai",
+            "--memory-query",
+            "source monitor",
+            "--memory-project",
+            "marcbot-memory",
+            "--memory-facts-limit",
+            "2",
+            "--memory-summaries-limit",
+            "1",
+            "--memory-events-limit",
+            "3",
+        ]
+    )
+
+    assert args.memory_query == "source monitor"
+    assert args.memory_project == "marcbot-memory"
+    assert args.memory_facts_limit == 2
+    assert args.memory_summaries_limit == 1
+    assert args.memory_events_limit == 3
+
+
+def test_source_monitor_run_summary_accepts_memory_context_flags() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "source-monitor",
+            "run-summary",
+            "ai",
+            "--memory-query",
+            "source monitor",
+        ]
+    )
+
+    assert args.memory_query == "source monitor"
+    assert args.memory_project is None
+    assert args.memory_facts_limit == 5
+    assert args.memory_summaries_limit == 3
+    assert args.memory_events_limit == 5
+

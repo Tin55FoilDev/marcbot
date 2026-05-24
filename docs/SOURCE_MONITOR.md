@@ -384,3 +384,22 @@ the exact CLI command needed to refresh the summary:
 
 This keeps the status command read-only while making the next operator action
 clear.
+
+### Opt-in memory context for source-monitor summaries
+
+`source-monitor summarize-latest` and `source-monitor run-summary` may
+include bounded local MarcBot memory context when explicitly requested:
+
+```bash
+python -m marcbot source-monitor summarize-latest ai --memory-query "source monitor" --memory-project marcbot-memory
+python -m marcbot source-monitor run-summary ai --memory-query "source monitor" --memory-project marcbot-memory
+```
+
+Memory context retrieval is local and provider-contact-free. Provider
+contact occurs only because these commands explicitly run the configured
+source-monitor LLM summary task.
+
+When memory context is requested, MarcBot reserves prompt budget by using
+a smaller compacted source-monitor report input. This prevents the combined
+report prompt, memory prompt-boundary rules, and memory context block from
+exceeding the configured LLM prompt-size guardrail.

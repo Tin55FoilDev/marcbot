@@ -1300,6 +1300,14 @@ bounded memory context with `--memory-query` and/or `--memory-project`.
 This keeps memory retrieval automatic within that selected workflow only
 when requested, while preserving provider-contact boundaries.
 
+
+Source-monitor summaries can explicitly request bounded memory context.
+`source-monitor summarize-latest` and `source-monitor run-summary` accept
+`--memory-query` and/or `--memory-project` plus per-section memory limits.
+This is the next controlled workflow integration after LLM file summaries.
+The memory retrieval step remains local and provider-contact-free; provider
+contact remains part of the explicit source-monitor LLM summary command.
+
 ## Workflow integration boundary
 
 The memory context helper is now suitable as a local workflow-facing API.
