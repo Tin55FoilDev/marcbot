@@ -1366,3 +1366,18 @@ Prompt-use rules:
 These rules are intended to improve prompt quality before memory context is
 used by more workflows. They keep the model useful while preserving the
 controlled retrieval boundary.
+
+### Memory context profiles
+
+MarcBot supports deterministic memory context profiles for common workflows.
+The first profile is `weather-report`:
+
+```bash
+python -m marcbot memory context --profile weather-report
+python -m marcbot memory context --profile weather-report --format json
+```
+
+The `weather-report` profile maps to a short high-signal query, `weather`,
+with bounded section limits. It intentionally does not set `project` so it
+can retrieve both workflow-specific facts and cross-project reference-pattern
+facts. Retrieval remains local and provider-contact-free.

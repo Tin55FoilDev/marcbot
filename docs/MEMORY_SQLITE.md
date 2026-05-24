@@ -961,3 +961,16 @@ The JSON/dict contract is intentionally bounded and explicit: provider
 contact status, path, SQLite status, warnings list, query, project,
 per-section limits, counts, active facts, matching summaries, and recent
 matching events.
+
+### Memory context profiles
+
+The `memory context` command supports deterministic profiles for common
+workflow retrieval patterns:
+
+```bash
+python -m marcbot memory context --profile weather-report
+python -m marcbot memory context --profile weather-report --format json
+```
+
+Profiles are local mappings from a profile name to query/project/limit
+settings. They do not contact providers.

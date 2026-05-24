@@ -35,6 +35,7 @@ from marcbot.logging_setup import configure_logging
 from marcbot.memory_context import (
     format_memory_context,
     format_memory_context_json,
+    get_memory_context_profile,
 )
 from marcbot.memory_sqlite import (
     format_memory_sqlite_counts,
@@ -503,6 +504,7 @@ def build_parser() -> argparse.ArgumentParser:
         "context",
         help="assemble bounded local memory context from SQLite",
     )
+    memory_context_parser.add_argument("--profile", default=None)
     memory_context_parser.add_argument("--query", default=None)
     memory_context_parser.add_argument("--project", default=None)
     memory_context_parser.add_argument("--facts-limit", type=int, default=5)
@@ -1314,13 +1316,25 @@ def main(argv: list[str] | None = None) -> int:
                     if args.format == "json"
                     else format_memory_context
                 )
+                query = args.query
+                project = args.project
+                facts_limit = args.facts_limit
+                summaries_limit = args.summaries_limit
+                events_limit = args.events_limit
+                if args.profile:
+                    profile = get_memory_context_profile(args.profile)
+                    query = query if query is not None else profile.query
+                    project = project if project is not None else profile.project
+                    facts_limit = profile.facts_limit
+                    summaries_limit = profile.summaries_limit
+                    events_limit = profile.events_limit
                 print(
                     formatter(
-                        query=args.query,
-                        project=args.project,
-                        facts_limit=args.facts_limit,
-                        summaries_limit=args.summaries_limit,
-                        events_limit=args.events_limit,
+                        query=query,
+                        project=project,
+                        facts_limit=facts_limit,
+                        summaries_limit=summaries_limit,
+                        events_limit=events_limit,
                     )
                 )
                 return 0

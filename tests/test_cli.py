@@ -2191,3 +2191,18 @@ def test_source_monitor_run_summary_accepts_memory_context_flags() -> None:
     assert args.memory_summaries_limit == 3
     assert args.memory_events_limit == 5
 
+
+
+def test_memory_context_accepts_profile() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "memory",
+            "context",
+            "--profile",
+            "weather-report",
+        ]
+    )
+
+    assert args.profile == "weather-report"
+

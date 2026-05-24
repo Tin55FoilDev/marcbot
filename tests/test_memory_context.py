@@ -301,3 +301,30 @@ def test_format_memory_context_text_includes_warnings_for_empty_context(
     assert "Warnings:" in message
     assert "- No matching memory context was found." in message
     assert "Provider contact: no" in message
+
+
+
+def test_get_memory_context_profile_weather_report() -> None:
+    from marcbot.memory_context import get_memory_context_profile
+
+    profile = get_memory_context_profile("weather-report")
+
+    assert profile.name == "weather-report"
+    assert profile.query == "weather"
+    assert profile.project is None
+    assert profile.facts_limit == 5
+    assert profile.summaries_limit == 2
+    assert profile.events_limit == 5
+
+
+def test_get_memory_context_profile_rejects_unknown_profile() -> None:
+    from marcbot.memory_context import get_memory_context_profile
+
+    try:
+        get_memory_context_profile("missing")
+    except ValueError as exc:
+        assert "unknown memory context profile: missing" in str(exc)
+        assert "weather-report" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError")
+

@@ -17,6 +17,37 @@ from marcbot.memory_sqlite import (
 
 
 @dataclass(frozen=True)
+class MemoryContextProfile:
+    name: str
+    query: str | None
+    project: str | None
+    facts_limit: int
+    summaries_limit: int
+    events_limit: int
+
+
+DEFAULT_MEMORY_CONTEXT_PROFILES: dict[str, MemoryContextProfile] = {
+    "weather-report": MemoryContextProfile(
+        name="weather-report",
+        query="weather",
+        project=None,
+        facts_limit=5,
+        summaries_limit=2,
+        events_limit=5,
+    ),
+}
+
+
+def get_memory_context_profile(name: str) -> MemoryContextProfile:
+    try:
+        return DEFAULT_MEMORY_CONTEXT_PROFILES[name]
+    except KeyError as exc:
+        valid = ", ".join(sorted(DEFAULT_MEMORY_CONTEXT_PROFILES))
+        message = f"unknown memory context profile: {name}; valid profiles: {valid}"
+        raise ValueError(message) from exc
+
+
+@dataclass(frozen=True)
 class MemoryContextPackage:
     path: Path
     query: str | None
