@@ -9,6 +9,7 @@ from marcbot.memory_sqlite import (
     MemorySqliteEventRow,
     MemorySqliteFactRow,
     MemorySqliteSummaryRow,
+    get_memory_sqlite_status,
     query_sqlite_memory_events,
     query_sqlite_memory_facts,
     query_sqlite_memory_summaries,
@@ -77,10 +78,34 @@ def build_memory_context(
     )
 
 
+def _memory_context_warnings(context: MemoryContextPackage) -> list[str]:
+    warnings: list[str] = []
+    sqlite_status = get_memory_sqlite_status(path=context.path)
+
+    if not sqlite_status.exists:
+        warnings.append("SQLite memory database is missing.")
+    elif sqlite_status.schema_version is None:
+        warnings.append("SQLite memory schema version is unavailable.")
+
+    if not context.facts and not context.summaries and not context.events:
+        warnings.append("No matching memory context was found.")
+
+    return warnings
+
+
+def _memory_context_sqlite_status(context: MemoryContextPackage) -> dict[str, object]:
+    sqlite_status = get_memory_sqlite_status(path=context.path)
+    return {
+        "exists": sqlite_status.exists,
+        "schema_version": sqlite_status.schema_version,
+    }
+
 def memory_context_to_dict(context: MemoryContextPackage) -> dict[str, object]:
     return {
         "provider_contact": False,
         "path": str(context.path),
+        "sqlite": _memory_context_sqlite_status(context),
+        "warnings": _memory_context_warnings(context),
         "query": context.query,
         "project": context.project,
         "limits": {
@@ -219,6 +244,14 @@ def format_memory_context(
                 f"source={event.source}]"
             )
             lines.append(f"  {event.summary}")
+
+    lines.append("")
+    warnings = _memory_context_warnings(context)
+    if warnings:
+        lines.append("")
+        lines.append("Warnings:")
+        for warning in warnings:
+            lines.append(f"- {warning}")
 
     lines.append("")
     lines.append("Provider contact: no")

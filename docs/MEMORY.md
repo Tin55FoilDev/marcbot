@@ -1278,6 +1278,8 @@ structured workflow-facing memory context contract.
 Top-level fields:
 
 - `provider_contact`: always `false` for local memory retrieval.
+- `sqlite`: SQLite database existence and schema version metadata.
+- `warnings`: local retrieval warnings such as missing database or empty context.
 - `path`: SQLite database path used for the derived query view.
 - `query`: requested topic/query, or `null`.
 - `project`: requested project filter, or `null`.

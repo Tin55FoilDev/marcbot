@@ -958,5 +958,6 @@ MarcBot workflows because it avoids shelling out and avoids parsing CLI
 text.
 
 The JSON/dict contract is intentionally bounded and explicit: provider
-contact status, path, query, project, per-section limits, counts, active
-facts, matching summaries, and recent matching events.
+contact status, path, SQLite status, warnings list, query, project,
+per-section limits, counts, active facts, matching summaries, and recent
+matching events.

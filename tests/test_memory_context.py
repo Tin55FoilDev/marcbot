@@ -220,6 +220,8 @@ def test_format_memory_context_json_is_structured(tmp_path: Path) -> None:
     )
 
     assert payload["provider_contact"] is False
+    assert payload["sqlite"] == {"exists": True, "schema_version": 1}
+    assert payload["warnings"] == []
     assert payload["project"] == "MarcBot"
     assert payload["query"] == "JSON"
     assert payload["counts"] == {"events": 0, "facts": 1, "summaries": 0}
@@ -273,3 +275,29 @@ def test_build_memory_context_dict_is_workflow_facing_contract(
     assert payload["facts"][0]["id"] == "contract-fact"
     assert payload["summaries"][0]["name"] == "contract-summary.md"
     assert payload["events"][0]["summary"] == "Structured context contract event."
+
+
+def test_format_memory_context_json_warns_for_missing_database(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "missing.sqlite3"
+
+    payload = json.loads(format_memory_context_json(path=db_path, query="anything"))
+
+    assert payload["sqlite"] == {"exists": False, "schema_version": None}
+    assert "SQLite memory database is missing." in payload["warnings"]
+    assert "No matching memory context was found." in payload["warnings"]
+    assert payload["counts"] == {"events": 0, "facts": 0, "summaries": 0}
+
+
+def test_format_memory_context_text_includes_warnings_for_empty_context(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+
+    message = format_memory_context(path=db_path, query="missing")
+
+    assert "Warnings:" in message
+    assert "- No matching memory context was found." in message
+    assert "Provider contact: no" in message
