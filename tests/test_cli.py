@@ -2018,3 +2018,129 @@ def test_summarize_file_save_preview_prompt_does_not_contact_provider(
     assert "Provider contact: no" in captured.out
     assert not (workspace / "summary.md").exists()
     assert captured.err == ""
+
+
+
+def test_summarize_file_preview_prompt_save_writes_prompt_without_provider_contact(
+    capsys,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    import marcbot.cli as cli
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    report = workspace / "report.md"
+    report.write_text("# Test report\n\nSave this preview.", encoding="utf-8")
+
+    def load_test_summary_input(path):
+        from marcbot.llm_file_summary import load_workspace_summary_input
+
+        return load_workspace_summary_input(path, workspace_dir=workspace)
+
+    def resolve_test_summary_output(path):
+        from marcbot.llm_file_summary import resolve_workspace_summary_output_path
+
+        return resolve_workspace_summary_output_path(path, workspace_dir=workspace)
+
+    def fail_provider_env_load():
+        raise AssertionError("preview-save should not load provider env")
+
+    def fail_completion(**kwargs):
+        raise AssertionError("preview-save should not contact provider")
+
+    monkeypatch.setattr(cli, "load_workspace_summary_input", load_test_summary_input)
+    monkeypatch.setattr(
+        cli,
+        "resolve_workspace_summary_output_path",
+        resolve_test_summary_output,
+    )
+    monkeypatch.setattr(cli, "_load_llm_env_for_provider_contact", fail_provider_env_load)
+    monkeypatch.setattr(cli, "_run_summary_completion_with_retry", fail_completion)
+    monkeypatch.setattr(
+        cli,
+        "format_memory_context",
+        lambda **kwargs: "MarcBot memory context\nProvider contact: no",
+    )
+
+    result = main(
+        [
+            "llm",
+            "summarize-file",
+            "report_summary",
+            "report.md",
+            "--memory-query",
+            "weather",
+            "--preview-prompt-save",
+            "previews/report.prompt.md",
+        ]
+    )
+    captured = capsys.readouterr()
+    saved_prompt = workspace / "previews" / "report.prompt.md"
+
+    assert result == 0
+    assert "Saved LLM prompt preview:" in captured.out
+    assert saved_prompt.is_file()
+    saved_text = saved_prompt.read_text(encoding="utf-8")
+    assert "Save this preview." in saved_text
+    assert "## Local MarcBot memory context" in saved_text
+    assert "Provider contact: no" in saved_text
+    assert captured.err == ""
+
+
+def test_summarize_file_save_preview_prompt_save_does_not_validate_summary_output(
+    capsys,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    import marcbot.cli as cli
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    report = workspace / "report.md"
+    report.write_text("# Save report\n\nPreview save only.", encoding="utf-8")
+    existing_summary = workspace / "summary.md"
+    existing_summary.write_text("existing summary", encoding="utf-8")
+
+    def load_test_summary_input(path):
+        from marcbot.llm_file_summary import load_workspace_summary_input
+
+        return load_workspace_summary_input(path, workspace_dir=workspace)
+
+    def resolve_test_summary_output(path):
+        from marcbot.llm_file_summary import resolve_workspace_summary_output_path
+
+        return resolve_workspace_summary_output_path(path, workspace_dir=workspace)
+
+    def fail_provider_env_load():
+        raise AssertionError("preview-save should not load provider env")
+
+    monkeypatch.setattr(cli, "load_workspace_summary_input", load_test_summary_input)
+    monkeypatch.setattr(
+        cli,
+        "resolve_workspace_summary_output_path",
+        resolve_test_summary_output,
+    )
+    monkeypatch.setattr(cli, "_load_llm_env_for_provider_contact", fail_provider_env_load)
+
+    result = main(
+        [
+            "llm",
+            "summarize-file-save",
+            "report_summary",
+            "report.md",
+            "summary.md",
+            "--preview-prompt-save",
+            "previews/save.prompt.md",
+        ]
+    )
+    captured = capsys.readouterr()
+    saved_prompt = workspace / "previews" / "save.prompt.md"
+
+    assert result == 0
+    assert "Saved LLM prompt preview:" in captured.out
+    assert saved_prompt.is_file()
+    assert "Preview save only." in saved_prompt.read_text(encoding="utf-8")
+    assert existing_summary.read_text(encoding="utf-8") == "existing summary"
+    assert captured.err == ""
+

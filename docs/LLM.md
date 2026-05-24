@@ -682,3 +682,5 @@ python -m marcbot llm summarize-file report_summary path.md --memory-query "weat
 
 This is useful for inspecting the bounded memory-context block and prompt
 boundary rules before running an actual provider-contacting LLM command.
+
+Use `--preview-prompt-save <workspace-relative-path>` to write the prompt preview to a workspace file instead of contacting a provider. This is useful for auditability and for comparing prompt changes over time.

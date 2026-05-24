@@ -94,6 +94,12 @@ SUMMARY_COMPLETION_ATTEMPTS = 2
 SOURCE_MONITOR_SUMMARY_INPUT_LIMIT = 3000
 
 
+def _save_prompt_preview(prompt: str, output_path: str) -> Path:
+    resolved_output = resolve_workspace_summary_output_path(output_path)
+    resolved_output.parent.mkdir(parents=True, exist_ok=True)
+    resolved_output.write_text(prompt, encoding="utf-8")
+    return resolved_output
+
 def _load_llm_env_for_provider_contact() -> None:
     values = load_llm_env()
     for name, value in values.items():
@@ -440,6 +446,7 @@ def build_parser() -> argparse.ArgumentParser:
     llm_summarize_file_parser.add_argument("--memory-summaries-limit", type=int, default=3)
     llm_summarize_file_parser.add_argument("--memory-events-limit", type=int, default=5)
     llm_summarize_file_parser.add_argument("--preview-prompt", action="store_true")
+    llm_summarize_file_parser.add_argument("--preview-prompt-save", default=None)
     llm_summarize_file_save_parser = llm_subparsers.add_parser(
         "summarize-file-save",
         help="summarize a workspace file and save the result under the workspace",
@@ -459,6 +466,7 @@ def build_parser() -> argparse.ArgumentParser:
     llm_summarize_file_save_parser.add_argument("--memory-summaries-limit", type=int, default=3)
     llm_summarize_file_save_parser.add_argument("--memory-events-limit", type=int, default=5)
     llm_summarize_file_save_parser.add_argument("--preview-prompt", action="store_true")
+    llm_summarize_file_save_parser.add_argument("--preview-prompt-save", default=None)
 
     memory_parser = subparsers.add_parser(
         "memory",
@@ -1140,8 +1148,12 @@ def main(argv: list[str] | None = None) -> int:
                 summary_input = load_workspace_summary_input(args.path)
                 prompt = build_summary_prompt(summary_input)
                 prompt = _append_optional_memory_context_to_prompt(prompt, args)
+                if args.preview_prompt_save:
+                    saved_path = _save_prompt_preview(prompt, args.preview_prompt_save)
+                    print(f"Saved LLM prompt preview: {saved_path}")
                 if args.preview_prompt:
                     print(prompt)
+                if args.preview_prompt or args.preview_prompt_save:
                     return 0
 
                 _load_llm_env_for_provider_contact()
@@ -1183,9 +1195,14 @@ def main(argv: list[str] | None = None) -> int:
                 summary_input = load_workspace_summary_input(args.input_path)
                 prompt = build_summary_prompt(summary_input)
                 prompt = _append_optional_memory_context_to_prompt(prompt, args)
-                resolve_workspace_summary_output_path(args.output_path)
+                if not args.preview_prompt and not args.preview_prompt_save:
+                    resolve_workspace_summary_output_path(args.output_path)
+                if args.preview_prompt_save:
+                    saved_path = _save_prompt_preview(prompt, args.preview_prompt_save)
+                    print(f"Saved LLM prompt preview: {saved_path}")
                 if args.preview_prompt:
                     print(prompt)
+                if args.preview_prompt or args.preview_prompt_save:
                     return 0
 
                 _load_llm_env_for_provider_contact()
