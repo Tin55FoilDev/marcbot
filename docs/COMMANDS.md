@@ -517,3 +517,13 @@ catalog as structured JSON for future workflow automation.
 
 `python -m marcbot memory context --profile weather-report` assembles
 bounded local memory context using that profile.
+
+### Telegram memory profile visibility
+
+`/memory_profiles` lists deterministic memory context profiles from Telegram.
+It is read-only and provider-contact-free.
+
+Current profiles include:
+
+- `weather-report`
+- `source-monitor`

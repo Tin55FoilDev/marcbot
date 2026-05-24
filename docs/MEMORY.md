@@ -1414,6 +1414,12 @@ The first profile is `weather-report`:
 ```bash
 python -m marcbot memory profiles
 python -m marcbot memory profiles --format json
+
+Telegram read-only visibility:
+
+```text
+/memory_profiles
+```
 python -m marcbot memory context --profile weather-report
 python -m marcbot memory context --profile source-monitor
 python -m marcbot memory context --profile weather-report --format json

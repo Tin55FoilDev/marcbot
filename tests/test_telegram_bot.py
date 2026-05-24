@@ -1504,3 +1504,69 @@ def test_help_command_lists_commands_alphabetically() -> None:
 
     assert commands == sorted(commands)
 
+
+def test_memory_profiles_command_replies_with_profiles() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_profiles_command(update, context))
+
+    assert message.replies == [
+        (
+            "MarcBot memory context profiles\n\n"
+            "- source-monitor\n"
+            "  query: source-monitor\n"
+            "  project: source-monitor\n"
+            "  limits: facts=5 summaries=2 events=5\n\n"
+            "- weather-report\n"
+            "  query: weather\n"
+            "  project: none\n"
+            "  limits: facts=5 summaries=2 events=5\n\n"
+            "Provider contact: no"
+        )
+    ]
+
+
+def test_memory_profiles_command_rejects_unauthorized_chat() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=999),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_profiles_command(update, context))
+
+    assert message.replies
