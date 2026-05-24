@@ -122,14 +122,28 @@ def _append_optional_memory_context_to_prompt(
     if not memory_context:
         return prompt
 
-    return (
-        prompt.rstrip()
-        + "\n\n"
-        + "## Local MarcBot memory context\n"
-        + "\n"
-        + memory_context
-        + "\n"
+    memory_instructions = "\n".join(
+        [
+            "## Local MarcBot memory context",
+            "",
+            "The following memory context was retrieved locally by MarcBot before this",
+            "LLM request. Use it only if it is relevant to the requested task.",
+            "",
+            "Memory-use rules:",
+            "- Prefer active facts over summaries and recent events if they conflict.",
+            "- Treat warnings from the memory context as important.",
+            "- Do not invent memory that is not present in the supplied context.",
+            "- Do not treat recent events as durable facts unless supported by facts",
+            "  or summaries.",
+            "- Memory retrieval was local; provider contact begins with this explicit",
+            "  LLM command.",
+            "",
+            "Retrieved memory context:",
+            "",
+        ]
     )
+
+    return prompt.rstrip() + "\n\n" + memory_instructions + memory_context + "\n"
 
 def _build_source_monitor_summary_input(
     report_path: Path,

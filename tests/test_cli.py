@@ -1833,3 +1833,35 @@ def test_llm_provider_contact_env_loader_overrides_stale_environment(
     cli._load_llm_env_for_provider_contact()
 
     assert os.environ["MARCBOT_LMSTUDIO_API_KEY"] == "fresh-token"
+
+
+def test_optional_memory_context_prompt_includes_use_rules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from marcbot import cli
+
+    class Args:
+        memory_query = "weather"
+        memory_project = "weather-report"
+        memory_facts_limit = 2
+        memory_summaries_limit = 1
+        memory_events_limit = 2
+
+    monkeypatch.setattr(
+        cli,
+        "format_memory_context",
+        lambda **kwargs: "MarcBot memory context\nProvider contact: no",
+    )
+
+    prompt = cli._append_optional_memory_context_to_prompt(
+        "Summarize this file.",
+        Args(),
+    )
+
+    assert "## Local MarcBot memory context" in prompt
+    assert "Memory-use rules:" in prompt
+    assert "Prefer active facts over summaries" in prompt
+    assert "Treat warnings from the memory context as important." in prompt
+    assert "Do not invent memory" in prompt
+    assert "Retrieved memory context:" in prompt
+    assert "Provider contact: no" in prompt
