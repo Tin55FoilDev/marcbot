@@ -1392,3 +1392,43 @@ The `weather-report` profile maps to a short high-signal query, `weather`,
 with bounded section limits. It intentionally does not set `project` so it
 can retrieve both workflow-specific facts and cross-project reference-pattern
 facts. Retrieval remains local and provider-contact-free.
+
+## Memory workflow reference roles
+
+MarcBot now has two useful reference workflows for memory integration,
+but they prove different things.
+
+### Weather-report
+
+`weather-report` is the reference workflow for useful existing memory
+retrieval. It already has durable facts and recent workflow events, so
+`python -m marcbot memory context --profile weather-report` returns
+meaningful local context without provider contact.
+
+This proves that named memory context profiles can retrieve useful workflow
+history without Marc manually spelling out query/project/limit flags.
+
+### Source-monitor
+
+`source-monitor` is the reference workflow for memory-aware LLM workflow
+integration mechanics. It already has a bounded CLI, local artifacts, and
+an explicit LLM summary path, so it is a safe place to validate:
+
+- deterministic memory retrieval before the model call;
+- prompt-boundary rules around supplied memory;
+- provider-contact-free retrieval;
+- provider contact only during explicit LLM summary commands;
+- prompt budget handling when memory context is added;
+- LLM env loading and retry behavior outside top-level `llm` commands.
+
+Source-monitor does not yet prove useful source-monitor-specific memory
+retrieval, because durable source-monitor facts have not been added. A
+dedicated source-monitor memory profile should wait until those facts
+exist and retrieval returns meaningful context.
+
+The intended sequence is:
+
+1. Keep `weather-report` as the first useful memory profile.
+2. Keep `source-monitor` as the first memory-aware LLM workflow integration.
+3. Add durable source-monitor facts when the workflow facts are stable.
+4. Add a dedicated source-monitor memory profile only after retrieval is useful.

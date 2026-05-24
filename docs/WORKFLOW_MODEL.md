@@ -303,3 +303,20 @@ for relevance, priority, warnings, and conflict handling.
 
 This keeps deterministic retrieval separate from model reasoning while
 allowing the model to benefit from project history and durable facts.
+
+## Memory-aware workflow reference roles
+
+Memory-aware workflows should distinguish two validation questions:
+
+1. Does a workflow have useful durable memory to retrieve?
+2. Can a workflow safely consume retrieved memory in a bounded model prompt?
+
+`weather-report` currently answers the first question. It has durable facts
+and recent events that make `memory context --profile weather-report` useful.
+
+`source-monitor` currently answers the second question. It validates the
+workflow mechanics for adding retrieved memory to an explicit LLM summary
+without letting the model search files or memory directly.
+
+This distinction prevents MarcBot from adding empty or misleading automatic
+memory profiles before the underlying durable facts exist.

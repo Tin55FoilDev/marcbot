@@ -409,3 +409,15 @@ When memory context is requested, MarcBot reserves prompt budget by using
 a smaller compacted source-monitor report input. This prevents the combined
 report prompt, memory prompt-boundary rules, and memory context block from
 exceeding the configured LLM prompt-size guardrail.
+
+### Memory profile caution
+
+Source-monitor can consume explicit memory context and memory profiles, but
+a dedicated source-monitor profile should not be added until durable
+source-monitor facts exist. Current source-monitor memory integration is
+primarily a validation of workflow mechanics: bounded retrieval, prompt
+boundary handling, prompt budget handling, provider env loading, and LLM
+summary retry behavior.
+
+For now, `--memory-profile weather-report` is mainly useful as a reference
+pattern demonstration, not as source-monitor-specific context.
