@@ -20,6 +20,12 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.8 - Bounded memory context assembly
+
+- Added `python -m marcbot memory context` for bounded local memory context assembly.
+- Combines active facts, matching summaries, and recent matching events from SQLite-backed local reads.
+- Documented the memory context assembly design and kept the path provider-contact-free.
+- Preserves file memory as the source of truth while using SQLite as the queryable view.
 ## 0.3.7 - SQLite-backed memory read expansion
 
 - Added `python -m marcbot memory sqlite summaries` for bounded, read-only SQLite-backed memory summary listing/query.
