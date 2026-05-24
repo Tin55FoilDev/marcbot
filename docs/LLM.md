@@ -684,3 +684,20 @@ This is useful for inspecting the bounded memory-context block and prompt
 boundary rules before running an actual provider-contacting LLM command.
 
 Use `--preview-prompt-save <workspace-relative-path>` to write the prompt preview to a workspace file instead of contacting a provider. This is useful for auditability and for comparing prompt changes over time.
+
+### Memory profile for file summaries
+
+`llm summarize-file` and `llm summarize-file-save` support
+`--memory-profile` for deterministic memory-context retrieval.
+
+Example:
+
+```bash
+python -m marcbot llm summarize-file report_summary path.md --memory-profile weather-report
+python -m marcbot llm summarize-file-save report_summary path.md output.md --memory-profile weather-report
+```
+
+The first profile is `weather-report`, which retrieves bounded local memory
+using the high-signal query `weather`. Retrieval remains local and
+provider-contact-free; provider contact starts only when the explicit LLM
+summary command runs.

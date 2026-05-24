@@ -1367,6 +1367,12 @@ These rules are intended to improve prompt quality before memory context is
 used by more workflows. They keep the model useful while preserving the
 controlled retrieval boundary.
 
+
+LLM file-summary commands can consume memory profiles with
+`--memory-profile <name>`. This lets a workflow use a deterministic
+memory profile without repeating query/project/limit flags manually.
+The first supported profile is `weather-report`.
+
 ### Memory context profiles
 
 MarcBot supports deterministic memory context profiles for common workflows.

@@ -2206,3 +2206,101 @@ def test_memory_context_accepts_profile() -> None:
 
     assert args.profile == "weather-report"
 
+
+
+def test_summarize_file_accepts_memory_profile_flag() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "llm",
+            "summarize-file",
+            "report_summary",
+            "report.md",
+            "--memory-profile",
+            "weather-report",
+        ]
+    )
+
+    assert args.memory_profile == "weather-report"
+
+
+def test_summarize_file_save_accepts_memory_profile_flag() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "llm",
+            "summarize-file-save",
+            "report_summary",
+            "report.md",
+            "summary.md",
+            "--memory-profile",
+            "weather-report",
+        ]
+    )
+
+    assert args.memory_profile == "weather-report"
+
+
+def test_optional_memory_context_uses_profile_defaults(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from marcbot import cli
+
+    captured = {}
+
+    class Args:
+        memory_profile = "weather-report"
+        memory_query = None
+        memory_project = None
+        memory_facts_limit = 99
+        memory_summaries_limit = 99
+        memory_events_limit = 99
+
+    def fake_format_memory_context(**kwargs):
+        captured.update(kwargs)
+        return "memory context"
+
+    monkeypatch.setattr(cli, "format_memory_context", fake_format_memory_context)
+
+    result = cli._build_optional_memory_context_for_prompt(Args())
+
+    assert result == "memory context"
+    assert captured == {
+        "query": "weather",
+        "project": None,
+        "facts_limit": 5,
+        "summaries_limit": 2,
+        "events_limit": 5,
+    }
+
+
+def test_optional_memory_context_allows_profile_query_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from marcbot import cli
+
+    captured = {}
+
+    class Args:
+        memory_profile = "weather-report"
+        memory_query = "override"
+        memory_project = None
+        memory_facts_limit = 99
+        memory_summaries_limit = 99
+        memory_events_limit = 99
+
+    def fake_format_memory_context(**kwargs):
+        captured.update(kwargs)
+        return "memory context"
+
+    monkeypatch.setattr(cli, "format_memory_context", fake_format_memory_context)
+
+    result = cli._build_optional_memory_context_for_prompt(Args())
+
+    assert result == "memory context"
+    assert captured["query"] == "override"
+    assert captured["project"] is None
+    assert captured["facts_limit"] == 5
+    assert captured["summaries_limit"] == 2
+    assert captured["events_limit"] == 5
+

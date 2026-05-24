@@ -108,17 +108,30 @@ def _load_llm_env_for_provider_contact() -> None:
         os.environ[name] = value
 
 def _build_optional_memory_context_for_prompt(args: argparse.Namespace) -> str:
+    memory_profile = getattr(args, "memory_profile", None)
     memory_query = getattr(args, "memory_query", None)
     memory_project = getattr(args, "memory_project", None)
+    facts_limit = getattr(args, "memory_facts_limit", 5)
+    summaries_limit = getattr(args, "memory_summaries_limit", 3)
+    events_limit = getattr(args, "memory_events_limit", 5)
+
+    if memory_profile:
+        profile = get_memory_context_profile(memory_profile)
+        memory_query = memory_query if memory_query is not None else profile.query
+        memory_project = memory_project if memory_project is not None else profile.project
+        facts_limit = profile.facts_limit
+        summaries_limit = profile.summaries_limit
+        events_limit = profile.events_limit
+
     if not memory_query and not memory_project:
         return ""
 
     return format_memory_context(
         query=memory_query,
         project=memory_project,
-        facts_limit=getattr(args, "memory_facts_limit", 5),
-        summaries_limit=getattr(args, "memory_summaries_limit", 3),
-        events_limit=getattr(args, "memory_events_limit", 5),
+        facts_limit=facts_limit,
+        summaries_limit=summaries_limit,
+        events_limit=events_limit,
     )
 
 
@@ -464,6 +477,7 @@ def build_parser() -> argparse.ArgumentParser:
         "path",
         help="workspace-relative text file path",
     )
+    llm_summarize_file_parser.add_argument("--memory-profile", default=None)
     llm_summarize_file_parser.add_argument("--memory-query", default=None)
     llm_summarize_file_parser.add_argument("--memory-project", default=None)
     llm_summarize_file_parser.add_argument("--memory-facts-limit", type=int, default=5)
@@ -484,6 +498,7 @@ def build_parser() -> argparse.ArgumentParser:
         "output_path",
         help="workspace-relative output file path",
     )
+    llm_summarize_file_save_parser.add_argument("--memory-profile", default=None)
     llm_summarize_file_save_parser.add_argument("--memory-query", default=None)
     llm_summarize_file_save_parser.add_argument("--memory-project", default=None)
     llm_summarize_file_save_parser.add_argument("--memory-facts-limit", type=int, default=5)
