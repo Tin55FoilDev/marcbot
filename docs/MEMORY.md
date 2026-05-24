@@ -5,6 +5,38 @@ MarcBot does not yet have a full memory subsystem.
 This document records the intended direction for a future memory system so the
 project can revisit the design deliberately when the core workflows justify it.
 
+## Long-term retrieval and automation target
+
+The long-term purpose of MarcBot memory is not to create another manual
+filing system that Marc has to operate command by command. The target is
+for MarcBot to automatically and safely use memory during normal approved
+chat and workflow activity.
+
+The desired end state is:
+
+1. MarcBot identifies when prior project context, user preferences,
+   operational facts, workflow history, or corrections are relevant.
+2. MarcBot retrieves the most useful memory records without requiring Marc
+   to explicitly ask for a memory search.
+3. MarcBot assembles a bounded context package from durable facts,
+   summaries, recent events, and corrections before model-assisted work
+   where memory is appropriate.
+4. MarcBot avoids stale or superseded memory by respecting fact status,
+   correction records, approval state, timestamps, and source metadata.
+5. MarcBot remains auditable: Marc should be able to inspect what memory
+   exists, what was proposed, what was approved or rejected, and why a
+   memory item influenced a workflow.
+
+The current file-backed memory store is intentionally conservative and
+human-readable. SQLite is being added as a structured, indexed, queryable
+view so future retrieval can be faster, more precise, and easier to bound
+than searching a loose collection of flat Markdown or TOML files. For now,
+file memory remains the source of truth and SQLite remains a derived view.
+
+Manual CLI commands are implementation and diagnostic tools. They are not
+the final user experience. The final MarcBot behavior should reduce Marc's
+burden by using memory automatically where safe, while preserving explicit
+guardrails for high-risk facts, corrections, and actions.
 ## Goal
 
 MarcBot should eventually have a reliable hybrid memory system that helps future

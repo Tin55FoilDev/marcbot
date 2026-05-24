@@ -203,3 +203,26 @@ The governing rule is:
 > Deterministic code does deterministic work. LLMs do bounded judgment work. MarcBot orchestrates approved workflows. Telegram exposes only safe workflow handles.
 
 This rule should guide future project design, CLI command design, LLM integration, Telegram exposure, and memory development.
+
+## Memory retrieval in future workflows
+
+Future MarcBot workflows should treat memory retrieval as part of the
+workflow planning/context stage, not as a separate manual chore for Marc.
+
+For workflows that can benefit from project history or durable user/project
+context, the intended flow is:
+
+1. Determine whether memory is relevant to the requested task.
+2. Retrieve bounded memory context from structured sources first, including
+   active facts, relevant summaries, recent events, and corrections.
+3. Exclude rejected, superseded, stale, or unrelated memory unless the task
+   explicitly asks for history.
+4. Use retrieved memory to prepare safer prompts, reports, command plans,
+   or workflow decisions.
+5. Record new low-risk operational events automatically where appropriate,
+   and route durable/high-impact facts through proposal or approval
+   workflows as required.
+
+SQLite-backed memory reads are an implementation step toward that model.
+They are not intended to make Marc manually query memory forever; they are
+the indexed substrate future MarcBot context assembly can rely on.
