@@ -20,6 +20,12 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.9 - Opt-in memory context for LLM file summaries
+
+- Added opt-in memory context flags to `llm summarize-file` and `llm summarize-file-save`.
+- Verified live LLM file summarization with bounded weather-report memory context.
+- Documented LM Studio environment loading requirements for provider-contact CLI commands.
+- Preserves local memory retrieval as provider-contact-free; provider contact remains explicit through LLM commands.
 ## 0.3.8 - Bounded memory context assembly
 
 - Added `python -m marcbot memory context` for bounded local memory context assembly.

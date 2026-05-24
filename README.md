@@ -4,7 +4,7 @@ MarcBot is Marc's personal-only Telegram bot and automation project.
 
 It is intended to replace the reliable subset of OpenClaw workflows with a smaller, safer, more testable system that Marc can maintain over time.
 
-Current baseline: **MarcBot 0.3.8**.
+Current baseline: **MarcBot 0.3.9**.
 
 Project direction: see `docs/PROJECT_DIRECTION.md` for the long-term target: a personal Telegram-facing OpenClaw replacement for chat, commands, workflows, local models, and frontier model profiles.
 
@@ -65,7 +65,7 @@ MarcBot currently includes:
 
 ## Session restart support
 
-MarcBot 0.3.8 adds bounded local memory context assembly from SQLite-backed facts, summaries, and events while keeping memory retrieval provider-contact-free.
+MarcBot 0.3.9 adds opt-in memory context for LLM file summarization, with live validation and documented LM Studio environment handling.
 
 
 Memory context helper:
