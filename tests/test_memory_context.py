@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 
-from marcbot.memory_context import build_memory_context, format_memory_context
+from marcbot.memory_context import (
+    build_memory_context,
+    format_memory_context,
+    format_memory_context_json,
+)
 from marcbot.memory_sqlite import initialize_memory_sqlite
 
 
@@ -191,3 +196,32 @@ def test_build_memory_context_validates_limits(tmp_path: Path) -> None:
         assert str(exc) == "facts_limit must be 1 or greater"
     else:
         raise AssertionError("Expected ValueError")
+
+
+def test_format_memory_context_json_is_structured(tmp_path: Path) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_fact(
+            connection,
+            fact_id="json-fact",
+            statement="JSON context assembly stays structured.",
+            project="MarcBot",
+        )
+        connection.commit()
+
+    payload = json.loads(
+        format_memory_context_json(
+            path=db_path,
+            project="MarcBot",
+            query="JSON",
+        )
+    )
+
+    assert payload["provider_contact"] is False
+    assert payload["project"] == "MarcBot"
+    assert payload["query"] == "JSON"
+    assert payload["counts"] == {"events": 0, "facts": 1, "summaries": 0}
+    assert payload["facts"][0]["id"] == "json-fact"
+    assert payload["summaries"] == []
+    assert payload["events"] == []

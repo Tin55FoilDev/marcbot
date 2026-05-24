@@ -907,6 +907,7 @@ The context assembly command is now implemented as:
 ```bash
 python -m marcbot memory context --query "weather report"
 python -m marcbot memory context --project weather-report --query delivery
+python -m marcbot memory context --project weather-report --query delivery --format json
 ```
 
 It combines active facts, matching summaries, and recent matching events

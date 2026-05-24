@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -75,6 +76,66 @@ def build_memory_context(
         events=events,
     )
 
+
+def memory_context_to_dict(context: MemoryContextPackage) -> dict[str, object]:
+    return {
+        "provider_contact": False,
+        "path": str(context.path),
+        "query": context.query,
+        "project": context.project,
+        "limits": {
+            "facts": context.facts_limit,
+            "summaries": context.summaries_limit,
+            "events": context.events_limit,
+        },
+        "counts": {
+            "facts": len(context.facts),
+            "summaries": len(context.summaries),
+            "events": len(context.events),
+        },
+        "facts": [
+            {
+                "id": fact.id,
+                "statement": fact.statement,
+                "category": fact.category,
+                "project": fact.project,
+                "source": fact.source,
+                "created_at": fact.created_at,
+                "updated_at": fact.updated_at,
+                "confidence": fact.confidence,
+                "status": fact.status,
+                "details": fact.details,
+            }
+            for fact in context.facts
+        ],
+        "summaries": [
+            {
+                "name": summary.name,
+                "title": summary.title,
+                "project": summary.project,
+                "source": summary.source,
+                "created_at": summary.created_at,
+                "body": summary.body,
+                "preview": _preview(summary.body),
+            }
+            for summary in context.summaries
+        ],
+        "events": [
+            {
+                "id": event.id,
+                "timestamp": event.timestamp,
+                "type": event.type,
+                "project": event.project,
+                "summary": event.summary,
+                "source": event.source,
+                "confidence": event.confidence,
+                "details": event.details,
+                "source_file": event.source_file,
+                "source_line": event.source_line,
+            }
+            for event in context.events
+        ],
+    }
 
 def _preview(text: str, *, limit: int = 180) -> str:
     collapsed = " ".join(text.split())
@@ -162,3 +223,23 @@ def format_memory_context(
     lines.append("")
     lines.append("Provider contact: no")
     return "\n".join(lines)
+
+
+def format_memory_context_json(
+    *,
+    path: Path = DEFAULT_MEMORY_DB_PATH,
+    query: str | None = None,
+    project: str | None = None,
+    facts_limit: int = 5,
+    summaries_limit: int = 3,
+    events_limit: int = 5,
+) -> str:
+    context = build_memory_context(
+        path=path,
+        query=query,
+        project=project,
+        facts_limit=facts_limit,
+        summaries_limit=summaries_limit,
+        events_limit=events_limit,
+    )
+    return json.dumps(memory_context_to_dict(context), indent=2, sort_keys=True)

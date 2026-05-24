@@ -1200,6 +1200,7 @@ Initial implementation command:
 ```bash
 python -m marcbot memory context --query "weather report"
 python -m marcbot memory context --project weather-report --query delivery
+python -m marcbot memory context --project weather-report --query delivery --format json
 ```
 
 The v1 output is a local, human-readable package with Facts, Summaries,

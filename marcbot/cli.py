@@ -30,7 +30,10 @@ from marcbot.llm_file_summary import (
 )
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
-from marcbot.memory_context import format_memory_context
+from marcbot.memory_context import (
+    format_memory_context,
+    format_memory_context_json,
+)
 from marcbot.memory_sqlite import (
     format_memory_sqlite_counts,
     format_memory_sqlite_status,
@@ -409,6 +412,7 @@ def build_parser() -> argparse.ArgumentParser:
     memory_context_parser.add_argument("--facts-limit", type=int, default=5)
     memory_context_parser.add_argument("--summaries-limit", type=int, default=3)
     memory_context_parser.add_argument("--events-limit", type=int, default=5)
+    memory_context_parser.add_argument("--format", choices=["text", "json"], default="text")
     memory_sqlite_parser = memory_subparsers.add_parser(
         "sqlite",
         help="manage imported SQLite memory view",
@@ -1164,8 +1168,13 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.memory_command == "context":
+                formatter = (
+                    format_memory_context_json
+                    if args.format == "json"
+                    else format_memory_context
+                )
                 print(
-                    format_memory_context(
+                    formatter(
                         query=args.query,
                         project=args.project,
                         facts_limit=args.facts_limit,
