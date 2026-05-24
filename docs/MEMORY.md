@@ -1319,3 +1319,19 @@ remain:
 A workflow may use memory context to prepare a safer prompt, report, or
 analysis input. It should not treat memory retrieval itself as a model call,
 and it should not give the model arbitrary file or memory-store access.
+
+### Live validation of opt-in file summarization memory context
+
+The first live validation used a small manual workspace note and explicit
+memory flags on `llm summarize-file` and `llm summarize-file-save`.
+
+Validated behavior:
+
+- `memory context` retrieved bounded weather-report context locally.
+- local memory retrieval reported `Provider contact: no`.
+- `llm summarize-file` included the supplied weather-report memory context.
+- `llm summarize-file-save` wrote a summary artifact under the workspace.
+- provider contact occurred only during the explicit LLM commands.
+
+The live run also confirmed that provider-contact LLM commands need the
+LM Studio environment secret loaded in the shell before execution.

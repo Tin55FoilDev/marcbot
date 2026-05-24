@@ -608,3 +608,28 @@ python -m marcbot llm summarize-file-save report_summary path.md output.md --mem
 Memory context retrieval remains local and provider-contact-free. Provider
 contact still occurs only because the operator explicitly runs an `llm`
 command routed through the configured task/profile.
+
+### LLM environment loading note
+
+Provider-contact CLI commands require the relevant provider secrets to be
+present in the process environment. For LM Studio, this means
+`MARCBOT_LMSTUDIO_API_KEY` must be loaded before commands such as:
+
+```bash
+python -m marcbot llm health local_fast
+python -m marcbot llm summarize-file report_summary path.md
+```
+
+Operationally, Marc can source the local LLM environment file before manual
+provider-contact tests:
+
+```bash
+set -a
+. /srv/marcbot/config/llm.env
+set +a
+```
+
+If direct LM Studio `curl` tests pass with Authorization but MarcBot LLM
+commands return HTTP 401, verify that the shell running MarcBot has loaded
+`/srv/marcbot/config/llm.env`. A future hardening step may make provider
+secret loading more explicit or automatic for CLI provider-contact commands.
