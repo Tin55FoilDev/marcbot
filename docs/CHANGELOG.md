@@ -20,6 +20,13 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.16 - Telegram memory proposal control loop
+
+- Completed the initial Telegram pending-proposal loop.
+- Added Telegram read-only proposal listing and proposal detail commands.
+- Added Telegram-side rejection for pending proposals.
+- Preserved the approval boundary: Telegram still cannot approve durable facts.
+- Validated the loop live: propose, list, inspect, reject, SQLite sync, and clean pending queue.
 ## 0.3.15 - Telegram memory proposal command
 
 - Added the authorized Telegram `/memory_propose_fact` command.
