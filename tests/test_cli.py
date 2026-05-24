@@ -2304,3 +2304,34 @@ def test_optional_memory_context_allows_profile_query_override(
     assert captured["summaries_limit"] == 2
     assert captured["events_limit"] == 5
 
+
+
+def test_source_monitor_summarize_latest_accepts_memory_profile() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "source-monitor",
+            "summarize-latest",
+            "ai",
+            "--memory-profile",
+            "weather-report",
+        ]
+    )
+
+    assert args.memory_profile == "weather-report"
+
+
+def test_source_monitor_run_summary_accepts_memory_profile() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "source-monitor",
+            "run-summary",
+            "ai",
+            "--memory-profile",
+            "weather-report",
+        ]
+    )
+
+    assert args.memory_profile == "weather-report"
+

@@ -788,6 +788,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="source_monitor_analysis",
         help="configured LLM task name (default: source_monitor_analysis)",
     )
+    source_monitor_run_summary_parser.add_argument("--memory-profile", default=None)
     source_monitor_run_summary_parser.add_argument("--memory-query", default=None)
     source_monitor_run_summary_parser.add_argument("--memory-project", default=None)
     source_monitor_run_summary_parser.add_argument(
@@ -814,6 +815,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="source_monitor_analysis",
         help="configured LLM task name (default: source_monitor_analysis)",
     )
+    source_monitor_summarize_latest_parser.add_argument("--memory-profile", default=None)
     source_monitor_summarize_latest_parser.add_argument("--memory-query", default=None)
     source_monitor_summarize_latest_parser.add_argument("--memory-project", default=None)
     source_monitor_summarize_latest_parser.add_argument(

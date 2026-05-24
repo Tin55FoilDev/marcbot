@@ -393,11 +393,17 @@ include bounded local MarcBot memory context when explicitly requested:
 ```bash
 python -m marcbot source-monitor summarize-latest ai --memory-query "source monitor" --memory-project marcbot-memory
 python -m marcbot source-monitor run-summary ai --memory-query "source monitor" --memory-project marcbot-memory
+python -m marcbot source-monitor summarize-latest ai --memory-profile weather-report
+python -m marcbot source-monitor run-summary ai --memory-profile weather-report
 ```
 
 Memory context retrieval is local and provider-contact-free. Provider
 contact occurs only because these commands explicitly run the configured
 source-monitor LLM summary task.
+
+`--memory-profile` uses a deterministic local memory profile. The first
+available profile is `weather-report`, which is mainly useful as a reference
+pattern while broader source-monitor-specific memory facts are added later.
 
 When memory context is requested, MarcBot reserves prompt budget by using
 a smaller compacted source-monitor report input. This prevents the combined

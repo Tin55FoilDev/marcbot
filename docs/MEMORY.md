@@ -1368,6 +1368,11 @@ used by more workflows. They keep the model useful while preserving the
 controlled retrieval boundary.
 
 
+
+Source-monitor summary commands can also consume memory profiles with
+`--memory-profile <name>`. This keeps source-monitor summary behavior
+consistent with LLM file-summary commands while preserving explicit opt-in
+memory retrieval.
 LLM file-summary commands can consume memory profiles with
 `--memory-profile <name>`. This lets a workflow use a deterministic
 memory profile without repeating query/project/limit flags manually.
