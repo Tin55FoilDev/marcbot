@@ -20,6 +20,11 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.14 - Telegram memory profile visibility
+
+- Added the read-only Telegram `/memory_profiles` command.
+- Exposed deterministic memory context profiles from Telegram without provider contact.
+- Documented Telegram memory profile visibility.
 ## 0.3.13 - Source-monitor memory profile and prompt preview
 
 - Added durable source-monitor memory facts to support meaningful source-monitor memory retrieval.
