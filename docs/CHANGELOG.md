@@ -20,6 +20,12 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.7 - SQLite-backed memory read expansion
+
+- Added `python -m marcbot memory sqlite summaries` for bounded, read-only SQLite-backed memory summary listing/query.
+- Added `python -m marcbot memory sqlite events` for bounded, read-only SQLite-backed memory event listing/query.
+- Clarified the long-term memory target: automatic bounded retrieval/context assembly rather than manual memory micromanagement.
+- Preserves file memory as the source of truth and keeps memory operations provider-contact-free.
 ## 0.3.6 - SQLite-backed memory fact reads
 
 - Added `python -m marcbot memory sqlite facts` for bounded, read-only SQLite-backed memory fact listing/query.
