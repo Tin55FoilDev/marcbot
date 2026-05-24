@@ -1195,6 +1195,17 @@ imported view validates against file memory. It does not import or switch runtim
 memory behavior.
 
 ## Memory context assembly v1
+Initial implementation command:
+
+```bash
+python -m marcbot memory context --query "weather report"
+python -m marcbot memory context --project weather-report --query delivery
+```
+
+The v1 output is a local, human-readable package with Facts, Summaries,
+and Recent events sections. It is intentionally suitable for inspection
+before any future workflow uses it automatically.
+
 
 The next implementation phase is a bounded memory context assembly layer.
 This layer should answer a practical question for future MarcBot workflows:

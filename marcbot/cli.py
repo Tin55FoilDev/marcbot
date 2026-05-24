@@ -30,6 +30,7 @@ from marcbot.llm_file_summary import (
 )
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
+from marcbot.memory_context import format_memory_context
 from marcbot.memory_sqlite import (
     format_memory_sqlite_counts,
     format_memory_sqlite_status,
@@ -398,6 +399,16 @@ def build_parser() -> argparse.ArgumentParser:
     memory_subparsers = memory_parser.add_subparsers(dest="memory_command")
     memory_subparsers.add_parser("init", help="initialize local memory store")
     memory_subparsers.add_parser("status", help="show local memory store status")
+
+    memory_context_parser = memory_subparsers.add_parser(
+        "context",
+        help="assemble bounded local memory context from SQLite",
+    )
+    memory_context_parser.add_argument("--query", default=None)
+    memory_context_parser.add_argument("--project", default=None)
+    memory_context_parser.add_argument("--facts-limit", type=int, default=5)
+    memory_context_parser.add_argument("--summaries-limit", type=int, default=3)
+    memory_context_parser.add_argument("--events-limit", type=int, default=5)
     memory_sqlite_parser = memory_subparsers.add_parser(
         "sqlite",
         help="manage imported SQLite memory view",
@@ -1150,6 +1161,18 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             if args.memory_command == "status":
                 print(format_memory_status_message(include_sqlite=True))
+                return 0
+
+            if args.memory_command == "context":
+                print(
+                    format_memory_context(
+                        query=args.query,
+                        project=args.project,
+                        facts_limit=args.facts_limit,
+                        summaries_limit=args.summaries_limit,
+                        events_limit=args.events_limit,
+                    )
+                )
                 return 0
             if args.memory_command == "sqlite":
                 if args.memory_sqlite_command == "status":

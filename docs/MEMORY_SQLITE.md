@@ -902,6 +902,17 @@ view only. File memory remains the source of truth, SQLite remains a
 query/index view, and provider contact for memory operations remains `no`.
 
 ### SQLite-backed context assembly
+The context assembly command is now implemented as:
+
+```bash
+python -m marcbot memory context --query "weather report"
+python -m marcbot memory context --project weather-report --query delivery
+```
+
+It combines active facts, matching summaries, and recent matching events
+from SQLite-backed local reads. It remains read-only and
+provider-contact-free.
+
 
 Facts, summaries, and events now provide the first useful SQLite-backed
 read surfaces. The next phase is a bounded context assembly command that
