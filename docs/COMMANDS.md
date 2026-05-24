@@ -554,3 +554,9 @@ Example:
 
 The command is authorized-chat-only, writes a pending proposal, and remains
 provider-contact-free.
+
+### Telegram memory proposal visibility
+
+`/memory_proposals` lists pending memory proposals from Telegram.
+It is read-only and provider-contact-free. It does not approve, reject,
+or modify proposals.

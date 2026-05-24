@@ -1809,3 +1809,68 @@ def test_memory_propose_fact_command_rejects_unauthorized_chat() -> None:
     asyncio.run(telegram_bot.memory_propose_fact_command(update, context))
 
     assert message.replies
+
+
+def test_memory_proposals_command_replies_with_pending_proposals(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_memory_proposal_list",
+        lambda status, limit: (
+            f"MarcBot memory proposals\nStatus: {status}\n"
+            f"Limit: {limit}\nProvider contact: no"
+        ),
+    )
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_proposals_command(update, context))
+
+    assert message.replies == [
+        "MarcBot memory proposals\nStatus: pending\nLimit: 8\nProvider contact: no"
+    ]
+
+
+def test_memory_proposals_command_rejects_unauthorized_chat() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=999),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_proposals_command(update, context))
+
+    assert message.replies

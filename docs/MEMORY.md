@@ -1380,6 +1380,11 @@ The first supported profile is `weather-report`.
 
 #
 
+
+`/memory_proposals` provides read-only Telegram visibility into pending
+memory proposals. It complements `/memory_propose_fact` by letting Marc
+inspect pending proposal state without using the CLI.
+
 ### Telegram explicit memory proposal
 
 `/memory_propose_fact <project> | <statement>` is the first Telegram-side

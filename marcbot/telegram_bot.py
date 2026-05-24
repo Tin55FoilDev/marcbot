@@ -36,6 +36,7 @@ from marcbot.memory_store import (
     add_memory_proposal,
     format_memory_event_list,
     format_memory_fact_list,
+    format_memory_proposal_list,
     format_memory_status_message,
 )
 from marcbot.report_sender import format_weather_report_for_telegram
@@ -547,6 +548,25 @@ async def memory_context_command(update: Update, context: ContextTypes.DEFAULT_T
         profile_name,
     )
 
+
+
+
+async def memory_proposals_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /memory_proposals."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /memory_proposals from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    message = format_memory_proposal_list(status="pending", limit=8)
+    await update.message.reply_text(message)
+    LOGGER.info("Handled /memory_proposals for chat_id=%s", chat_id)
 
 
 async def memory_propose_fact_command(
@@ -1237,6 +1257,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/memory_events - show recent local memory events\n"
         "/memory_facts - show active local memory facts\n"
         "/memory_profiles - list deterministic memory context profiles\n"
+        "/memory_proposals - show pending memory proposals\n"
         "/memory_propose_fact <project> | <statement> - propose a pending memory fact\n"
         "/memory_status - show local memory status\n"
         "/ping - check whether MarcBot is responding\n"
@@ -1326,6 +1347,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("memory_facts", memory_facts_command))
     application.add_handler(CommandHandler("memory_context", memory_context_command))
     application.add_handler(CommandHandler("memory_propose_fact", memory_propose_fact_command))
+    application.add_handler(CommandHandler("memory_proposals", memory_proposals_command))
     application.add_handler(CommandHandler("memory_profiles", memory_profiles_command))
     application.add_handler(CommandHandler("memory_status", memory_status_command))
     application.add_handler(CommandHandler("send_weather_report", send_weather_report_command))
