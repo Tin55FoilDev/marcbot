@@ -38,6 +38,29 @@ DEFAULT_MEMORY_CONTEXT_PROFILES: dict[str, MemoryContextProfile] = {
 }
 
 
+
+def format_memory_context_profiles() -> str:
+    lines = ["MarcBot memory context profiles", ""]
+
+    for name in sorted(DEFAULT_MEMORY_CONTEXT_PROFILES):
+        profile = DEFAULT_MEMORY_CONTEXT_PROFILES[name]
+        project = profile.project if profile.project is not None else "none"
+        query = profile.query if profile.query is not None else "none"
+        lines.append(f"- {profile.name}")
+        lines.append(f"  query: {query}")
+        lines.append(f"  project: {project}")
+        lines.append(
+            "  limits: "
+            f"facts={profile.facts_limit} "
+            f"summaries={profile.summaries_limit} "
+            f"events={profile.events_limit}"
+        )
+        lines.append("")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
+
+
 def get_memory_context_profile(name: str) -> MemoryContextProfile:
     try:
         return DEFAULT_MEMORY_CONTEXT_PROFILES[name]

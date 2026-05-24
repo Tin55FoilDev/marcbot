@@ -378,3 +378,17 @@ def test_resolve_memory_context_request_without_profile_preserves_limits() -> No
     assert request.summaries_limit == 4
     assert request.events_limit == 2
 
+
+
+def test_format_memory_context_profiles_lists_weather_profile() -> None:
+    from marcbot.memory_context import format_memory_context_profiles
+
+    message = format_memory_context_profiles()
+
+    assert "MarcBot memory context profiles" in message
+    assert "- weather-report" in message
+    assert "query: weather" in message
+    assert "project: none" in message
+    assert "limits: facts=5 summaries=2 events=5" in message
+    assert "Provider contact: no" in message
+

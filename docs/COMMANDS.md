@@ -505,3 +505,12 @@ before contacting the configured provider. This applies to explicit
 
 `llm status` remains provider-contact-free and does not require provider
 contact to report configured providers, profiles, tasks, and route validity.
+
+### Memory profile commands
+
+`python -m marcbot memory profiles` lists deterministic memory context
+profiles such as `weather-report`. The command is read-only and
+provider-contact-free.
+
+`python -m marcbot memory context --profile weather-report` assembles
+bounded local memory context using that profile.

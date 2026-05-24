@@ -35,6 +35,7 @@ from marcbot.logging_setup import configure_logging
 from marcbot.memory_context import (
     format_memory_context,
     format_memory_context_json,
+    format_memory_context_profiles,
     resolve_memory_context_request,
 )
 from marcbot.memory_sqlite import (
@@ -508,6 +509,7 @@ def build_parser() -> argparse.ArgumentParser:
     memory_subparsers = memory_parser.add_subparsers(dest="memory_command")
     memory_subparsers.add_parser("init", help="initialize local memory store")
     memory_subparsers.add_parser("status", help="show local memory store status")
+    memory_subparsers.add_parser("profiles", help="list memory context profiles")
 
     memory_context_parser = memory_subparsers.add_parser(
         "context",
@@ -1319,6 +1321,10 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             if args.memory_command == "status":
                 print(format_memory_status_message(include_sqlite=True))
+                return 0
+
+            if args.memory_command == "profiles":
+                print(format_memory_context_profiles())
                 return 0
 
             if args.memory_command == "context":

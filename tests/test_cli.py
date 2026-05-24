@@ -2335,3 +2335,15 @@ def test_source_monitor_run_summary_accepts_memory_profile() -> None:
 
     assert args.memory_profile == "weather-report"
 
+
+
+def test_memory_profiles_command_outputs_profiles(capsys) -> None:
+    result = main(["memory", "profiles"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory context profiles" in captured.out
+    assert "- weather-report" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert captured.err == ""
+
