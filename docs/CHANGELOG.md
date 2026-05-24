@@ -20,6 +20,13 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.11 - Memory context prompt controls and source-monitor integration
+
+- Clarified the memory-context prompt boundary for LLM file summaries.
+- Added provider-contact-free prompt preview and prompt preview save support.
+- Added opt-in memory context flags to `source-monitor summarize-latest` and `source-monitor run-summary`.
+- Reserved source-monitor prompt budget when memory context is included.
+- Hardened source-monitor LLM summary execution with local LLM env loading and empty-response retry behavior.
 ## 0.3.10 - LLM provider environment loading
 
 - Provider-contact LLM CLI commands now load `/srv/marcbot/config/llm.env` before contacting configured providers.

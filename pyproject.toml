@@ -1,6 +1,6 @@
 [project]
 name = "marcbot"
-version = "0.3.10"
+version = "0.3.11"
 description = "Personal automation bot for Marc"
 requires-python = ">=3.14"
 readme = "README.md"
