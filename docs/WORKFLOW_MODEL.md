@@ -265,3 +265,29 @@ information while keeping retrieval safe, auditable, and efficient.
 Memory retrieval remains separate from provider contact; local retrieval
 should complete before any optional model call receives the assembled
 context.
+
+## Controlled memory context integration for workflows
+
+Selected workflows may eventually retrieve memory context automatically,
+but memory retrieval and provider contact must remain separate concerns.
+
+Approved pattern:
+
+1. The workflow determines that memory context may help.
+2. MarcBot retrieves bounded local memory context using deterministic code,
+   such as `build_memory_context_dict(...)`.
+3. The memory retrieval step remains provider-contact-free.
+4. The workflow inspects the returned `warnings`, `sqlite`, `counts`, and
+   section payloads before deciding whether the context is usable.
+5. Any later LLM/provider contact remains explicit and controlled by the
+   selected LLM command, task route, and profile.
+6. The model receives only the bounded context package, not arbitrary
+   file-system access or unrestricted memory search access.
+
+This allows MarcBot to reduce Marc's burden by retrieving useful memory
+automatically inside approved workflows, while still preserving auditability,
+bounded context size, and clear provider-contact boundaries.
+
+Initial integration should stay CLI-only. Telegram or free-form chat
+integration should wait until the CLI workflow path is stable, tested, and
+documented.

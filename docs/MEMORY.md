@@ -1292,3 +1292,23 @@ Top-level fields:
 Future workflow code should consume the direct Python helper
 `build_memory_context_dict(...)` where possible. The CLI JSON output is
 for inspection, integration testing, and shell-facing workflows.
+
+## Workflow integration boundary
+
+The memory context helper is now suitable as a local workflow-facing API.
+Future workflows should prefer `build_memory_context_dict(...)` over parsing
+CLI text or JSON output.
+
+Memory retrieval may become automatic in selected workflows, but it must
+remain:
+
+- local;
+- deterministic;
+- bounded by project/query and per-section limits;
+- warning-aware;
+- provider-contact-free;
+- separate from any later explicit LLM/provider call.
+
+A workflow may use memory context to prepare a safer prompt, report, or
+analysis input. It should not treat memory retrieval itself as a model call,
+and it should not give the model arbitrary file or memory-store access.

@@ -580,3 +580,17 @@ Keep the profile explicitly chat-approved:
     chat_enabled = true
 
 and keep provider secrets in `/srv/marcbot/config/llm.env`, not in Git.
+
+## Memory context and provider contact
+
+Memory context retrieval is local and separate from LLM/provider contact.
+Selected future LLM workflows may retrieve bounded memory context before
+building a prompt, but that retrieval must not contact a provider.
+
+Provider contact remains controlled by explicit LLM commands, configured
+task routes, and selected profiles. A memory context package may be included
+in a prompt only after deterministic MarcBot code has assembled and bounded
+the context.
+
+This keeps local memory retrieval auditable and safe while allowing future
+model-assisted workflows to benefit from project history and durable facts.
