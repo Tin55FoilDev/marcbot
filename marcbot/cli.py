@@ -35,6 +35,7 @@ from marcbot.memory_sqlite import (
     format_memory_sqlite_status,
     format_memory_sqlite_validation,
     format_sqlite_memory_fact_list,
+    format_sqlite_memory_summary_list,
     import_file_memory_to_sqlite,
     initialize_memory_sqlite,
 )
@@ -433,6 +434,14 @@ def build_parser() -> argparse.ArgumentParser:
     memory_sqlite_facts_parser.add_argument("--project", default=None)
     memory_sqlite_facts_parser.add_argument("--query", default=None)
     memory_sqlite_facts_parser.add_argument("--limit", type=int, default=20)
+
+    memory_sqlite_summaries_parser = memory_sqlite_subparsers.add_parser(
+        "summaries",
+        help="list/query summaries from the SQLite memory view",
+    )
+    memory_sqlite_summaries_parser.add_argument("--project", default=None)
+    memory_sqlite_summaries_parser.add_argument("--query", default=None)
+    memory_sqlite_summaries_parser.add_argument("--limit", type=int, default=20)
 
     memory_search_parser = memory_subparsers.add_parser(
         "search",
@@ -1155,6 +1164,16 @@ def main(argv: list[str] | None = None) -> int:
                         format_sqlite_memory_fact_list(
                             status=args.status,
                             category=args.category,
+                            project=args.project,
+                            query=args.query,
+                            limit=args.limit,
+                        )
+                    )
+                    return 0
+
+                if args.memory_sqlite_command == "summaries":
+                    print(
+                        format_sqlite_memory_summary_list(
                             project=args.project,
                             query=args.query,
                             limit=args.limit,

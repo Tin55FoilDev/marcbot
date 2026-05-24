@@ -9,11 +9,13 @@ from marcbot.memory_sqlite import (
     format_memory_sqlite_counts,
     format_memory_sqlite_status,
     format_sqlite_memory_fact_list,
+    format_sqlite_memory_summary_list,
     get_memory_sqlite_status,
     get_sqlite_memory_counts,
     import_file_memory_to_sqlite,
     initialize_memory_sqlite,
     query_sqlite_memory_facts,
+    query_sqlite_memory_summaries,
 )
 
 
@@ -1067,3 +1069,124 @@ def test_query_sqlite_memory_facts_missing_database_returns_empty(
     db_path = tmp_path / "missing.sqlite3"
 
     assert query_sqlite_memory_facts(path=db_path) == []
+
+
+def _insert_test_sqlite_summary(
+    connection,
+    *,
+    name: str,
+    title: str,
+    project: str | None = None,
+    body: str = "Summary body.",
+    created_at: str = "2026-05-22T10:00:00+00:00",
+) -> None:
+    sql = (
+        "INSERT INTO memory_summaries("
+        "name, title, project, source, created_at, body, source_file, imported_at"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    connection.execute(
+        sql,
+        (
+            name,
+            title,
+            project,
+            "test",
+            created_at,
+            body,
+            f"/tmp/{name}",
+            "2026-05-22T11:00:00+00:00",
+        ),
+    )
+
+
+def test_query_sqlite_memory_summaries_returns_recent_rows(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_summary(
+            connection,
+            name="older.md",
+            title="Older summary",
+            created_at="2026-05-21T10:00:00+00:00",
+        )
+        _insert_test_sqlite_summary(
+            connection,
+            name="newer.md",
+            title="Newer summary",
+            created_at="2026-05-22T10:00:00+00:00",
+        )
+        connection.commit()
+
+    summaries = query_sqlite_memory_summaries(path=db_path, limit=2)
+
+    assert [summary.name for summary in summaries] == ["newer.md", "older.md"]
+
+
+def test_query_sqlite_memory_summaries_supports_project_and_query(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_summary(
+            connection,
+            name="weather.md",
+            title="Weather workflow summary",
+            project="weather-report",
+            body="Daily weather report delivery workflow notes.",
+        )
+        _insert_test_sqlite_summary(
+            connection,
+            name="other.md",
+            title="Other workflow summary",
+            project="other",
+            body="Unrelated notes.",
+        )
+        connection.commit()
+
+    summaries = query_sqlite_memory_summaries(
+        path=db_path,
+        project="weather-report",
+        query="delivery",
+    )
+
+    assert [summary.name for summary in summaries] == ["weather.md"]
+
+
+def test_format_sqlite_memory_summary_list_includes_provider_contact_no(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_summary(
+            connection,
+            name="summary-format.md",
+            title="Formatted summary",
+            project="MarcBot",
+            body="Formatted SQLite summaries stay local.",
+        )
+        connection.commit()
+
+    message = format_sqlite_memory_summary_list(
+        path=db_path,
+        project="MarcBot",
+        query="local",
+    )
+
+    assert "MarcBot memory SQLite summaries" in message
+    assert "summary-format.md" in message
+    assert "Formatted summary" in message
+    assert "Formatted SQLite summaries stay local." in message
+    assert "Provider contact: no" in message
+
+
+def test_query_sqlite_memory_summaries_missing_database_returns_empty(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "missing.sqlite3"
+
+    assert query_sqlite_memory_summaries(path=db_path) == []

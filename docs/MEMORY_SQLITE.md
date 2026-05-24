@@ -871,3 +871,17 @@ python -m marcbot memory sqlite facts --category architecture --project MarcBot
 This command reads from the imported SQLite view only. File memory remains
 the source of truth, SQLite remains a query/index view, and provider contact
 for memory operations remains `no`.
+
+### SQLite-backed summary reads
+
+MarcBot also supports bounded SQLite-backed summary listing/query:
+
+```bash
+python -m marcbot memory sqlite summaries
+python -m marcbot memory sqlite summaries --query weather --limit 5
+python -m marcbot memory sqlite summaries --project marcbot-memory --limit 5
+```
+
+This command reads summary metadata and body previews from the imported
+SQLite view only. File memory remains the source of truth, SQLite remains
+a query/index view, and provider contact for memory operations remains `no`.

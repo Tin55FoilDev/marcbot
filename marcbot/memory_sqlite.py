@@ -1395,3 +1395,122 @@ def format_sqlite_memory_fact_list(
 
     lines.append("Provider contact: no")
     return "\n".join(lines)
+
+
+@dataclass(frozen=True)
+class MemorySqliteSummaryRow:
+    name: str
+    title: str
+    project: str | None
+    source: str
+    created_at: str
+    body: str
+
+
+def query_sqlite_memory_summaries(
+    *,
+    path: Path = DEFAULT_MEMORY_DB_PATH,
+    project: str | None = None,
+    query: str | None = None,
+    limit: int = 20,
+) -> list[MemorySqliteSummaryRow]:
+    if limit < 1:
+        raise ValueError("limit must be 1 or greater")
+    if not path.is_file():
+        return []
+
+    clauses: list[str] = []
+    params: list[object] = []
+
+    if project:
+        clauses.append("project = ?")
+        params.append(project)
+    if query:
+        pattern = f"%{query.lower()}%"
+        clauses.append(
+            "("
+            "lower(name) LIKE ? OR "
+            "lower(title) LIKE ? OR "
+            "lower(coalesce(project, '')) LIKE ? OR "
+            "lower(source) LIKE ? OR "
+            "lower(body) LIKE ?"
+            ")"
+        )
+        params.extend([pattern, pattern, pattern, pattern, pattern])
+
+    sql = (
+        "SELECT name, title, project, source, created_at, body "
+        "FROM memory_summaries"
+    )
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += " ORDER BY created_at DESC, name ASC LIMIT ?"
+    params.append(limit)
+
+    with _connect(path) as connection:
+        rows = connection.execute(sql, tuple(params)).fetchall()
+
+    return [
+        MemorySqliteSummaryRow(
+            name=str(row["name"]),
+            title=str(row["title"]),
+            project=row["project"],
+            source=str(row["source"]),
+            created_at=str(row["created_at"]),
+            body=str(row["body"]),
+        )
+        for row in rows
+    ]
+
+
+def _sqlite_memory_summary_preview(body: str, *, limit: int = 180) -> str:
+    collapsed = " ".join(body.split())
+    if len(collapsed) <= limit:
+        return collapsed
+    return collapsed[: limit - 3].rstrip() + "..."
+
+
+def format_sqlite_memory_summary_list(
+    *,
+    path: Path = DEFAULT_MEMORY_DB_PATH,
+    project: str | None = None,
+    query: str | None = None,
+    limit: int = 20,
+) -> str:
+    summaries = query_sqlite_memory_summaries(
+        path=path,
+        project=project,
+        query=query,
+        limit=limit,
+    )
+    lines = [
+        "MarcBot memory SQLite summaries",
+        f"Path: {path}",
+    ]
+
+    filters = []
+    if project:
+        filters.append(f"project={project}")
+    if query:
+        filters.append(f"query={query}")
+    if filters:
+        lines.append("Filters: " + ", ".join(filters))
+
+    lines.append(f"Limit: {limit}")
+    lines.append("")
+
+    if not summaries:
+        lines.append("No matching summaries.")
+    else:
+        for summary in summaries:
+            project_text = summary.project if summary.project else "none"
+            lines.append(
+                f"- {summary.name} [{summary.created_at}; project={project_text}]"
+            )
+            lines.append(f"  {summary.title}")
+            preview = _sqlite_memory_summary_preview(summary.body)
+            if preview:
+                lines.append(f"  {preview}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)
