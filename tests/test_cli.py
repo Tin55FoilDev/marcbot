@@ -1,6 +1,7 @@
 """Tests for MarcBot CLI behavior."""
 
 import logging
+import os
 
 import pytest
 
@@ -1798,3 +1799,37 @@ def test_summarize_file_save_accepts_memory_context_flags() -> None:
     assert args.memory_facts_limit == 5
     assert args.memory_summaries_limit == 3
     assert args.memory_events_limit == 5
+
+
+def test_llm_provider_contact_env_loader_sets_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from marcbot import cli
+
+    monkeypatch.delenv("MARCBOT_LMSTUDIO_API_KEY", raising=False)
+    monkeypatch.setattr(
+        cli,
+        "load_llm_env",
+        lambda: {"MARCBOT_LMSTUDIO_API_KEY": "test-token"},
+    )
+
+    cli._load_llm_env_for_provider_contact()
+
+    assert os.environ["MARCBOT_LMSTUDIO_API_KEY"] == "test-token"
+
+
+def test_llm_provider_contact_env_loader_overrides_stale_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from marcbot import cli
+
+    monkeypatch.setenv("MARCBOT_LMSTUDIO_API_KEY", "stale-token")
+    monkeypatch.setattr(
+        cli,
+        "load_llm_env",
+        lambda: {"MARCBOT_LMSTUDIO_API_KEY": "fresh-token"},
+    )
+
+    cli._load_llm_env_for_provider_contact()
+
+    assert os.environ["MARCBOT_LMSTUDIO_API_KEY"] == "fresh-token"

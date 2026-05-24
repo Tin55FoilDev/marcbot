@@ -495,3 +495,13 @@ SQLite memory commands:
 
 These commands are CLI-only and provider-contact-free. File memory remains the
 source of truth.
+
+### LLM provider-contact environment behavior
+
+Provider-contact LLM CLI commands load `/srv/marcbot/config/llm.env`
+before contacting the configured provider. This applies to explicit
+`llm models`, `llm health`, `llm ask`, `llm ask-task`,
+`llm summarize-file`, and `llm summarize-file-save` commands.
+
+`llm status` remains provider-contact-free and does not require provider
+contact to report configured providers, profiles, tasks, and route validity.

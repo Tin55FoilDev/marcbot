@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -28,6 +29,7 @@ from marcbot.llm_file_summary import (
     resolve_workspace_summary_output_path,
     write_workspace_summary_output,
 )
+from marcbot.llm_status import load_llm_env
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
 from marcbot.memory_context import (
@@ -91,6 +93,11 @@ LOGGER = logging.getLogger(__name__)
 SUMMARY_COMPLETION_ATTEMPTS = 2
 SOURCE_MONITOR_SUMMARY_INPUT_LIMIT = 3000
 
+
+def _load_llm_env_for_provider_contact() -> None:
+    values = load_llm_env()
+    for name, value in values.items():
+        os.environ[name] = value
 
 def _build_optional_memory_context_for_prompt(args: argparse.Namespace) -> str:
     memory_query = getattr(args, "memory_query", None)
@@ -1006,6 +1013,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.llm_command == "models":
+                _load_llm_env_for_provider_contact()
                 llm_config = load_llm_config()
                 provider = llm_config.providers.get(args.provider)
                 if provider is None:
@@ -1019,6 +1027,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.llm_command == "health":
+                _load_llm_env_for_provider_contact()
                 llm_config = load_llm_config()
                 profile = llm_config.profiles.get(args.profile)
                 if profile is None:
@@ -1037,6 +1046,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.llm_command == "ask":
+                _load_llm_env_for_provider_contact()
                 llm_config = load_llm_config()
                 profile = llm_config.profiles.get(args.profile)
                 if profile is None:
@@ -1076,6 +1086,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.llm_command == "ask-task":
+                _load_llm_env_for_provider_contact()
                 task_config = load_llm_task_config()
                 task = task_config.tasks.get(args.task)
                 if task is None:
@@ -1110,6 +1121,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.llm_command == "summarize-file":
+                _load_llm_env_for_provider_contact()
                 summary_input = load_workspace_summary_input(args.path)
                 prompt = build_summary_prompt(summary_input)
                 prompt = _append_optional_memory_context_to_prompt(prompt, args)
@@ -1149,6 +1161,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.llm_command == "summarize-file-save":
+                _load_llm_env_for_provider_contact()
                 summary_input = load_workspace_summary_input(args.input_path)
                 prompt = build_summary_prompt(summary_input)
                 prompt = _append_optional_memory_context_to_prompt(prompt, args)

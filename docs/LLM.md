@@ -611,17 +611,17 @@ command routed through the configured task/profile.
 
 ### LLM environment loading note
 
-Provider-contact CLI commands require the relevant provider secrets to be
-present in the process environment. For LM Studio, this means
-`MARCBOT_LMSTUDIO_API_KEY` must be loaded before commands such as:
+Provider-contact CLI commands load the local LLM secret environment file
+`/srv/marcbot/config/llm.env` before contacting a provider. For LM Studio,
+this supplies `MARCBOT_LMSTUDIO_API_KEY` for commands such as:
 
 ```bash
 python -m marcbot llm health local_fast
 python -m marcbot llm summarize-file report_summary path.md
 ```
 
-Operationally, Marc can source the local LLM environment file before manual
-provider-contact tests:
+Manual shell tests using `curl` still need Marc to source the local LLM
+environment file before using the token:
 
 ```bash
 set -a
@@ -630,6 +630,23 @@ set +a
 ```
 
 If direct LM Studio `curl` tests pass with Authorization but MarcBot LLM
-commands return HTTP 401, verify that the shell running MarcBot has loaded
-`/srv/marcbot/config/llm.env`. A future hardening step may make provider
-secret loading more explicit or automatic for CLI provider-contact commands.
+commands return HTTP 401, verify that `/srv/marcbot/config/llm.env` exists,
+is readable by the `marc` runtime user, and contains the current token.
+
+### CLI provider-contact secret loading
+
+Explicit CLI commands that contact an LLM provider now load
+`/srv/marcbot/config/llm.env` before making the provider request.
+
+This applies to:
+
+- `python -m marcbot llm models ...`
+- `python -m marcbot llm health ...`
+- `python -m marcbot llm ask ...`
+- `python -m marcbot llm ask-task ...`
+- `python -m marcbot llm summarize-file ...`
+- `python -m marcbot llm summarize-file-save ...`
+
+`python -m marcbot llm status --verbose` remains provider-contact-free.
+It reports local configuration validity and does not need provider secrets
+to contact LM Studio.
