@@ -226,3 +226,20 @@ context, the intended flow is:
 SQLite-backed memory reads are an implementation step toward that model.
 They are not intended to make Marc manually query memory forever; they are
 the indexed substrate future MarcBot context assembly can rely on.
+
+## Context assembly workflow step
+
+Future model-assisted workflows should have an explicit context assembly
+stage before asking an LLM to analyze, draft, summarize, or plan.
+
+For v1, this stage should be implemented as a local CLI helper that returns
+bounded memory context from active facts, relevant summaries, and recent
+events. Later, approved workflows can call that helper automatically.
+
+The workflow boundary remains important:
+
+- Deterministic retrieval and filtering should happen in code.
+- LLMs may use the assembled context for analysis or drafting only after the
+  retrieval step has produced a bounded package.
+- Memory retrieval must not require Marc to manually search every time.
+- Provider contact remains explicit and separate from memory retrieval.

@@ -900,3 +900,21 @@ python -m marcbot memory sqlite events --type workflow --limit 5
 This command reads chronological event records from the imported SQLite
 view only. File memory remains the source of truth, SQLite remains a
 query/index view, and provider contact for memory operations remains `no`.
+
+### SQLite-backed context assembly
+
+Facts, summaries, and events now provide the first useful SQLite-backed
+read surfaces. The next phase is a bounded context assembly command that
+combines these read surfaces into one local memory package.
+
+Target command shape:
+
+```bash
+python -m marcbot memory context --query "weather report"
+python -m marcbot memory context --project weather-report --query delivery
+```
+
+The context command should remain read-only and provider-contact-free. It
+should use SQLite as the indexed/queryable view, while file memory remains
+the source of truth. The output should be suitable for human inspection now
+and for future bounded prompt/context assembly later.

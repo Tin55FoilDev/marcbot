@@ -1194,3 +1194,33 @@ This reports the SQLite database presence, schema version, and whether the
 imported view validates against file memory. It does not import or switch runtime
 memory behavior.
 
+## Memory context assembly v1
+
+The next implementation phase is a bounded memory context assembly layer.
+This layer should answer a practical question for future MarcBot workflows:
+
+```text
+Given a topic, project, or task, what local memory context should MarcBot
+retrieve before doing model-assisted work?
+```
+
+The first version should stay local, deterministic, and CLI-only. It should
+not contact any LLM provider. The command should assemble a compact context
+package from SQLite-backed memory reads while preserving file memory as the
+source of truth.
+
+Expected v1 behavior:
+
+1. Accept a query/topic and optional project filter.
+2. Retrieve active matching facts first.
+3. Retrieve matching summaries second.
+4. Retrieve recent matching events third.
+5. Exclude rejected or superseded facts by default.
+6. Keep independent limits per section so one category cannot crowd out the
+   others.
+7. Clearly report `Provider contact: no`.
+
+The context assembler is not the final automatic memory behavior, but it is
+the bridge toward it. Once the CLI helper is stable and tested, future
+approved chat/workflow paths can call it automatically during their planning
+or prompt-preparation stage.
