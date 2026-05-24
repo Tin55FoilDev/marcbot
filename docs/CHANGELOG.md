@@ -20,6 +20,12 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.13 - Source-monitor memory profile and prompt preview
+
+- Added durable source-monitor memory facts to support meaningful source-monitor memory retrieval.
+- Added the `source-monitor` deterministic memory context profile.
+- Added provider-contact-free prompt preview and prompt preview save for source-monitor summary commands.
+- Enabled source-monitor prompt inspection with `--memory-profile source-monitor` before LLM execution or summary artifact writes.
 ## 0.3.12 - Memory context profiles
 
 - Added deterministic memory context profiles, starting with `weather-report`.
