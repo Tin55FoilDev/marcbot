@@ -100,6 +100,8 @@ Expected flow:
 
 Do not commit secrets or local operational config.
 
+For version bumps, restart `marcbot-telegram.service` after the commit/push and verify Telegram `/about` and `/version` both report the new version before closing the milestone.
+
 ## Security boundaries
 
 Do not add:

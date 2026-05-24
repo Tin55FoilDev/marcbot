@@ -123,6 +123,27 @@ If Ruff reports fixable formatting issues:
     ./scripts/check.sh
     '
 
+## Version bump deployment check
+
+After every MarcBot revision/version bump:
+
+1. Commit and push the version bump.
+2. Restart the deployed Telegram service:
+
+```bash
+sudo systemctl restart marcbot-telegram.service
+```
+
+3. Verify Telegram reports the new version with both commands:
+
+```text
+/about
+/version
+```
+
+4. If Telegram still reports the old version, treat the service as not
+   restarted or not running the expected checkout, then inspect service
+   status and logs before continuing.
 ## Post-change deploy check
 
 After a code change and successful validation:
