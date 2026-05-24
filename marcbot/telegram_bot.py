@@ -39,6 +39,7 @@ from marcbot.memory_store import (
     format_memory_proposal_detail,
     format_memory_proposal_list,
     format_memory_status_message,
+    reject_memory_proposal,
 )
 from marcbot.report_sender import format_weather_report_for_telegram
 from marcbot.report_status import format_report_status_message
@@ -551,6 +552,73 @@ async def memory_context_command(update: Update, context: ContextTypes.DEFAULT_T
 
 
 
+
+
+
+async def memory_reject_proposal_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /memory_reject_proposal."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning(
+            "Rejected unauthorized /memory_reject_proposal from chat_id=%s",
+            chat_id,
+        )
+        await _reject_unauthorized(update)
+        return
+
+    raw_text = " ".join(context.args).strip()
+    if " | " not in raw_text:
+        await update.message.reply_text(
+            "Usage: /memory_reject_proposal <id> | <reason>"
+        )
+        LOGGER.info(
+            "Handled /memory_reject_proposal for chat_id=%s ok=false invalid_format",
+            chat_id,
+        )
+        return
+
+    proposal_id, reason = [part.strip() for part in raw_text.split(" | ", 1)]
+    if not proposal_id or not reason:
+        await update.message.reply_text(
+            "Usage: /memory_reject_proposal <id> | <reason>"
+        )
+        LOGGER.info(
+            "Handled /memory_reject_proposal for chat_id=%s ok=false missing_value",
+            chat_id,
+        )
+        return
+
+    try:
+        result = reject_memory_proposal(
+            proposal_id=proposal_id,
+            reason=reason,
+            source="telegram_memory_reject_proposal",
+        )
+    except ValueError as exc:
+        await update.message.reply_text(f"Memory proposal reject failed: {exc}")
+        LOGGER.info(
+            "Handled /memory_reject_proposal for chat_id=%s ok=false proposal=%s",
+            chat_id,
+            proposal_id,
+        )
+        return
+
+    await update.message.reply_text(
+        "Memory proposal rejected:\n"
+        f"ID: {result.proposal.id}\n"
+        "Status: rejected\n"
+        "Provider contact: no"
+    )
+    LOGGER.info(
+        "Handled /memory_reject_proposal for chat_id=%s ok=true proposal=%s",
+        chat_id,
+        result.proposal.id,
+    )
 
 
 async def memory_proposal_command(
@@ -1303,6 +1371,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/memory_proposal <id> - show one memory proposal\n"
         "/memory_proposals - show pending memory proposals\n"
         "/memory_propose_fact <project> | <statement> - propose a pending memory fact\n"
+        "/memory_reject_proposal <id> | <reason> - reject a pending memory proposal\n"
         "/memory_status - show local memory status\n"
         "/ping - check whether MarcBot is responding\n"
         "/report_status - show latest daily status report status\n"
@@ -1391,6 +1460,9 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("memory_facts", memory_facts_command))
     application.add_handler(CommandHandler("memory_context", memory_context_command))
     application.add_handler(CommandHandler("memory_propose_fact", memory_propose_fact_command))
+    application.add_handler(
+        CommandHandler("memory_reject_proposal", memory_reject_proposal_command)
+    )
     application.add_handler(CommandHandler("memory_proposal", memory_proposal_command))
     application.add_handler(CommandHandler("memory_proposals", memory_proposals_command))
     application.add_handler(CommandHandler("memory_profiles", memory_profiles_command))

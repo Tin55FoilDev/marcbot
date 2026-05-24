@@ -1382,6 +1382,10 @@ The first supported profile is `weather-report`.
 
 
 
+
+`/memory_reject_proposal <id> | <reason>` allows Telegram-side cleanup
+of pending proposals. It is intentionally lower risk than approval: it
+closes a pending proposal and does not create an approved durable fact.
 `/memory_proposal <id>` provides read-only Telegram detail for one
 proposal. It complements `/memory_proposals` and keeps review visibility
 available without adding Telegram approval authority.

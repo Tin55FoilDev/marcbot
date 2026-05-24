@@ -566,3 +566,15 @@ or modify proposals.
 `/memory_proposal <id>` shows one memory proposal from Telegram.
 It is read-only and provider-contact-free. It does not approve, reject,
 or modify the proposal.
+
+### Telegram memory proposal rejection
+
+`/memory_reject_proposal <id> | <reason>` rejects a pending memory
+proposal from Telegram. It is a bounded write operation, but it does not
+approve facts or create durable memory.
+
+Example:
+
+```text
+/memory_reject_proposal telegram-fact-20260524-231420 | Validation-only test proposal.
+```
