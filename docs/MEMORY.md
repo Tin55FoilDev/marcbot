@@ -1235,3 +1235,36 @@ The context assembler is not the final automatic memory behavior, but it is
 the bridge toward it. Once the CLI helper is stable and tested, future
 approved chat/workflow paths can call it automatically during their planning
 or prompt-preparation stage.
+
+## Controlled model access to memory
+
+MarcBot should not prevent model-assisted workflows from using memory.
+The goal is controlled capability, not over-locking.
+
+The intended boundary is:
+
+```text
+The model may choose the memory intent.
+MarcBot code controls the retrieval method.
+```
+
+In practice, a future model-assisted workflow may decide that it needs
+context about a project, topic, user preference, correction, or workflow
+history. It should request that context through bounded MarcBot memory
+interfaces such as a context assembler or structured memory search helper.
+
+The model should not directly rummage through arbitrary files or decide
+how much raw memory to load. Deterministic MarcBot code should enforce:
+
+- which memory sources are searched;
+- active/rejected/superseded filtering;
+- project and query filters;
+- per-section limits;
+- recency handling;
+- stale/correction handling;
+- output shape for human inspection or later prompt assembly;
+- provider-contact boundaries.
+
+This keeps memory useful and flexible while preserving auditability,
+bounded context size, and safety. The model can ask for specific memory;
+MarcBot decides how to retrieve it safely.

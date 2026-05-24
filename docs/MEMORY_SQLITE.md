@@ -929,3 +929,19 @@ The context command should remain read-only and provider-contact-free. It
 should use SQLite as the indexed/queryable view, while file memory remains
 the source of truth. The output should be suitable for human inspection now
 and for future bounded prompt/context assembly later.
+
+### Controlled retrieval interface
+
+SQLite-backed memory reads are the controlled retrieval layer between
+future model-assisted workflows and the file-backed memory source of
+truth.
+
+The model should not directly decide which memory files to open or how
+much raw memory to load. Instead, future workflows should call bounded
+retrieval helpers such as `memory context`, passing a project, query,
+and limits. SQLite provides the indexed/queryable view; MarcBot code
+applies filtering, ordering, and formatting rules.
+
+This design allows the model to request specific memory context while
+preventing unbounded file rummaging, stale memory leakage, and excessive
+prompt/context growth.

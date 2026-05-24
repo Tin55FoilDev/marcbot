@@ -243,3 +243,25 @@ The workflow boundary remains important:
   retrieval step has produced a bounded package.
 - Memory retrieval must not require Marc to manually search every time.
 - Provider contact remains explicit and separate from memory retrieval.
+
+## Model-requested memory retrieval boundary
+
+Future workflows may allow a model-assisted planning step to request
+memory context, but the model should not receive arbitrary file-system
+or raw memory access.
+
+Approved pattern:
+
+1. The workflow or model identifies a memory need, such as a project,
+   topic, correction, preference, or prior workflow history.
+2. MarcBot converts that need into a bounded memory retrieval request.
+3. Deterministic memory code retrieves active facts, relevant summaries,
+   recent events, and correction-aware context using configured limits.
+4. The model receives only the bounded context package, not unrestricted
+   file access.
+
+This preserves the flexibility for the model to ask for specific
+information while keeping retrieval safe, auditable, and efficient.
+Memory retrieval remains separate from provider contact; local retrieval
+should complete before any optional model call receives the assembled
+context.
