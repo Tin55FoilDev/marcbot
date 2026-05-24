@@ -1261,3 +1261,137 @@ def upsert_memory_fact_row(
         connection.commit()
 
     return True
+
+
+@dataclass(frozen=True)
+class MemorySqliteFactRow:
+    id: str
+    statement: str
+    category: str
+    project: str | None
+    source: str
+    created_at: str
+    updated_at: str
+    confidence: str
+    status: str
+    details: str | None
+
+
+def query_sqlite_memory_facts(
+    *,
+    path: Path = DEFAULT_MEMORY_DB_PATH,
+    status: str | None = "active",
+    category: str | None = None,
+    project: str | None = None,
+    query: str | None = None,
+    limit: int = 20,
+) -> list[MemorySqliteFactRow]:
+    if limit < 1:
+        raise ValueError("limit must be 1 or greater")
+    if not path.is_file():
+        return []
+
+    clauses: list[str] = []
+    params: list[object] = []
+
+    if status:
+        clauses.append("status = ?")
+        params.append(status)
+    if category:
+        clauses.append("category = ?")
+        params.append(category)
+    if project:
+        clauses.append("project = ?")
+        params.append(project)
+    if query:
+        pattern = f"%{query.lower()}%"
+        clauses.append(
+            "("
+            "lower(id) LIKE ? OR "
+            "lower(statement) LIKE ? OR "
+            "lower(category) LIKE ? OR "
+            "lower(coalesce(project, '')) LIKE ? OR "
+            "lower(coalesce(details, '')) LIKE ?"
+            ")"
+        )
+        params.extend([pattern, pattern, pattern, pattern, pattern])
+
+    sql = (
+        "SELECT id, statement, category, project, source, created_at, "
+        "updated_at, confidence, status, details FROM memory_facts"
+    )
+    if clauses:
+        sql += " WHERE " + " AND ".join(clauses)
+    sql += " ORDER BY updated_at DESC, id ASC LIMIT ?"
+    params.append(limit)
+
+    with _connect(path) as connection:
+        rows = connection.execute(sql, tuple(params)).fetchall()
+
+    return [
+        MemorySqliteFactRow(
+            id=str(row["id"]),
+            statement=str(row["statement"]),
+            category=str(row["category"]),
+            project=row["project"],
+            source=str(row["source"]),
+            created_at=str(row["created_at"]),
+            updated_at=str(row["updated_at"]),
+            confidence=str(row["confidence"]),
+            status=str(row["status"]),
+            details=row["details"],
+        )
+        for row in rows
+    ]
+
+
+def format_sqlite_memory_fact_list(
+    *,
+    path: Path = DEFAULT_MEMORY_DB_PATH,
+    status: str | None = "active",
+    category: str | None = None,
+    project: str | None = None,
+    query: str | None = None,
+    limit: int = 20,
+) -> str:
+    facts = query_sqlite_memory_facts(
+        path=path,
+        status=status,
+        category=category,
+        project=project,
+        query=query,
+        limit=limit,
+    )
+    lines = [
+        "MarcBot memory SQLite facts",
+        f"Path: {path}",
+    ]
+
+    filters = []
+    if status:
+        filters.append(f"status={status}")
+    if category:
+        filters.append(f"category={category}")
+    if project:
+        filters.append(f"project={project}")
+    if query:
+        filters.append(f"query={query}")
+    if filters:
+        lines.append("Filters: " + ", ".join(filters))
+
+    lines.append(f"Limit: {limit}")
+    lines.append("")
+
+    if not facts:
+        lines.append("No matching facts.")
+    else:
+        for fact in facts:
+            project_text = fact.project if fact.project else "none"
+            lines.append(
+                f"- {fact.id} [{fact.status}/{fact.category}; "
+                f"project={project_text}]"
+            )
+            lines.append(f"  {fact.statement}")
+
+    lines.append("Provider contact: no")
+    return "\n".join(lines)

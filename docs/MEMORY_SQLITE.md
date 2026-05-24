@@ -857,3 +857,17 @@ transactions. If SQLite sync fails after a file write, the command raises a
 clear error and the full `memory sqlite import` command can rebuild the SQLite
 view from file memory.
 
+### SQLite-backed fact reads
+
+MarcBot begins the read/query phase with a bounded SQLite-backed fact
+listing command:
+
+```bash
+python -m marcbot memory sqlite facts
+python -m marcbot memory sqlite facts --query MarcBot --limit 5
+python -m marcbot memory sqlite facts --category architecture --project MarcBot
+```
+
+This command reads from the imported SQLite view only. File memory remains
+the source of truth, SQLite remains a query/index view, and provider contact
+for memory operations remains `no`.

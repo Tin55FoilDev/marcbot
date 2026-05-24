@@ -8,10 +8,12 @@ from marcbot.memory_sqlite import (
     SCHEMA_VERSION,
     format_memory_sqlite_counts,
     format_memory_sqlite_status,
+    format_sqlite_memory_fact_list,
     get_memory_sqlite_status,
     get_sqlite_memory_counts,
     import_file_memory_to_sqlite,
     initialize_memory_sqlite,
+    query_sqlite_memory_facts,
 )
 
 
@@ -939,3 +941,129 @@ def test_upsert_memory_fact_row_rejects_missing_file(tmp_path: Path) -> None:
             fact_path=tmp_path / "missing.toml",
             database_path=tmp_path / "memory.sqlite3",
         )
+
+
+def _insert_test_sqlite_fact(
+    connection,
+    *,
+    fact_id: str,
+    statement: str,
+    category: str = "preference",
+    project: str | None = None,
+    status: str = "active",
+    updated_at: str = "2026-05-22T10:00:00+00:00",
+) -> None:
+    sql = (
+        "INSERT INTO memory_facts("
+        "id, statement, category, project, source, created_at, updated_at, "
+        "confidence, status, details, source_file, imported_at"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    connection.execute(
+        sql,
+        (
+            fact_id,
+            statement,
+            category,
+            project,
+            "test",
+            "2026-05-22T09:00:00+00:00",
+            updated_at,
+            "high",
+            status,
+            "test details",
+            f"/tmp/{fact_id}.toml",
+            "2026-05-22T11:00:00+00:00",
+        ),
+    )
+
+
+def test_query_sqlite_memory_facts_filters_active_rows(tmp_path: Path) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_fact(
+            connection,
+            fact_id="fact-active",
+            statement="MarcBot keeps file memory as source of truth.",
+            status="active",
+        )
+        _insert_test_sqlite_fact(
+            connection,
+            fact_id="fact-rejected",
+            statement="Rejected memory fact.",
+            status="rejected",
+        )
+        connection.commit()
+
+    facts = query_sqlite_memory_facts(path=db_path)
+
+    assert [fact.id for fact in facts] == ["fact-active"]
+
+
+def test_query_sqlite_memory_facts_supports_query_category_and_project(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_fact(
+            connection,
+            fact_id="fact-marcbot",
+            statement="SQLite read capability is available.",
+            category="architecture",
+            project="MarcBot",
+        )
+        _insert_test_sqlite_fact(
+            connection,
+            fact_id="fact-other",
+            statement="Unrelated active fact.",
+            category="preference",
+            project="Other",
+        )
+        connection.commit()
+
+    facts = query_sqlite_memory_facts(
+        path=db_path,
+        category="architecture",
+        project="MarcBot",
+        query="read capability",
+    )
+
+    assert [fact.id for fact in facts] == ["fact-marcbot"]
+
+
+def test_format_sqlite_memory_fact_list_includes_provider_contact_no(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "memory.sqlite3"
+    initialize_memory_sqlite(path=db_path)
+    with sqlite3.connect(db_path) as connection:
+        _insert_test_sqlite_fact(
+            connection,
+            fact_id="fact-format",
+            statement="Formatted SQLite facts stay local.",
+            category="security",
+            project="MarcBot",
+        )
+        connection.commit()
+
+    message = format_sqlite_memory_fact_list(
+        path=db_path,
+        category="security",
+        project="MarcBot",
+        query="local",
+    )
+
+    assert "MarcBot memory SQLite facts" in message
+    assert "fact-format" in message
+    assert "Formatted SQLite facts stay local." in message
+    assert "Provider contact: no" in message
+
+
+def test_query_sqlite_memory_facts_missing_database_returns_empty(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "missing.sqlite3"
+
+    assert query_sqlite_memory_facts(path=db_path) == []

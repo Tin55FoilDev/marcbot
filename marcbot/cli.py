@@ -34,6 +34,7 @@ from marcbot.memory_sqlite import (
     format_memory_sqlite_counts,
     format_memory_sqlite_status,
     format_memory_sqlite_validation,
+    format_sqlite_memory_fact_list,
     import_file_memory_to_sqlite,
     initialize_memory_sqlite,
 )
@@ -422,6 +423,16 @@ def build_parser() -> argparse.ArgumentParser:
         "validate",
         help="validate SQLite import against file memory",
     )
+
+    memory_sqlite_facts_parser = memory_sqlite_subparsers.add_parser(
+        "facts",
+        help="list/query facts from the SQLite memory view",
+    )
+    memory_sqlite_facts_parser.add_argument("--status", default="active")
+    memory_sqlite_facts_parser.add_argument("--category", default=None)
+    memory_sqlite_facts_parser.add_argument("--project", default=None)
+    memory_sqlite_facts_parser.add_argument("--query", default=None)
+    memory_sqlite_facts_parser.add_argument("--limit", type=int, default=20)
 
     memory_search_parser = memory_subparsers.add_parser(
         "search",
@@ -1137,6 +1148,18 @@ def main(argv: list[str] | None = None) -> int:
                     return 0
                 if args.memory_sqlite_command == "validate":
                     print(format_memory_sqlite_validation())
+                    return 0
+
+                if args.memory_sqlite_command == "facts":
+                    print(
+                        format_sqlite_memory_fact_list(
+                            status=args.status,
+                            category=args.category,
+                            project=args.project,
+                            query=args.query,
+                            limit=args.limit,
+                        )
+                    )
                     return 0
                 parser.error("memory sqlite requires a subcommand")
             if args.memory_command == "search":
