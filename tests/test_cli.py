@@ -1865,3 +1865,34 @@ def test_optional_memory_context_prompt_includes_use_rules(
     assert "Do not invent memory" in prompt
     assert "Retrieved memory context:" in prompt
     assert "Provider contact: no" in prompt
+
+
+def test_summarize_file_preview_prompt_flag_parses() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "llm",
+            "summarize-file",
+            "report_summary",
+            "report.md",
+            "--preview-prompt",
+        ]
+    )
+
+    assert args.preview_prompt is True
+
+
+def test_summarize_file_save_preview_prompt_flag_parses() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "llm",
+            "summarize-file-save",
+            "report_summary",
+            "report.md",
+            "summary.md",
+            "--preview-prompt",
+        ]
+    )
+
+    assert args.preview_prompt is True

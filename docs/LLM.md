@@ -666,3 +666,19 @@ The memory block should state that:
 
 This prompt boundary is especially important as MarcBot moves from manual
 memory inspection toward selected workflow-level automatic memory retrieval.
+
+### Provider-contact-free prompt preview
+
+`llm summarize-file` and `llm summarize-file-save` support
+`--preview-prompt` to print the exact prompt that would be sent to the
+configured model, then exit before loading provider secrets or contacting
+the provider.
+
+Example:
+
+```bash
+python -m marcbot llm summarize-file report_summary path.md --memory-query "weather" --memory-project weather-report --preview-prompt
+```
+
+This is useful for inspecting the bounded memory-context block and prompt
+boundary rules before running an actual provider-contacting LLM command.

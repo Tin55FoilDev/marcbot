@@ -439,6 +439,7 @@ def build_parser() -> argparse.ArgumentParser:
     llm_summarize_file_parser.add_argument("--memory-facts-limit", type=int, default=5)
     llm_summarize_file_parser.add_argument("--memory-summaries-limit", type=int, default=3)
     llm_summarize_file_parser.add_argument("--memory-events-limit", type=int, default=5)
+    llm_summarize_file_parser.add_argument("--preview-prompt", action="store_true")
     llm_summarize_file_save_parser = llm_subparsers.add_parser(
         "summarize-file-save",
         help="summarize a workspace file and save the result under the workspace",
@@ -457,6 +458,7 @@ def build_parser() -> argparse.ArgumentParser:
     llm_summarize_file_save_parser.add_argument("--memory-facts-limit", type=int, default=5)
     llm_summarize_file_save_parser.add_argument("--memory-summaries-limit", type=int, default=3)
     llm_summarize_file_save_parser.add_argument("--memory-events-limit", type=int, default=5)
+    llm_summarize_file_save_parser.add_argument("--preview-prompt", action="store_true")
 
     memory_parser = subparsers.add_parser(
         "memory",
@@ -1135,11 +1137,14 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.llm_command == "summarize-file":
-                _load_llm_env_for_provider_contact()
                 summary_input = load_workspace_summary_input(args.path)
                 prompt = build_summary_prompt(summary_input)
                 prompt = _append_optional_memory_context_to_prompt(prompt, args)
+                if args.preview_prompt:
+                    print(prompt)
+                    return 0
 
+                _load_llm_env_for_provider_contact()
                 task_config = load_llm_task_config()
                 task = task_config.tasks.get(args.task)
                 if task is None:
@@ -1175,12 +1180,15 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
 
             if args.llm_command == "summarize-file-save":
-                _load_llm_env_for_provider_contact()
                 summary_input = load_workspace_summary_input(args.input_path)
                 prompt = build_summary_prompt(summary_input)
                 prompt = _append_optional_memory_context_to_prompt(prompt, args)
                 resolve_workspace_summary_output_path(args.output_path)
+                if args.preview_prompt:
+                    print(prompt)
+                    return 0
 
+                _load_llm_env_for_provider_contact()
                 task_config = load_llm_task_config()
                 task = task_config.tasks.get(args.task)
                 if task is None:
