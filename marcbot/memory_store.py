@@ -1391,8 +1391,14 @@ def format_memory_proposal_list(
 
     for proposal in proposals:
         lines.append(f"- {proposal.format_one_line()}")
+        lines.append(f"  Source: {proposal.source}")
+        lines.append(f"  Rationale: {proposal.rationale}")
         if proposal.details:
             lines.append(f"  Details: {proposal.details}")
+        if proposal.reviewed_at:
+            lines.append(f"  Reviewed at: {proposal.reviewed_at}")
+        if proposal.review_reason:
+            lines.append(f"  Review reason: {proposal.review_reason}")
         if proposal.path:
             lines.append(f"  File: {proposal.path}")
 

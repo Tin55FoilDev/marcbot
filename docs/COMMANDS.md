@@ -740,3 +740,14 @@ become the summary body when present; otherwise the proposal rationale is used.
 This remains CLI-only and provider-contact-free. Telegram cannot approve
 durable memory proposals.
 
+### CLI memory proposal list review details
+
+`python -m marcbot memory proposal list --status pending`
+
+Proposal list output includes the proposal source, rationale, optional details,
+review timestamp, review reason, and backing file path when present. This makes
+CLI review safer now that fact, event, and summary proposals can all be
+approved from the CLI.
+
+This remains read-only and provider-contact-free.
+

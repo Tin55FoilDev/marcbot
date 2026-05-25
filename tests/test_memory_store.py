@@ -2014,3 +2014,72 @@ def test_approve_memory_summary_proposal_uses_rationale_without_details(
     summaries = list_memory_summaries(root=tmp_path)
     assert len(summaries) == 1
     assert "Use this rationale as the summary body." in summaries[0].body
+
+def test_format_memory_proposal_list_includes_review_context(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_proposal, format_memory_proposal_list
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="cron-fix",
+        proposed_type="event",
+        proposed_statement="Cron job ownership issue was fixed.",
+        source="session",
+        rationale="Future troubleshooting should find the prior debug path.",
+        risk_level="low",
+        timestamp=datetime(2026, 5, 25, 15, 0, tzinfo=UTC),
+        project="marcbot",
+        details="Checked timer status, journal output, ownership, and validation.",
+    )
+
+    message = format_memory_proposal_list(root=tmp_path, status="pending")
+
+    assert "MarcBot memory proposals" in message
+    assert "- cron-fix [marcbot]: event / low / pending:" in message
+    assert "Source: session" in message
+    assert "Rationale: Future troubleshooting should find the prior debug path." in message
+    assert "Details: Checked timer status, journal output, ownership, and validation." in message
+    assert "File: " in message
+    assert "Provider contact: no" in message
+
+
+def test_format_memory_proposal_list_includes_review_metadata(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        format_memory_proposal_list,
+        reject_memory_proposal,
+    )
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="stale-summary",
+        proposed_type="summary",
+        proposed_statement="A stale summary proposal.",
+        source="session",
+        rationale="Initial rationale.",
+        risk_level="medium",
+        timestamp=datetime(2026, 5, 25, 15, 0, tzinfo=UTC),
+        project="marcbot",
+    )
+
+    reject_memory_proposal(
+        root=tmp_path,
+        proposal_id="stale-summary",
+        reason="Superseded by newer session context.",
+        source="test-review",
+        timestamp=datetime(2026, 5, 25, 15, 5, tzinfo=UTC),
+    )
+
+    message = format_memory_proposal_list(root=tmp_path, status="rejected")
+
+    assert "- stale-summary [marcbot]: summary / medium / rejected:" in message
+    assert "Source: session" in message
+    assert "Rationale: Initial rationale." in message
+    assert "Reviewed at: 2026-05-25T15:05:00+00:00" in message
+    assert "Review reason: Superseded by newer session context." in message
+    assert "Provider contact: no" in message

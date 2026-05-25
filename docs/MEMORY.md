@@ -1002,6 +1002,17 @@ approval are deferred.
 
 
 
+
+## Implemented M8F proposal list review ergonomics
+
+MarcBot proposal list output includes source, rationale, optional details,
+review timestamp, review reason, and backing file path when present. This keeps
+the proposal review loop easier to audit now that fact, event, and summary
+proposal approval are all supported from the CLI.
+
+This change is read-only formatting and does not expand Telegram approval
+authority.
+
 ## Implemented M8E summary proposal approval
 
 MarcBot supports CLI-only approval of pending memory proposals where

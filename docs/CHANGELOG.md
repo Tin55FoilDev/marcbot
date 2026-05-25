@@ -20,6 +20,8 @@ Highlights:
 
 ## Unreleased
 
+- Improved CLI memory proposal list output with source, rationale, details,
+  review metadata, and file path for safer proposal review.
 - Added CLI-only approval for pending `summary` memory proposals, creating
   reviewed summary records while preserving the Telegram durable-memory
   approval boundary.
