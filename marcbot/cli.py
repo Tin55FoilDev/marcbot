@@ -35,7 +35,10 @@ from marcbot.logging_setup import configure_logging
 from marcbot.memory_candidate import (
     format_memory_candidate_preview,
     format_memory_candidate_preview_json,
+    format_memory_proposal_preview,
+    format_memory_proposal_preview_json,
     preview_memory_candidate,
+    preview_memory_candidate_proposal,
 )
 from marcbot.memory_context import (
     format_memory_context,
@@ -617,6 +620,17 @@ def build_parser() -> argparse.ArgumentParser:
     memory_candidate_preview_parser.add_argument("text")
     memory_candidate_preview_parser.add_argument("--project", default=None)
     memory_candidate_preview_parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+    )
+    memory_candidate_proposal_preview_parser = memory_candidate_subparsers.add_parser(
+        "proposal-preview",
+        help="preview the pending proposal candidate text would create",
+    )
+    memory_candidate_proposal_preview_parser.add_argument("text")
+    memory_candidate_proposal_preview_parser.add_argument("--project", default=None)
+    memory_candidate_proposal_preview_parser.add_argument(
         "--format",
         choices=["text", "json"],
         default="text",
@@ -1466,6 +1480,18 @@ def main(argv: list[str] | None = None) -> int:
                         format_memory_candidate_preview_json
                         if args.format == "json"
                         else format_memory_candidate_preview
+                    )
+                    print(formatter(preview))
+                    return 0
+                if args.memory_candidate_command == "proposal-preview":
+                    preview = preview_memory_candidate_proposal(
+                        text=args.text,
+                        project=args.project,
+                    )
+                    formatter = (
+                        format_memory_proposal_preview_json
+                        if args.format == "json"
+                        else format_memory_proposal_preview
                     )
                     print(formatter(preview))
                     return 0

@@ -79,3 +79,61 @@ def test_format_memory_candidate_preview_json_is_structured() -> None:
         "risk_level": "medium",
         "writes": False,
     }
+
+
+def test_preview_memory_candidate_proposal_for_fact_candidate() -> None:
+    from marcbot.memory_candidate import preview_memory_candidate_proposal
+
+    preview = preview_memory_candidate_proposal(
+        text="Source-monitor summaries should use explicit memory profiles.",
+        project="source-monitor",
+    )
+
+    assert preview.would_create_proposal is True
+    assert preview.proposal_type == "fact"
+    assert preview.risk_level == "medium"
+    assert preview.project == "source-monitor"
+    assert preview.proposed_statement == (
+        "Source-monitor summaries should use explicit memory profiles."
+    )
+    assert preview.provider_contact is False
+    assert preview.writes is False
+
+
+def test_preview_memory_candidate_proposal_for_non_fact_candidate() -> None:
+    from marcbot.memory_candidate import preview_memory_candidate_proposal
+
+    preview = preview_memory_candidate_proposal(
+        text="Source-monitor summary generated successfully.",
+        project="source-monitor",
+    )
+
+    assert preview.would_create_proposal is False
+    assert preview.proposal_type is None
+    assert preview.risk_level == "low"
+    assert preview.proposed_statement is None
+    assert preview.provider_contact is False
+    assert preview.writes is False
+
+
+def test_format_memory_proposal_preview_json_is_structured() -> None:
+    import json
+
+    from marcbot.memory_candidate import (
+        format_memory_proposal_preview_json,
+        preview_memory_candidate_proposal,
+    )
+
+    preview = preview_memory_candidate_proposal(
+        text="Source-monitor summaries should use explicit memory profiles.",
+        project="source-monitor",
+    )
+
+    payload = json.loads(format_memory_proposal_preview_json(preview))
+
+    assert payload["would_create_proposal"] is True
+    assert payload["proposal_type"] == "fact"
+    assert payload["risk_level"] == "medium"
+    assert payload["project"] == "source-monitor"
+    assert payload["provider_contact"] is False
+    assert payload["writes"] is False

@@ -579,6 +579,12 @@ Example:
 /memory_reject_proposal telegram-fact-20260524-231420 | Validation-only test proposal.
 ```
 
+
+`python -m marcbot memory candidate proposal-preview [--project PROJECT] TEXT`
+previews whether candidate text would become a pending fact proposal.
+It is read-only, provider-contact-free, and writes no memory. Use
+`--format json` for structured output.
+
 ### Memory candidate preview
 
 `python -m marcbot memory candidate preview [--project PROJECT] TEXT`

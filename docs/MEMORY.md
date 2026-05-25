@@ -1413,6 +1413,23 @@ candidate preview in Telegram without writing memory. This allows Marc to
 test memory-candidate classification from chat before automatic capture
 is introduced.
 
+
+### Memory candidate proposal preview
+
+`python -m marcbot memory candidate proposal-preview` bridges
+candidate classification to the pending-proposal workflow without writing
+memory. It shows whether MarcBot would create a pending fact proposal and
+what proposal fields would be used.
+
+Example:
+
+```bash
+python -m marcbot memory candidate proposal-preview --project source-monitor "Source-monitor summaries should use explicit memory profiles."
+python -m marcbot memory candidate proposal-preview --format json --project source-monitor "Source-monitor summaries should use explicit memory profiles."
+```
+
+This remains preview-only: provider contact is no and writes is no.
+
 ### Memory candidate preview
 
 `python -m marcbot memory candidate preview` is the first deterministic
