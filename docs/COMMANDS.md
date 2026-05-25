@@ -785,3 +785,13 @@ troubleshooting/debug/fix context useful in the human-readable CLI output,
 not only in JSON.
 
 This remains read-only, SQLite-backed, and provider-contact-free.
+## Workflow registry CLI commands
+
+`python -m marcbot workflow list` lists approved workflow definitions.
+
+`python -m marcbot workflow show WORKFLOW_ID` shows one approved workflow
+definition, including provider-contact, artifact, memory, and Telegram
+execution boundaries.
+
+Workflow registry v1 is read-only and provider-contact-free. It does not run
+workflows. Execution is deferred to workflow run v1.

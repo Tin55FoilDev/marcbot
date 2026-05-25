@@ -347,3 +347,26 @@ This distinction prevents MarcBot from adding empty or misleading automatic
 memory profiles before the underlying durable facts exist. The source-monitor
 profile was added only after durable source-monitor facts were created and
 validated in SQLite.
+## Implemented workflow registry v1
+
+MarcBot includes a read-only approved workflow registry.
+
+CLI commands:
+
+```text
+python -m marcbot workflow list
+python -m marcbot workflow show WORKFLOW_ID
+```
+
+The registry records workflow IDs, descriptions, execution status, provider
+contact expectations, artifact writes, memory writes, Telegram visibility,
+Telegram execution boundaries, allowed arguments, artifact roots, and memory
+profile hints.
+
+Initial registered workflows:
+
+- `source-monitor-ai-report`
+- `source-monitor-ai-summary`
+
+Workflow registry v1 does not run workflows. Execution is deferred to
+workflow run v1 after the registry shape is validated.

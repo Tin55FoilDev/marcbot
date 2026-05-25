@@ -20,6 +20,8 @@ Highlights:
 
 ## Unreleased
 
+- Added read-only workflow registry v1 with CLI list/show commands for
+  approved source-monitor workflows.
 - Added fact and event details to human-readable memory context output so
   troubleshooting/debug/fix context is visible outside JSON output.
 - Documented the implemented memory context v1 baseline, including

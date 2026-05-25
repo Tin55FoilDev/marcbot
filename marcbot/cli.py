@@ -100,6 +100,10 @@ from marcbot.weather_report import (
     find_latest_weather_report,
     write_weather_report,
 )
+from marcbot.workflow_registry import (
+    format_workflow_detail,
+    format_workflow_list,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -524,6 +528,11 @@ def build_parser() -> argparse.ArgumentParser:
     llm_summarize_file_save_parser.add_argument("--preview-prompt", action="store_true")
     llm_summarize_file_save_parser.add_argument("--preview-prompt-save", default=None)
 
+    workflow_parser = subparsers.add_parser("workflow", help="inspect approved workflow registry")
+    workflow_subparsers = workflow_parser.add_subparsers(dest="workflow_command")
+    workflow_subparsers.add_parser("list", help="list approved workflows")
+    workflow_show_parser = workflow_subparsers.add_parser("show", help="show one approved workflow")
+    workflow_show_parser.add_argument("workflow_id")
     memory_parser = subparsers.add_parser(
         "memory",
         help="inspect local MarcBot memory",
@@ -1403,6 +1412,15 @@ def main(argv: list[str] | None = None) -> int:
                 LOGGER.info("Support snapshot generated")
                 return 0
 
+        if args.command == "workflow":
+            if args.workflow_command == "list":
+                print(format_workflow_list())
+                return 0
+            if args.workflow_command == "show":
+                print(format_workflow_detail(args.workflow_id))
+                return 0
+            print("usage: marcbot workflow {list,show} ...", file=sys.stderr)
+            return 2
         if args.command == "memory":
             if args.memory_command == "init":
                 result = init_memory_store()
