@@ -650,6 +650,22 @@ Example:
 For non-proposal candidates, the command reports `Created: no` and writes
 nothing.
 
+### CLI memory candidate propose JSON output
+
+`python -m marcbot memory candidate propose --format json --project PROJECT TEXT`
+returns a structured result for future automation.
+
+Important fields:
+
+- `created`: whether a pending proposal was created
+- `proposal_id`: the pending proposal id, or `null`
+- `proposal_path`: the pending proposal file path, or `null`
+- `provider_contact`: always `false` for this deterministic command
+- `writes`: whether the command wrote a pending proposal
+
+The command writes only when candidate classification returns `propose_fact`.
+It creates a pending proposal only; it does not approve durable memory.
+
 ### Telegram memory candidate help
 
 `/memory_candidate_help` explains the memory candidate workflow from

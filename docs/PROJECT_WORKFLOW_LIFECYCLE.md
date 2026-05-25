@@ -810,6 +810,21 @@ Telegram: restarted and verified when relevant
 Server: backed up
 ```
 
+### Structured output discipline
+
+Future automation should consume JSON contracts from CLI commands rather
+than parsing human-readable display text. For memory candidate workflows,
+`memory candidate preview --format json`, `memory candidate proposal-preview
+--format json`, and `memory candidate propose --format json` provide
+structured provider-contact and write-boundary fields.
+
+This keeps automation explicit and testable:
+
+- `provider_contact` states whether provider access occurred
+- `writes` states whether durable/local state was changed
+- `created` states whether a pending proposal was created
+- `proposal_id` and `proposal_path` identify created pending proposals
+
 ### Design discipline
 
 MarcBot should remain reliable and useful. New features should be added only through bounded, testable surfaces.

@@ -1442,6 +1442,50 @@ This lets Marc verify what a future bridge would propose before any
 automatic or semi-automatic write path exists.
 
 
+### Memory candidate propose JSON contract
+
+`python -m marcbot memory candidate propose --format json` returns a
+machine-readable result for both write and non-write paths. Future
+automation should consume this JSON contract instead of parsing
+human-readable CLI output.
+
+Non-write result example:
+
+```json
+{
+  "created": false,
+  "proposal_id": null,
+  "proposal_path": null,
+  "provider_contact": false,
+  "reason": "text looks like a low-risk operational event",
+  "writes": false
+}
+```
+
+Write result example:
+
+```json
+{
+  "created": true,
+  "proposal_id": "candidate-fact-YYYYMMDD-HHMMSS",
+  "proposal_path": "/srv/marcbot/memory/pending/candidate-fact-YYYYMMDD-HHMMSS.json",
+  "provider_contact": false,
+  "reason": "text looks like a durable instruction, preference, or policy",
+  "writes": true
+}
+```
+
+Validated behavior:
+
+- non-write JSON returns `created: false`, `proposal_id: null`, and `writes: false`
+- write JSON returns `created: true`, a `candidate-fact-*` proposal id, and `writes: true`
+- pending proposal detail shows source `memory_candidate_cli_propose`
+- SQLite validation remains valid after create and cleanup rejection
+- cleanup returns the pending proposal queue to empty
+
+This command creates pending proposals only. It does not approve durable
+facts. Durable approval remains CLI-only and explicit.
+
 ### Memory candidate propose
 
 `python -m marcbot memory candidate propose` is the first controlled
