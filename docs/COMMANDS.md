@@ -493,8 +493,9 @@ SQLite memory commands:
     python -m marcbot memory sqlite counts
     python -m marcbot memory sqlite validate
 
-These commands are CLI-only and provider-contact-free. File memory remains the
-source of truth.
+These commands are CLI-only and provider-contact-free. File-backed memory
+records remain the current transitional implementation while SQLite is the
+intended primary structured memory repository.
 
 ### LLM provider-contact environment behavior
 

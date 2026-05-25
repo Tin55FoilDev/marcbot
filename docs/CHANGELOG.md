@@ -20,6 +20,8 @@ Highlights:
 
 ## Unreleased
 
+- Reconciled COMMANDS.md SQLite wording with the current memory storage
+  direction.
 - Improved CLI memory proposal list output with source, rationale, details,
   review metadata, and file path for safer proposal review.
 - Added CLI-only approval for pending `summary` memory proposals, creating
