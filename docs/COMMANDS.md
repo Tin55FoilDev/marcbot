@@ -585,6 +585,12 @@ previews whether candidate text would become a pending fact proposal.
 It is read-only, provider-contact-free, and writes no memory. Use
 `--format json` for structured output.
 
+
+`python -m marcbot memory candidate propose --project PROJECT TEXT`
+creates a pending fact proposal only when candidate preview classifies the
+text as `propose_fact`. It is CLI-only, provider-contact-free, and does not
+approve durable memory.
+
 ### Memory candidate preview
 
 `python -m marcbot memory candidate preview [--project PROJECT] TEXT`

@@ -1420,6 +1420,24 @@ candidate-to-proposal preview in Telegram without creating a proposal.
 This lets Marc verify what a future bridge would propose before any
 automatic or semi-automatic write path exists.
 
+
+### Memory candidate propose
+
+`python -m marcbot memory candidate propose` is the first controlled
+candidate-to-pending-proposal bridge. It is CLI-only. It creates a pending
+fact proposal only when deterministic candidate preview classifies the text
+as `propose_fact`.
+
+Example:
+
+```bash
+python -m marcbot memory candidate propose --project source-monitor "Source-monitor summaries should use explicit memory profiles."
+```
+
+For non-proposal candidates, the command reports `Created: no` and writes
+nothing. This preserves the durable-memory approval boundary: it creates
+pending proposals only and never approves durable facts.
+
 ### Memory candidate proposal preview
 
 `python -m marcbot memory candidate proposal-preview` bridges

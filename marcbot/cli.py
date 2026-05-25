@@ -635,6 +635,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["text", "json"],
         default="text",
     )
+    memory_candidate_propose_parser = memory_candidate_subparsers.add_parser(
+        "propose",
+        help="create a pending proposal from candidate text when appropriate",
+    )
+    memory_candidate_propose_parser.add_argument("text")
+    memory_candidate_propose_parser.add_argument("--project", required=True)
     memory_search_parser = memory_subparsers.add_parser(
         "search",
         help="search local memory files",
@@ -1494,6 +1500,40 @@ def main(argv: list[str] | None = None) -> int:
                         else format_memory_proposal_preview
                     )
                     print(formatter(preview))
+                    return 0
+                if args.memory_candidate_command == "propose":
+                    preview = preview_memory_candidate_proposal(
+                        text=args.text,
+                        project=args.project,
+                    )
+                    if not preview.would_create_proposal:
+                        print("MarcBot memory candidate proposal")
+                        print("Created: no")
+                        print(f"Reason: {preview.reason}")
+                        print("Provider contact: no")
+                        print("Writes: no")
+                        return 0
+
+                    proposal_id = (
+                        "candidate-fact-"
+                        f"{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+                    )
+                    result = add_memory_proposal(
+                        proposal_id=proposal_id,
+                        proposed_type="fact",
+                        proposed_statement=preview.proposed_statement or "",
+                        source="memory_candidate_cli_propose",
+                        rationale=preview.rationale,
+                        risk_level=preview.risk_level,
+                        project=preview.project,
+                        details=(
+                            "Created by memory candidate propose. "
+                            "Candidate preview action was propose_fact."
+                        ),
+                    )
+                    print(result.message)
+                    print("Provider contact: no")
+                    print("Writes: yes")
                     return 0
                 parser.error("memory candidate requires a subcommand")
             if args.memory_command == "search":

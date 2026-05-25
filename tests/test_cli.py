@@ -2507,3 +2507,64 @@ def test_memory_candidate_proposal_preview_command_outputs_json(capsys) -> None:
     assert payload["provider_contact"] is False
     assert payload["writes"] is False
     assert captured.err == ""
+
+
+def test_memory_candidate_propose_command_creates_pending_proposal(
+    capsys, monkeypatch, tmp_path
+) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_proposal
+
+    monkeypatch.setattr(
+        cli,
+        "add_memory_proposal",
+        lambda **kwargs: add_memory_proposal(root=tmp_path, **kwargs),
+    )
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "propose",
+            "Source-monitor summaries should use explicit memory profiles.",
+            "--project",
+            "source-monitor",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory proposal added:" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert "Writes: yes" in captured.out
+    assert captured.err == ""
+
+
+def test_memory_candidate_propose_command_skips_non_fact_candidate(
+    capsys, monkeypatch
+) -> None:
+    import marcbot.cli as cli
+
+    def fail_add_memory_proposal(**kwargs):
+        raise AssertionError("add_memory_proposal should not be called")
+
+    monkeypatch.setattr(cli, "add_memory_proposal", fail_add_memory_proposal)
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "propose",
+            "Source-monitor summary generated successfully.",
+            "--project",
+            "source-monitor",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory candidate proposal" in captured.out
+    assert "Created: no" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert "Writes: no" in captured.out
+    assert captured.err == ""
