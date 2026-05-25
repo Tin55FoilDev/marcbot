@@ -20,6 +20,11 @@ Highlights:
 
 ## Unreleased
 
+- Clarified the long-term memory direction: memory is broader than MarcBot
+  project development, SQLite is the intended primary structured memory
+  repository, and chat-derived troubleshooting/debug/fix knowledge is a
+  first-class memory target.
+
 ## 0.3.20 - Controlled candidate memory writes
 
 - Added CLI `memory candidate record-event` for low-risk operational event capture.

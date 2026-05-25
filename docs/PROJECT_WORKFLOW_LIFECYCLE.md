@@ -422,6 +422,12 @@ Exact command names should be designed later.
 
 ## Stage 17: Optional memory integration
 
+Memory integration is not limited to MarcBot project-development history.
+Project workflows are the safest initial proving ground, but the same memory
+model should eventually support operational troubleshooting, chat-derived
+debug/fix knowledge, recurring preferences, and domain-specific context that
+helps MarcBot continue useful work across sessions.
+
 Memory is a later subsystem.
 
 A project should not write durable memory until memory design exists.

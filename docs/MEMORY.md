@@ -9,18 +9,36 @@ project can revisit the design deliberately when the core workflows justify it.
 
 The long-term purpose of MarcBot memory is not to create another manual
 filing system that Marc has to operate command by command. The target is
-for MarcBot to automatically and safely use memory during normal approved
-chat and workflow activity.
+for MarcBot to automatically and safely capture, organize, retrieve, update,
+and explain important durable knowledge during normal approved chat and
+workflow activity.
+
+Memory is broader than MarcBot project development. Project work is the
+safest early test bed because it has a public repository, repeatable tests,
+clear validation output, and explicit commits, but the memory system is
+intended to support any MarcBot-supported domain where durable context helps
+future work. Examples include operational troubleshooting, cron and systemd
+timer failures, backup and restore issues, local model configuration, source
+monitoring, recurring workflow preferences, design decisions, lessons
+learned, and important chat-derived context.
+
+A mature memory workflow should let MarcBot notice when a conversation or
+workflow produced useful durable knowledge, such as a problem description,
+symptoms, debug path, root cause, fix, validation result, and follow-up
+warning. Marc should not need to manually tell MarcBot to save ordinary
+low-risk troubleshooting knowledge, and Marc should not need to manually
+request routine retrieval when a similar future problem appears.
 
 The desired end state is:
 
-1. MarcBot identifies when prior project context, user preferences,
-   operational facts, workflow history, or corrections are relevant.
+1. MarcBot identifies when prior context, user preferences, operational
+   facts, workflow history, troubleshooting history, decisions, or
+   corrections are relevant.
 2. MarcBot retrieves the most useful memory records without requiring Marc
    to explicitly ask for a memory search.
 3. MarcBot assembles a bounded context package from durable facts,
-   summaries, recent events, and corrections before model-assisted work
-   where memory is appropriate.
+   troubleshooting records, summaries, recent events, decisions, preferences,
+   and corrections before model-assisted work where memory is appropriate.
 4. MarcBot avoids stale or superseded memory by respecting fact status,
    correction records, approval state, timestamps, and source metadata.
 5. MarcBot remains auditable: Marc should be able to inspect what memory
@@ -28,24 +46,31 @@ The desired end state is:
    memory item influenced a workflow.
 
 The current file-backed memory store is intentionally conservative and
-human-readable. SQLite is being added as a structured, indexed, queryable
-view so future retrieval can be faster, more precise, and easier to bound
-than searching a loose collection of flat Markdown or TOML files. For now,
-file memory remains the source of truth and SQLite remains a derived view.
+human-readable while the project proves the memory model. SQLite is being
+added as the structured, indexed, queryable repository that should become
+the primary durable memory backend for records that need filtering, search,
+review state, supersession, correction, or context assembly. Markdown files
+remain important for design notes, workflow documentation, runbooks, and
+human-readable handoff material, but they are not the intended long-term
+backend for all memory records.
 
 Manual CLI commands are implementation and diagnostic tools. They are not
 the final user experience. The final MarcBot behavior should reduce Marc's
 burden by using memory automatically where safe, while preserving explicit
-guardrails for high-risk facts, corrections, and actions.
+guardrails for high-risk facts, corrections, security-sensitive decisions,
+and actions.
+
 ## Goal
 
-MarcBot should eventually have a reliable hybrid memory system that helps future
-chats and actions consider project history without becoming mysterious, unsafe,
-or difficult to correct.
+MarcBot should eventually have a reliable hybrid memory system that helps
+future chats and actions consider important prior context without becoming
+mysterious, unsafe, or difficult to correct.
 
-The goal is not just to store facts. The goal is to reduce Marc's operational
-burden by allowing MarcBot to remember, retrieve, update, correct, and explain
-important context over time.
+The goal is not just to store facts, and it is not limited to project
+development. The goal is to reduce Marc's operational burden by allowing
+MarcBot to remember, retrieve, update, correct, and explain important
+context over time, including debug history, validated fixes, operational
+lessons learned, recurring preferences, and durable chat-derived knowledge.
 
 ## Design principles
 
@@ -69,7 +94,7 @@ autonomy.
 
 MarcBot must distinguish authoritative truth from helpful memory.
 
-Authoritative sources include:
+For MarcBot project-development work, authoritative sources include:
 
 - current repository files
 - current local config schemas
@@ -78,6 +103,12 @@ Authoritative sources include:
 - validation results
 - support snapshots
 - explicit Marc approvals or corrections
+
+For non-repository operational and chat workflows, authoritative sources are
+the live system, current command output, current configuration, explicit Marc
+corrections, and any external source Marc intentionally provides for the task.
+Memory can suggest likely causes, prior debug paths, known fixes, and
+standing preferences, but it must not override current evidence.
 
 Helpful but non-authoritative sources include:
 
@@ -88,11 +119,36 @@ Helpful but non-authoritative sources include:
 - inferred preferences
 - proposed reflections
 
-Memory should assist decisions, not silently override current evidence.
+Memory can help decide what to check first. It cannot, by itself, prove what
+is true now.
 
 ## Hybrid memory direction
 
-The likely long-term design is a hybrid system using multiple memory layers.
+The long-term memory direction is hybrid, but SQLite should become the main
+structured repository for memory records. Human-readable files remain useful
+for design documents, project policy, runbooks, and bootstrap context, while
+SQLite stores records that need status, review, correction, filtering,
+search, and context assembly.
+
+Conceptually, memory should be organized as typed records in a structured
+store rather than as unrelated storage layers. Record types may include:
+
+- event
+- troubleshooting
+- fact
+- summary
+- decision
+- preference
+- workflow_rule
+- correction
+- proposal
+
+Each record type should carry enough metadata to make retrieval and review
+safe: source, timestamp, project or domain, risk tier, status, confidence
+where appropriate, related commands, related files or artifacts, and
+supersession/correction links where needed.
+
+### 1. Curated human-readable memory files
 
 ### 1. Curated human-readable memory files
 
