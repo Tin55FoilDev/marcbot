@@ -126,12 +126,11 @@ is true now.
 
 The long-term memory direction is hybrid, but SQLite should become the main
 structured repository for memory records. Human-readable files remain useful
-for design documents, project policy, runbooks, and bootstrap context, while
-SQLite stores records that need status, review, correction, filtering,
-search, and context assembly.
+for design documents, project policy, runbooks, bootstrap context, exported
+snapshots, and reviewable handoff material.
 
-Conceptually, memory should be organized as typed records in a structured
-store rather than as unrelated storage layers. Record types may include:
+Memory should be organized primarily as typed records in a structured store,
+not as unrelated storage layers. Record types may include:
 
 - event
 - troubleshooting
@@ -148,44 +147,42 @@ safe: source, timestamp, project or domain, risk tier, status, confidence
 where appropriate, related commands, related files or artifacts, and
 supersession/correction links where needed.
 
-### 1. Curated human-readable memory files
+The current implementation still uses inspectable file-backed records for
+several memory classes and validates SQLite against those records. That is a
+transitional implementation detail, not the final architecture. Future
+migration work should deliberately move toward SQLite as the primary
+structured memory repository once the migration path is explicit, tested, and
+easy to inspect.
 
 ### 1. Curated human-readable memory files
 
-Markdown or TOML files can store stable context such as:
+Markdown or TOML files should store stable context that is better maintained as
+human-facing documentation than as individual memory records, such as:
 
-- operator preferences
 - project principles
+- architecture notes
 - security rules
 - runbooks
-- recurring workflow rules
-- durable design decisions
+- workflow documentation
+- design charters
+- bootstrap/session-start guidance
 
-These files are easy to inspect, edit, back up, and review.
+These files are easy to inspect, edit, back up, and review. Some human-readable
+memory or runbook files may belong outside Git if they contain personal or
+local operational details.
 
-Some memory files may belong outside Git if they contain personal or local
-operational details.
+### 2. Structured SQLite-backed memory
 
-### 2. Structured database-backed memory
+SQLite is the intended primary structured repository for durable memory records
+that need query, status, correction, review, filtering, or context assembly.
 
-A database should eventually store durable facts, events, summaries,
-corrections, source metadata, and review state.
-
-SQLite should probably be evaluated first because MarcBot is personal-only and
-SQLite is simple to back up, test, and operate.
+SQLite-backed memory should store typed records such as facts, events,
+troubleshooting cases, summaries, decisions, preferences, workflow rules,
+corrections, source metadata, and pending proposals.
 
 A stronger database backend such as PostgreSQL, MariaDB, or MySQL should be
 considered only if justified by concurrency, scale, indexing, remote access, or
 operational needs.
-
-Possible future tables:
-
-- memory_events
-- memory_facts
-- memory_summaries
-- memory_corrections
-- memory_sources
-- memory_reviews
 
 ### 3. Event ledger
 
@@ -427,9 +424,11 @@ important behavior-shaping rules.
 
 ## Current status
 
-Memory is a future subsystem.
+MarcBot now has an early memory substrate, but not the full long-term memory
+system described above.
 
-The current project already has early memory-like support through:
+The project already has several sources that help reconstruct development and
+operational context:
 
 - docs/SESSION_START.md
 - python -m marcbot support snapshot
@@ -437,9 +436,17 @@ The current project already has early memory-like support through:
 - docs/ROADMAP.md
 - project documentation
 - Git history
+- file-backed memory records
+- SQLite validation and indexing
 
-These should remain the source of truth until a real memory subsystem is
-designed, tested, and documented.
+For MarcBot project-development questions, current repository files, current
+command output, validation results, Git commits, and explicit Marc corrections
+remain authoritative. For broader operational and chat-derived memory, the live
+system, current evidence, and explicit Marc corrections remain authoritative.
+
+Memory records, summaries, and indexed SQLite views are helpful context and
+retrieval aids. They should guide what MarcBot checks first, but they must not
+override current evidence.
 
 ## Implementation charter
 
@@ -561,17 +568,23 @@ workflow lessons.
 
 ## Storage format v1
 
-The first implementation should use inspectable files.
+The current implementation uses inspectable file-backed records plus SQLite
+validation and indexing. This early format made records easy to review, diff,
+back up, and test while the memory model was still being shaped.
 
-Suggested v1 storage:
+Current file-backed record locations include:
 
-    events/YYYY-MM.jsonl
-    facts/*.toml
-    summaries/YYYY-MM-DD-<slug>.md
-    pending/*.json
-    corrections/*.jsonl
+    /srv/marcbot/memory/events/
+    /srv/marcbot/memory/facts/
+    /srv/marcbot/memory/summaries/
+    /srv/marcbot/memory/proposals/
+    /srv/marcbot/memory/corrections/
 
-SQLite may be added later after the file schemas are proven.
+The design direction is to migrate toward SQLite as the primary structured
+memory repository for records that need status, review, correction,
+supersession, filtering, search, or context assembly. Any migration away from
+file-backed source records must be explicit, tested, backed up, and documented
+so the system remains inspectable and recoverable.
 
 ## Event schema v1
 
@@ -1274,8 +1287,8 @@ retrieve before doing model-assisted work?
 
 The first version should stay local, deterministic, and CLI-only. It should
 not contact any LLM provider. The command should assemble a compact context
-package from SQLite-backed memory reads while preserving file memory as the
-source of truth.
+package from SQLite-backed memory reads while preserving compatibility with
+the current transitional file-backed records.
 
 Expected v1 behavior:
 

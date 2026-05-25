@@ -20,6 +20,9 @@ Highlights:
 
 ## Unreleased
 
+- Reconciled memory storage direction so SQLite is documented as the
+  intended primary structured memory repository while file-backed records
+  remain the current transitional implementation.
 - Clarified the long-term memory direction: memory is broader than MarcBot
   project development, SQLite is the intended primary structured memory
   repository, and chat-derived troubleshooting/debug/fix knowledge is a
