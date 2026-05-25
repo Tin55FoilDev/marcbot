@@ -2160,3 +2160,103 @@ def test_memory_reject_proposal_command_rejects_unauthorized_chat() -> None:
     asyncio.run(telegram_bot.memory_reject_proposal_command(update, context))
 
     assert message.replies
+
+
+def test_memory_candidate_preview_command_replies_with_preview() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        args=[
+            "source-monitor",
+            "|",
+            "Source-monitor summaries should use explicit memory profiles.",
+        ],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_candidate_preview_command(update, context))
+
+    assert len(message.replies) == 1
+    assert "MarcBot memory candidate preview" in message.replies[0]
+    assert "Action: propose_fact" in message.replies[0]
+    assert "Risk level: medium" in message.replies[0]
+    assert "Project: source-monitor" in message.replies[0]
+    assert "Provider contact: no" in message.replies[0]
+    assert "Writes: no" in message.replies[0]
+
+
+def test_memory_candidate_preview_command_reports_usage_for_bad_format() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        args=["source-monitor", "missing", "separator"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_candidate_preview_command(update, context))
+
+    assert message.replies == [
+        "Usage: /memory_candidate_preview <project> | <text>"
+    ]
+
+
+def test_memory_candidate_preview_command_rejects_unauthorized_chat() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=999),
+        message=message,
+    )
+    context = SimpleNamespace(
+        args=[
+            "source-monitor",
+            "|",
+            "Source-monitor summaries should use explicit memory profiles.",
+        ],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_candidate_preview_command(update, context))
+
+    assert message.replies

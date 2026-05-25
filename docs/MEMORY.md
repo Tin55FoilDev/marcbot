@@ -1407,6 +1407,12 @@ Example:
 ```
 
 
+
+`/memory_candidate_preview <project> | <text>` exposes deterministic
+candidate preview in Telegram without writing memory. This allows Marc to
+test memory-candidate classification from chat before automatic capture
+is introduced.
+
 ### Memory candidate preview
 
 `python -m marcbot memory candidate preview` is the first deterministic

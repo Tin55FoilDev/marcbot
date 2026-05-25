@@ -584,3 +584,15 @@ Example:
 `python -m marcbot memory candidate preview [--project PROJECT] TEXT`
 previews how MarcBot would classify text for memory handling. It is
 read-only, provider-contact-free, and writes no memory.
+
+### Telegram memory candidate preview
+
+`/memory_candidate_preview <project> | <text>` previews how MarcBot would
+classify text for memory handling. It is read-only, provider-contact-free,
+and writes no memory.
+
+Example:
+
+```text
+/memory_candidate_preview source-monitor | Source-monitor summaries should use explicit memory profiles.
+```

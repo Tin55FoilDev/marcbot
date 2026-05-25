@@ -27,6 +27,10 @@ from marcbot.llm_client import run_openai_compatible_completion
 from marcbot.llm_config import load_llm_config
 from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
+from marcbot.memory_candidate import (
+    format_memory_candidate_preview,
+    preview_memory_candidate,
+)
 from marcbot.memory_context import (
     format_memory_context,
     format_memory_context_profiles,
@@ -507,6 +511,56 @@ async def memory_facts_command(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text(format_memory_fact_list(status="active", limit=8))
 
 
+
+
+
+async def memory_candidate_preview_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /memory_candidate_preview."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning(
+            "Rejected unauthorized /memory_candidate_preview from chat_id=%s",
+            chat_id,
+        )
+        await _reject_unauthorized(update)
+        return
+
+    raw_text = " ".join(context.args).strip()
+    if " | " not in raw_text:
+        await update.message.reply_text(
+            "Usage: /memory_candidate_preview <project> | <text>"
+        )
+        LOGGER.info(
+            "Handled /memory_candidate_preview for chat_id=%s ok=false invalid_format",
+            chat_id,
+        )
+        return
+
+    project, candidate_text = [part.strip() for part in raw_text.split(" | ", 1)]
+    if not project or not candidate_text:
+        await update.message.reply_text(
+            "Usage: /memory_candidate_preview <project> | <text>"
+        )
+        LOGGER.info(
+            "Handled /memory_candidate_preview for chat_id=%s ok=false missing_value",
+            chat_id,
+        )
+        return
+
+    preview = preview_memory_candidate(text=candidate_text, project=project)
+    message = format_memory_candidate_preview(preview)
+    await update.message.reply_text(message)
+    LOGGER.info(
+        "Handled /memory_candidate_preview for chat_id=%s ok=true action=%s risk=%s",
+        chat_id,
+        preview.action,
+        preview.risk_level,
+    )
 
 
 async def memory_context_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1364,6 +1418,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/llm_status - show read-only LLM profile status\n"
         "/logs - show recent MarcBot application logs\n"
         "/ls - list workspace root entries\n"
+        "/memory_candidate_preview <project> | <text> - preview memory candidate handling\n"
         "/memory_context <profile> - show bounded memory context for a profile\n"
         "/memory_events - show recent local memory events\n"
         "/memory_facts - show active local memory facts\n"
@@ -1458,6 +1513,9 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("weather_status", weather_status_command))
     application.add_handler(CommandHandler("memory_events", memory_events_command))
     application.add_handler(CommandHandler("memory_facts", memory_facts_command))
+    application.add_handler(
+        CommandHandler("memory_candidate_preview", memory_candidate_preview_command)
+    )
     application.add_handler(CommandHandler("memory_context", memory_context_command))
     application.add_handler(CommandHandler("memory_propose_fact", memory_propose_fact_command))
     application.add_handler(
