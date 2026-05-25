@@ -679,3 +679,13 @@ The help text summarizes:
 - `/memory_proposals`
 - `/memory_proposal <id>`
 - `/memory_reject_proposal`
+
+### Telegram memory candidate status
+
+`/memory_candidate_status` summarizes the memory candidate workflow and
+its safety boundaries from Telegram. It is read-only, provider-contact-free,
+and writes no memory.
+
+It lists the candidate preview, proposal preview, candidate propose,
+proposal list/detail, and proposal rejection commands, and states that
+Telegram cannot approve durable facts.

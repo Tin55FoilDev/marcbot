@@ -2602,3 +2602,66 @@ def test_memory_candidate_help_command_rejects_unauthorized_chat() -> None:
     asyncio.run(telegram_bot.memory_candidate_help_command(update, context))
 
     assert message.replies
+
+
+def test_memory_candidate_status_command_replies_with_status() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=123),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_candidate_status_command(update, context))
+
+    assert len(message.replies) == 1
+    assert "MarcBot memory candidate status" in message.replies[0]
+    assert "/memory_candidate_help" in message.replies[0]
+    assert "/memory_candidate_preview <project> | <text>" in message.replies[0]
+    assert "/memory_proposal_preview <project> | <text>" in message.replies[0]
+    assert "/memory_candidate_propose <project> | <text>" in message.replies[0]
+    assert "Candidate propose writes pending proposals only." in message.replies[0]
+    assert "Telegram cannot approve durable facts." in message.replies[0]
+    assert "Provider contact: no" in message.replies[0]
+    assert "Writes: no" in message.replies[0]
+
+
+def test_memory_candidate_status_command_rejects_unauthorized_chat() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(
+        effective_chat=SimpleNamespace(id=999),
+        message=message,
+    )
+    context = SimpleNamespace(
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.memory_candidate_status_command(update, context))
+
+    assert message.replies

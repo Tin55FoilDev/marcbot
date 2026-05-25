@@ -1419,6 +1419,13 @@ The Telegram candidate-propose bridge was validated end-to-end:
 - cleanup returns the pending proposal queue to empty
 - Telegram still cannot approve durable facts
 
+
+`/memory_candidate_status` provides read-only Telegram status for the
+candidate-memory workflow. It lists available commands and repeats the
+current safety boundary: previews write nothing, candidate propose writes
+pending proposals only, Telegram cannot approve durable facts, provider
+contact is no, and the status command writes no memory.
+
 `/memory_candidate_help` provides Telegram-side guidance for the memory
 candidate workflow. It is intentionally read-only and summarizes preview,
 proposal-preview, candidate-propose, proposal review, and proposal rejection
