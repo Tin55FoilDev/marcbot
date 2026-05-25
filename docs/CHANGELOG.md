@@ -20,6 +20,15 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.17 - Memory candidate preview foundation
+
+- Added deterministic CLI memory candidate preview.
+- Added structured JSON output for memory candidate preview.
+- Added CLI candidate-to-proposal preview for pending fact proposals.
+- Added Telegram `/memory_candidate_preview`.
+- Added Telegram `/memory_proposal_preview` using a Telegram-valid command name.
+- Preserved the preview boundary: provider contact is no and writes is no.
+- Validated Telegram preview behavior for propose_fact and non-proposal cases.
 ## 0.3.16 - Telegram memory proposal control loop
 
 - Completed the initial Telegram pending-proposal loop.
