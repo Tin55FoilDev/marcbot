@@ -32,6 +32,10 @@ from marcbot.llm_file_summary import (
 from marcbot.llm_status import load_llm_env
 from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm_task_config
 from marcbot.logging_setup import configure_logging
+from marcbot.memory_candidate import (
+    format_memory_candidate_preview,
+    preview_memory_candidate,
+)
 from marcbot.memory_context import (
     format_memory_context,
     format_memory_context_json,
@@ -598,6 +602,19 @@ def build_parser() -> argparse.ArgumentParser:
     memory_sqlite_events_parser.add_argument("--query", default=None)
     memory_sqlite_events_parser.add_argument("--limit", type=int, default=20)
 
+    memory_candidate_parser = memory_subparsers.add_parser(
+        "candidate",
+        help="preview memory candidate classification",
+    )
+    memory_candidate_subparsers = memory_candidate_parser.add_subparsers(
+        dest="memory_candidate_command"
+    )
+    memory_candidate_preview_parser = memory_candidate_subparsers.add_parser(
+        "preview",
+        help="preview how text would be classified for memory",
+    )
+    memory_candidate_preview_parser.add_argument("text")
+    memory_candidate_preview_parser.add_argument("--project", default=None)
     memory_search_parser = memory_subparsers.add_parser(
         "search",
         help="search local memory files",
@@ -1433,6 +1450,15 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     return 0
                 parser.error("memory sqlite requires a subcommand")
+            if args.memory_command == "candidate":
+                if args.memory_candidate_command == "preview":
+                    preview = preview_memory_candidate(
+                        text=args.text,
+                        project=args.project,
+                    )
+                    print(format_memory_candidate_preview(preview))
+                    return 0
+                parser.error("memory candidate requires a subcommand")
             if args.memory_command == "search":
                 print(format_memory_search_results(args.query, limit=args.limit))
                 return 0

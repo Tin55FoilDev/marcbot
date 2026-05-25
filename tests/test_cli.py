@@ -2405,3 +2405,25 @@ def test_source_monitor_run_summary_accepts_preview_prompt_flags() -> None:
     assert args.preview_prompt is True
     assert args.preview_prompt_save == "manual-tests/source-monitor.prompt.md"
 
+
+def test_memory_candidate_preview_command_outputs_preview(capsys) -> None:
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "preview",
+            "Source-monitor summaries should use explicit memory profiles.",
+            "--project",
+            "source-monitor",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory candidate preview" in captured.out
+    assert "Action: propose_fact" in captured.out
+    assert "Risk level: medium" in captured.out
+    assert "Project: source-monitor" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert "Writes: no" in captured.out
+    assert captured.err == ""

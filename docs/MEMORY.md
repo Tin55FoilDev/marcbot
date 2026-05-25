@@ -1406,6 +1406,29 @@ Example:
 /memory_propose_fact source-monitor | Source-monitor summaries should use explicit memory profiles.
 ```
 
+
+### Memory candidate preview
+
+`python -m marcbot memory candidate preview` is the first deterministic
+candidate-detection surface. It classifies supplied text as a possible
+memory action without writing memory or contacting a provider.
+
+Example:
+
+```bash
+python -m marcbot memory candidate preview --project source-monitor "Source-monitor summaries should use explicit memory profiles."
+```
+
+Current preview actions are:
+
+- `ignore`
+- `record_event`
+- `propose_fact`
+- `manual_review`
+
+This is intentionally preview-only. It is the foundation for future
+Telegram/chat candidate detection without automatic memory capture.
+
 ## Telegram and chat memory direction
 
 Telegram should eventually become a major memory input, but not by saving

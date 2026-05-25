@@ -578,3 +578,9 @@ Example:
 ```text
 /memory_reject_proposal telegram-fact-20260524-231420 | Validation-only test proposal.
 ```
+
+### Memory candidate preview
+
+`python -m marcbot memory candidate preview [--project PROJECT] TEXT`
+previews how MarcBot would classify text for memory handling. It is
+read-only, provider-contact-free, and writes no memory.
