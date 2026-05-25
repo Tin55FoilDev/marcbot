@@ -341,6 +341,8 @@ def format_memory_context(
             project_text = fact.project if fact.project else "none"
             lines.append(f"- {fact.id} [{fact.category}; project={project_text}]")
             lines.append(f"  {fact.statement}")
+            if fact.details:
+                lines.append(f"  Details: {fact.details}")
 
     lines.append("")
     lines.append("Summaries:")
@@ -369,6 +371,8 @@ def format_memory_context(
                 f"source={event.source}]"
             )
             lines.append(f"  {event.summary}")
+            if event.details:
+                lines.append(f"  Details: {event.details}")
 
     lines.append("")
     warnings = _memory_context_warnings(context)

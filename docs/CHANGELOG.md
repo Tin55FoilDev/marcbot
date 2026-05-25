@@ -20,6 +20,8 @@ Highlights:
 
 ## Unreleased
 
+- Added fact and event details to human-readable memory context output so
+  troubleshooting/debug/fix context is visible outside JSON output.
 - Documented the implemented memory context v1 baseline, including
   `memory profiles`, `memory context`, JSON output, SQLite-backed retrieval,
   and provider-contact-free boundaries.

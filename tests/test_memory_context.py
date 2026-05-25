@@ -429,3 +429,47 @@ def test_get_memory_context_profile_source_monitor() -> None:
     assert profile.summaries_limit == 2
     assert profile.events_limit == 5
 
+def test_format_memory_context_includes_fact_and_event_details(tmp_path):
+    from datetime import UTC, datetime
+
+    from marcbot.memory_context import format_memory_context
+    from marcbot.memory_sqlite import import_file_memory_to_sqlite
+    from marcbot.memory_store import add_memory_event, add_memory_fact
+
+    root = tmp_path / "memory"
+    db_path = root / "marcbot-memory.sqlite3"
+
+    add_memory_fact(
+        root=root,
+        fact_id="cron-owner-fix",
+        statement="Cron ownership issue was fixed.",
+        category="operations",
+        source="test",
+        confidence="high",
+        timestamp=datetime(2026, 5, 25, 17, 0, tzinfo=UTC),
+        project="marcbot",
+        details="Check timer status, journal output, and file ownership first.",
+    )
+    add_memory_event(
+        root=root,
+        event_type="issue_resolved",
+        summary="Fixed cron job ownership failure.",
+        source="test",
+        confidence="high",
+        timestamp=datetime(2026, 5, 25, 17, 5, tzinfo=UTC),
+        project="marcbot",
+        details="Corrected ownership and reran validation successfully.",
+    )
+    import_file_memory_to_sqlite(source_root=root, database_path=db_path)
+
+    output = format_memory_context(
+        path=db_path,
+        query="cron",
+        project="marcbot",
+    )
+
+    assert "Cron ownership issue was fixed." in output
+    assert "Details: Check timer status, journal output, and file ownership first." in output
+    assert "Fixed cron job ownership failure." in output
+    assert "Details: Corrected ownership and reran validation successfully." in output
+    assert "Provider contact: no" in output

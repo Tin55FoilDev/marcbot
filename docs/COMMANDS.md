@@ -777,4 +777,11 @@ timestamp, review reason, backing file path, and provider-contact status. This
 keeps single-proposal review consistent with proposal list output.
 
 This remains read-only and provider-contact-free.
+### CLI memory context detail text output
 
+`python -m marcbot memory context --query QUERY` includes fact and event
+details in text output when those records have details. This keeps
+troubleshooting/debug/fix context useful in the human-readable CLI output,
+not only in JSON.
+
+This remains read-only, SQLite-backed, and provider-contact-free.

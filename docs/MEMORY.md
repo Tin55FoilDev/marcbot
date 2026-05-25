@@ -1741,6 +1741,15 @@ should not require Marc to manually approve every low-risk write, but it
 must remain auditable and correctable, with explicit approval for high-risk
 or sensitive memory.
 
+
+## Implemented M12B memory context text details
+
+MarcBot memory context text output includes fact and event details when those
+records have details. This keeps troubleshooting, debug, and fix context
+actionable in human-readable CLI output as well as JSON output.
+
+This change is read-only, SQLite-backed, provider-contact-free, and does not
+write memory or expand Telegram approval authority.
 ## Implemented M12 memory context v1 baseline
 
 MarcBot has a local, deterministic memory context v1 interface.
