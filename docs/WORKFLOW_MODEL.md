@@ -370,3 +370,18 @@ Initial registered workflows:
 
 Workflow registry v1 does not run workflows. Execution is deferred to
 workflow run v1 after the registry shape is validated.
+## Implemented workflow run v1
+
+MarcBot supports CLI-only execution of the approved
+`source-monitor-ai-report` workflow:
+
+```text
+python -m marcbot workflow run source-monitor-ai-report --project ai
+```
+
+Workflow run v1 is intentionally narrow. It runs the existing deterministic
+source-monitor report writer, writes a report artifact, writes no memory,
+does not contact an LLM provider, and has no Telegram execution surface.
+
+The `source-monitor-ai-summary` workflow remains registered but not runnable
+until a later workflow run milestone adds explicit model-contact handling.

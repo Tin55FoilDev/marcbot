@@ -104,6 +104,7 @@ from marcbot.workflow_registry import (
     format_workflow_detail,
     format_workflow_list,
 )
+from marcbot.workflow_runner import format_workflow_run
 
 LOGGER = logging.getLogger(__name__)
 
@@ -533,6 +534,9 @@ def build_parser() -> argparse.ArgumentParser:
     workflow_subparsers.add_parser("list", help="list approved workflows")
     workflow_show_parser = workflow_subparsers.add_parser("show", help="show one approved workflow")
     workflow_show_parser.add_argument("workflow_id")
+    workflow_run_parser = workflow_subparsers.add_parser("run", help="run one approved workflow")
+    workflow_run_parser.add_argument("workflow_id")
+    workflow_run_parser.add_argument("--project", default=None)
     memory_parser = subparsers.add_parser(
         "memory",
         help="inspect local MarcBot memory",
@@ -1419,7 +1423,10 @@ def main(argv: list[str] | None = None) -> int:
             if args.workflow_command == "show":
                 print(format_workflow_detail(args.workflow_id))
                 return 0
-            print("usage: marcbot workflow {list,show} ...", file=sys.stderr)
+            if args.workflow_command == "run":
+                print(format_workflow_run(args.workflow_id, project=args.project))
+                return 0
+            print("usage: marcbot workflow {list,show,run} ...", file=sys.stderr)
             return 2
         if args.command == "memory":
             if args.memory_command == "init":

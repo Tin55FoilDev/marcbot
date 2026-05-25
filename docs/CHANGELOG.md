@@ -20,6 +20,8 @@ Highlights:
 
 ## Unreleased
 
+- Added CLI-only workflow run v1 for `source-monitor-ai-report`, using the
+  existing deterministic source-monitor report writer.
 - Added read-only workflow registry v1 with CLI list/show commands for
   approved source-monitor workflows.
 - Added fact and event details to human-readable memory context output so

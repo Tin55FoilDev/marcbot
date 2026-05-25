@@ -30,7 +30,7 @@ WORKFLOW_REGISTRY: tuple[WorkflowDefinition, ...] = (
         workflow_id="source-monitor-ai-report",
         title="Source monitor AI report",
         description="Generate a bounded source-monitor report for the AI source project.",
-        status="registered",
+        status="runnable",
         cli_only=True,
         telegram_visible=False,
         telegram_executable=False,
@@ -41,7 +41,7 @@ WORKFLOW_REGISTRY: tuple[WorkflowDefinition, ...] = (
         allowed_arguments=("project",),
         artifact_roots=("workspace/source-projects/<project>/reports",),
         memory_profile="source-monitor",
-        implementation_note="Execution is intentionally deferred until workflow run v1.",
+        implementation_note="CLI workflow run v1 executes this workflow.",
     ),
     WorkflowDefinition(
         workflow_id="source-monitor-ai-summary",
