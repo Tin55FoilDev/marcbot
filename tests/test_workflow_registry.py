@@ -42,7 +42,7 @@ def test_format_workflow_detail_discloses_execution_boundaries() -> None:
     assert "Writes memory when run: no" in output
     assert "Telegram executable: no" in output
     assert "Memory profile: source-monitor" in output
-    assert "Execution is intentionally deferred until workflow run v1." in output
+    assert "CLI workflow run v2 executes this workflow with explicit provider contact." in output
     assert "Registry provider contact: no" in output
 
 

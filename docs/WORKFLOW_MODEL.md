@@ -385,3 +385,15 @@ does not contact an LLM provider, and has no Telegram execution surface.
 
 The `source-monitor-ai-summary` workflow remains registered but not runnable
 until a later workflow run milestone adds explicit model-contact handling.
+## Implemented workflow run v2
+
+MarcBot supports CLI-only execution of the approved
+`source-monitor-ai-summary` workflow:
+
+```text
+python -m marcbot workflow run source-monitor-ai-summary --project ai --memory-profile source-monitor
+```
+
+Workflow run v2 reuses the existing bounded `source-monitor summarize-latest`
+CLI path. It explicitly discloses provider contact, writes a summary artifact,
+writes no memory, and has no Telegram execution surface.

@@ -800,7 +800,13 @@ workflows. Execution is deferred to workflow run v1.
 `python -m marcbot workflow run source-monitor-ai-report --project ai` runs
 the approved source-monitor report workflow.
 
-Workflow run v1 supports only `source-monitor-ai-report`. It is CLI-only,
-state-changing, writes a report artifact, writes no memory, and does not
-contact an LLM provider. Other registered workflows remain non-runnable until
-they receive explicit execution implementations.
+Workflow run v1 supports `source-monitor-ai-report`. Workflow run v2 adds
+`source-monitor-ai-summary`, which uses the existing source-monitor
+summarize-latest path and explicitly discloses provider contact. Workflow
+runs remain CLI-only and do not write memory.
+
+Example summary workflow:
+
+```text
+python -m marcbot workflow run source-monitor-ai-summary --project ai --memory-profile source-monitor
+```

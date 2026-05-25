@@ -20,6 +20,9 @@ Highlights:
 
 ## Unreleased
 
+- Added CLI-only workflow run v2 for `source-monitor-ai-summary`, reusing
+  the existing source-monitor summarize-latest path with explicit provider
+  contact disclosure.
 - Added CLI-only workflow run v1 for `source-monitor-ai-report`, using the
   existing deterministic source-monitor report writer.
 - Added read-only workflow registry v1 with CLI list/show commands for

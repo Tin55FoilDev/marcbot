@@ -537,6 +537,13 @@ def build_parser() -> argparse.ArgumentParser:
     workflow_run_parser = workflow_subparsers.add_parser("run", help="run one approved workflow")
     workflow_run_parser.add_argument("workflow_id")
     workflow_run_parser.add_argument("--project", default=None)
+    workflow_run_parser.add_argument("--task", default="source_monitor_analysis")
+    workflow_run_parser.add_argument("--memory-profile", default=None)
+    workflow_run_parser.add_argument("--memory-query", default=None)
+    workflow_run_parser.add_argument("--memory-project", default=None)
+    workflow_run_parser.add_argument("--memory-facts-limit", type=int, default=5)
+    workflow_run_parser.add_argument("--memory-summaries-limit", type=int, default=3)
+    workflow_run_parser.add_argument("--memory-events-limit", type=int, default=5)
     memory_parser = subparsers.add_parser(
         "memory",
         help="inspect local MarcBot memory",
@@ -1424,7 +1431,19 @@ def main(argv: list[str] | None = None) -> int:
                 print(format_workflow_detail(args.workflow_id))
                 return 0
             if args.workflow_command == "run":
-                print(format_workflow_run(args.workflow_id, project=args.project))
+                print(
+                    format_workflow_run(
+                        args.workflow_id,
+                        project=args.project,
+                        task=args.task,
+                        memory_profile=args.memory_profile,
+                        memory_query=args.memory_query,
+                        memory_project=args.memory_project,
+                        memory_facts_limit=args.memory_facts_limit,
+                        memory_summaries_limit=args.memory_summaries_limit,
+                        memory_events_limit=args.memory_events_limit,
+                    )
+                )
                 return 0
             print("usage: marcbot workflow {list,show,run} ...", file=sys.stderr)
             return 2

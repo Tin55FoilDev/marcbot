@@ -50,7 +50,7 @@ WORKFLOW_REGISTRY: tuple[WorkflowDefinition, ...] = (
             "Summarize the latest source-monitor report through the configured "
             "LLM task route."
         ),
-        status="registered",
+        status="runnable",
         cli_only=True,
         telegram_visible=False,
         telegram_executable=False,
@@ -58,10 +58,19 @@ WORKFLOW_REGISTRY: tuple[WorkflowDefinition, ...] = (
         writes_artifacts=True,
         writes_memory=False,
         state_changing=True,
-        allowed_arguments=("project", "memory-profile"),
+        allowed_arguments=(
+            "project",
+            "task",
+            "memory-profile",
+            "memory-query",
+            "memory-project",
+        ),
         artifact_roots=("workspace/source-projects/<project>/summaries",),
         memory_profile="source-monitor",
-        implementation_note="Execution is intentionally deferred until workflow run v1.",
+        implementation_note=(
+            "CLI workflow run v2 executes this workflow with explicit "
+            "provider contact."
+        ),
     ),
 )
 
