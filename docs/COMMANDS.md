@@ -591,6 +591,9 @@ creates a pending fact proposal only when candidate preview classifies the
 text as `propose_fact`. It is CLI-only, provider-contact-free, and does not
 approve durable memory.
 
+`--format json` returns a structured result with `created`, `proposal_id`,
+`proposal_path`, `provider_contact`, and `writes` fields.
+
 ### Memory candidate preview
 
 `python -m marcbot memory candidate preview [--project PROJECT] TEXT`

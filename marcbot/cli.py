@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import subprocess
@@ -641,6 +642,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     memory_candidate_propose_parser.add_argument("text")
     memory_candidate_propose_parser.add_argument("--project", required=True)
+    memory_candidate_propose_parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+    )
     memory_search_parser = memory_subparsers.add_parser(
         "search",
         help="search local memory files",
@@ -1507,6 +1513,22 @@ def main(argv: list[str] | None = None) -> int:
                         project=args.project,
                     )
                     if not preview.would_create_proposal:
+                        if args.format == "json":
+                            print(
+                                json.dumps(
+                                    {
+                                        "created": False,
+                                        "proposal_id": None,
+                                        "proposal_path": None,
+                                        "reason": preview.reason,
+                                        "provider_contact": False,
+                                        "writes": False,
+                                    },
+                                    indent=2,
+                                    sort_keys=True,
+                                )
+                            )
+                            return 0
                         print("MarcBot memory candidate proposal")
                         print("Created: no")
                         print(f"Reason: {preview.reason}")
@@ -1531,6 +1553,22 @@ def main(argv: list[str] | None = None) -> int:
                             "Candidate preview action was propose_fact."
                         ),
                     )
+                    if args.format == "json":
+                        print(
+                            json.dumps(
+                                {
+                                    "created": True,
+                                    "proposal_id": result.proposal.id,
+                                    "proposal_path": str(result.path),
+                                    "reason": preview.reason,
+                                    "provider_contact": False,
+                                    "writes": True,
+                                },
+                                indent=2,
+                                sort_keys=True,
+                            )
+                        )
+                        return 0
                     print(result.message)
                     print("Provider contact: no")
                     print("Writes: yes")

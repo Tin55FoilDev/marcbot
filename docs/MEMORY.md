@@ -1459,6 +1459,9 @@ For non-proposal candidates, the command reports `Created: no` and writes
 nothing. This preserves the durable-memory approval boundary: it creates
 pending proposals only and never approves durable facts.
 
+Use `--format json` when future automation needs a structured result rather
+than human-readable text.
+
 ### Memory candidate proposal preview
 
 `python -m marcbot memory candidate proposal-preview` bridges

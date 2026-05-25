@@ -2568,3 +2568,77 @@ def test_memory_candidate_propose_command_skips_non_fact_candidate(
     assert "Provider contact: no" in captured.out
     assert "Writes: no" in captured.out
     assert captured.err == ""
+
+
+def test_memory_candidate_propose_command_outputs_json_for_non_write(
+    capsys, monkeypatch
+) -> None:
+    import json
+
+    import marcbot.cli as cli
+
+    def fail_add_memory_proposal(**kwargs):
+        raise AssertionError("add_memory_proposal should not be called")
+
+    monkeypatch.setattr(cli, "add_memory_proposal", fail_add_memory_proposal)
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "propose",
+            "Source-monitor summary generated successfully.",
+            "--project",
+            "source-monitor",
+            "--format",
+            "json",
+        ]
+    )
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+
+    assert result == 0
+    assert payload["created"] is False
+    assert payload["proposal_id"] is None
+    assert payload["proposal_path"] is None
+    assert payload["provider_contact"] is False
+    assert payload["writes"] is False
+    assert captured.err == ""
+
+
+def test_memory_candidate_propose_command_outputs_json_for_write(
+    capsys, monkeypatch, tmp_path
+) -> None:
+    import json
+
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_proposal
+
+    monkeypatch.setattr(
+        cli,
+        "add_memory_proposal",
+        lambda **kwargs: add_memory_proposal(root=tmp_path, **kwargs),
+    )
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "propose",
+            "Source-monitor summaries should use explicit memory profiles.",
+            "--project",
+            "source-monitor",
+            "--format",
+            "json",
+        ]
+    )
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+
+    assert result == 0
+    assert payload["created"] is True
+    assert payload["proposal_id"].startswith("candidate-fact-")
+    assert payload["proposal_path"].endswith(".json")
+    assert payload["provider_contact"] is False
+    assert payload["writes"] is True
+    assert captured.err == ""
