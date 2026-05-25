@@ -20,6 +20,9 @@ Highlights:
 
 ## Unreleased
 
+- Added a session-start public repo review rule so future development
+  sessions use the clean pushed GitHub repo for source inspection before
+  asking Marc to paste source listings.
 - Reconciled memory storage direction so SQLite is documented as the
   intended primary structured memory repository while file-backed records
   remain the current transitional implementation.

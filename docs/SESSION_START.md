@@ -102,6 +102,21 @@ Do not commit secrets or local operational config.
 
 For version bumps, restart `marcbot-telegram.service` after the commit/push and verify Telegram `/about` and `/version` both report the new version before closing the milestone.
 
+## Public repo review rule
+
+The GitHub repository is expected to be clean and current at session start.
+When the task is code review, implementation planning, or source inspection,
+use the public GitHub repo as the source of truth before asking Marc to run
+inspection commands or paste source files.
+
+Ask Marc to run server-side commands only when the task depends on local runtime
+state, validation output, SQLite contents, deployed service behavior, logs,
+permissions, local config, or other information that is not available from the
+public repo.
+
+When reviewing GitHub content, prefer raw file URLs with cache-busting when
+freshness matters, because rendered GitHub pages may lag or show stale previews.
+
 ## Security boundaries
 
 Do not add:
