@@ -2083,3 +2083,86 @@ def test_format_memory_proposal_list_includes_review_metadata(
     assert "Reviewed at: 2026-05-25T15:05:00+00:00" in message
     assert "Review reason: Superseded by newer session context." in message
     assert "Provider contact: no" in message
+
+def test_format_memory_proposal_detail_includes_pending_review_context(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import add_memory_proposal, format_memory_proposal_detail
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="cron-fix-detail",
+        proposed_type="event",
+        proposed_statement="Cron job ownership issue was fixed.",
+        source="session",
+        rationale="Future troubleshooting should find the prior debug path.",
+        risk_level="low",
+        timestamp=datetime(2026, 5, 25, 16, 0, tzinfo=UTC),
+        project="marcbot",
+        details="Checked timer status, journal output, ownership, and validation.",
+    )
+
+    message = format_memory_proposal_detail(
+        proposal_id="cron-fix-detail",
+        root=tmp_path,
+    )
+
+    assert "MarcBot memory proposal" in message
+    assert "ID: cron-fix-detail" in message
+    assert "Status: pending" in message
+    assert "Proposed type: event" in message
+    assert "Risk level: low" in message
+    assert "Project: marcbot" in message
+    assert "Source: session" in message
+    assert "Created: 2026-05-25T16:00:00+00:00" in message
+    assert "Reviewed at: not reviewed" in message
+    assert "Proposed statement: Cron job ownership issue was fixed." in message
+    assert "Rationale: Future troubleshooting should find the prior debug path." in message
+    assert "Details: Checked timer status, journal output, ownership, and validation." in message
+    assert "Review reason: none" in message
+    assert "File: " in message
+    assert "Provider contact: no" in message
+
+
+def test_format_memory_proposal_detail_includes_review_metadata(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        format_memory_proposal_detail,
+        reject_memory_proposal,
+    )
+
+    add_memory_proposal(
+        root=tmp_path,
+        proposal_id="stale-detail",
+        proposed_type="summary",
+        proposed_statement="A stale detail proposal.",
+        source="session",
+        rationale="Initial rationale.",
+        risk_level="medium",
+        timestamp=datetime(2026, 5, 25, 16, 0, tzinfo=UTC),
+        project="marcbot",
+    )
+
+    reject_memory_proposal(
+        root=tmp_path,
+        proposal_id="stale-detail",
+        reason="Superseded by newer session context.",
+        source="test-review",
+        timestamp=datetime(2026, 5, 25, 16, 5, tzinfo=UTC),
+    )
+
+    message = format_memory_proposal_detail(
+        proposal_id="stale-detail",
+        root=tmp_path,
+    )
+
+    assert "Status: rejected" in message
+    assert "Reviewed at: 2026-05-25T16:05:00+00:00" in message
+    assert "Review reason: Superseded by newer session context." in message
+    assert "Provider contact: no" in message

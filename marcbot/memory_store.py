@@ -1658,15 +1658,14 @@ def format_memory_proposal_detail(
         f"Project: {proposal.project or 'none'}",
         f"Source: {proposal.source}",
         f"Created: {proposal.created_at}",
-        f"Reviewed: {proposal.reviewed_at or 'not reviewed'}",
+        f"Reviewed at: {proposal.reviewed_at or 'not reviewed'}",
         f"Proposed statement: {proposal.proposed_statement}",
         f"Rationale: {proposal.rationale}",
     ]
 
     if proposal.details:
         lines.append(f"Details: {proposal.details}")
-    if proposal.review_reason:
-        lines.append(f"Review reason: {proposal.review_reason}")
+    lines.append(f"Review reason: {proposal.review_reason or 'none'}")
     if proposal.path:
         lines.append(f"File: {proposal.path}")
 

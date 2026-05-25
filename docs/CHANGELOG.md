@@ -20,6 +20,8 @@ Highlights:
 
 ## Unreleased
 
+- Improved CLI memory proposal detail output with explicit review metadata
+  and consistent provider-contact-free review fields.
 - Reconciled COMMANDS.md SQLite wording with the current memory storage
   direction.
 - Improved CLI memory proposal list output with source, rationale, details,

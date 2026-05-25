@@ -752,3 +752,13 @@ approved from the CLI.
 
 This remains read-only and provider-contact-free.
 
+### CLI memory proposal detail review fields
+
+`python -m marcbot memory proposal get --id PROPOSAL_ID`
+
+Proposal detail output includes source, rationale, optional details, review
+timestamp, review reason, backing file path, and provider-contact status. This
+keeps single-proposal review consistent with proposal list output.
+
+This remains read-only and provider-contact-free.
+

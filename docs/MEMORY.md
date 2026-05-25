@@ -1003,6 +1003,16 @@ approval are deferred.
 
 
 
+
+## Implemented M8G proposal detail review ergonomics
+
+MarcBot proposal detail output includes source, rationale, optional details,
+review timestamp, review reason, backing file path, and provider-contact
+status. Pending proposals explicitly show `Review reason: none`.
+
+This change is read-only formatting and does not expand Telegram approval
+authority.
+
 ## Implemented M8F proposal list review ergonomics
 
 MarcBot proposal list output includes source, rationale, optional details,
