@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 
 
@@ -107,6 +108,33 @@ def preview_memory_candidate(
         project=project,
         reason="no durable memory signal detected",
         input_text=cleaned_text,
+    )
+
+
+
+def memory_candidate_preview_to_dict(
+    preview: MemoryCandidatePreview,
+) -> dict[str, object]:
+    """Return a structured candidate-preview contract."""
+
+    return {
+        "action": preview.action,
+        "risk_level": preview.risk_level,
+        "project": preview.project,
+        "reason": preview.reason,
+        "input_text": preview.input_text,
+        "provider_contact": preview.provider_contact,
+        "writes": preview.writes,
+    }
+
+
+def format_memory_candidate_preview_json(preview: MemoryCandidatePreview) -> str:
+    """Format a memory candidate preview as stable JSON."""
+
+    return json.dumps(
+        memory_candidate_preview_to_dict(preview),
+        indent=2,
+        sort_keys=True,
     )
 
 

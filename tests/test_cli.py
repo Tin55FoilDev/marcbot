@@ -2427,3 +2427,31 @@ def test_memory_candidate_preview_command_outputs_preview(capsys) -> None:
     assert "Provider contact: no" in captured.out
     assert "Writes: no" in captured.out
     assert captured.err == ""
+
+
+def test_memory_candidate_preview_command_outputs_json(capsys) -> None:
+    import json
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "preview",
+            "Source-monitor summaries should use explicit memory profiles.",
+            "--project",
+            "source-monitor",
+            "--format",
+            "json",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    payload = json.loads(captured.out)
+
+    assert result == 0
+    assert payload["action"] == "propose_fact"
+    assert payload["risk_level"] == "medium"
+    assert payload["project"] == "source-monitor"
+    assert payload["provider_contact"] is False
+    assert payload["writes"] is False
+    assert captured.err == ""

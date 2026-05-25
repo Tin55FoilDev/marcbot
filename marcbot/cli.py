@@ -34,6 +34,7 @@ from marcbot.llm_tasks import format_llm_task_detail, format_llm_tasks, load_llm
 from marcbot.logging_setup import configure_logging
 from marcbot.memory_candidate import (
     format_memory_candidate_preview,
+    format_memory_candidate_preview_json,
     preview_memory_candidate,
 )
 from marcbot.memory_context import (
@@ -615,6 +616,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     memory_candidate_preview_parser.add_argument("text")
     memory_candidate_preview_parser.add_argument("--project", default=None)
+    memory_candidate_preview_parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+    )
     memory_search_parser = memory_subparsers.add_parser(
         "search",
         help="search local memory files",
@@ -1456,7 +1462,12 @@ def main(argv: list[str] | None = None) -> int:
                         text=args.text,
                         project=args.project,
                     )
-                    print(format_memory_candidate_preview(preview))
+                    formatter = (
+                        format_memory_candidate_preview_json
+                        if args.format == "json"
+                        else format_memory_candidate_preview
+                    )
+                    print(formatter(preview))
                     return 0
                 parser.error("memory candidate requires a subcommand")
             if args.memory_command == "search":

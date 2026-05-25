@@ -56,3 +56,26 @@ def test_format_memory_candidate_preview_includes_boundaries() -> None:
     assert "Action: propose_fact" in message
     assert "Provider contact: no" in message
     assert "Writes: no" in message
+
+
+def test_format_memory_candidate_preview_json_is_structured() -> None:
+    import json
+
+    from marcbot.memory_candidate import format_memory_candidate_preview_json
+
+    preview = preview_memory_candidate(
+        text="Source-monitor summaries should use explicit memory profiles.",
+        project="source-monitor",
+    )
+
+    payload = json.loads(format_memory_candidate_preview_json(preview))
+
+    assert payload == {
+        "action": "propose_fact",
+        "input_text": "Source-monitor summaries should use explicit memory profiles.",
+        "project": "source-monitor",
+        "provider_contact": False,
+        "reason": "text looks like a durable instruction, preference, or policy",
+        "risk_level": "medium",
+        "writes": False,
+    }

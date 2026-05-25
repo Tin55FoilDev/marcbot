@@ -1423,6 +1423,7 @@ Example:
 
 ```bash
 python -m marcbot memory candidate preview --project source-monitor "Source-monitor summaries should use explicit memory profiles."
+python -m marcbot memory candidate preview --format json --project source-monitor "Source-monitor summaries should use explicit memory profiles."
 ```
 
 Current preview actions are:
@@ -1431,6 +1432,11 @@ Current preview actions are:
 - `record_event`
 - `propose_fact`
 - `manual_review`
+
+
+The JSON format is intended for future automation paths so workflow code
+can consume the action, risk level, provider-contact flag, and write flag
+without parsing human-readable output.
 
 This is intentionally preview-only. It is the foundation for future
 Telegram/chat candidate detection without automatic memory capture.
