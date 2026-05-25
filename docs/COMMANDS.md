@@ -646,3 +646,17 @@ Example:
 
 For non-proposal candidates, the command reports `Created: no` and writes
 nothing.
+
+### Telegram memory candidate help
+
+`/memory_candidate_help` explains the memory candidate workflow from
+Telegram. It is read-only, provider-contact-free, and writes no memory.
+
+The help text summarizes:
+
+- `/memory_candidate_preview`
+- `/memory_proposal_preview`
+- `/memory_candidate_propose`
+- `/memory_proposals`
+- `/memory_proposal <id>`
+- `/memory_reject_proposal`

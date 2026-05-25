@@ -517,6 +517,57 @@ async def memory_facts_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 
+def format_memory_candidate_help_message() -> str:
+    """Return Telegram help text for the memory candidate workflow."""
+
+    return "\n".join(
+        [
+            "MarcBot memory candidate workflow",
+            "",
+            "1. Preview classification:",
+            "   /memory_candidate_preview <project> | <text>",
+            "",
+            "2. Preview pending proposal fields:",
+            "   /memory_proposal_preview <project> | <text>",
+            "",
+            "3. Create pending proposal only when classified propose_fact:",
+            "   /memory_candidate_propose <project> | <text>",
+            "",
+            "4. Review pending proposals:",
+            "   /memory_proposals",
+            "   /memory_proposal <id>",
+            "",
+            "5. Reject pending proposal if needed:",
+            "   /memory_reject_proposal <id> | <reason>",
+            "",
+            "Boundaries:",
+            "- Preview commands write no memory.",
+            "- Candidate propose creates pending proposals only.",
+            "- Telegram cannot approve durable facts.",
+            "- Provider contact: no",
+        ]
+    )
+
+
+async def memory_candidate_help_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /memory_candidate_help."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning(
+            "Rejected unauthorized /memory_candidate_help from chat_id=%s",
+            chat_id,
+        )
+        await _reject_unauthorized(update)
+        return
+
+    await update.message.reply_text(format_memory_candidate_help_message())
+    LOGGER.info("Handled /memory_candidate_help for chat_id=%s", chat_id)
+
 async def memory_candidate_propose_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -1571,6 +1622,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/llm_status - show read-only LLM profile status\n"
         "/logs - show recent MarcBot application logs\n"
         "/ls - list workspace root entries\n"
+        "/memory_candidate_help - explain memory candidate workflow\n"
         "/memory_candidate_preview <project> | <text> - preview memory candidate handling\n"
         "/memory_candidate_propose <project> | <text> - create candidate proposal\n"
         "/memory_context <profile> - show bounded memory context for a profile\n"
@@ -1668,6 +1720,9 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("weather_status", weather_status_command))
     application.add_handler(CommandHandler("memory_events", memory_events_command))
     application.add_handler(CommandHandler("memory_facts", memory_facts_command))
+    application.add_handler(
+        CommandHandler("memory_candidate_help", memory_candidate_help_command)
+    )
     application.add_handler(
         CommandHandler("memory_candidate_propose", memory_candidate_propose_command)
     )

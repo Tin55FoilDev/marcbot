@@ -1418,6 +1418,12 @@ The Telegram candidate-propose bridge was validated end-to-end:
 - SQLite validation remains valid after create and cleanup rejection
 - cleanup returns the pending proposal queue to empty
 - Telegram still cannot approve durable facts
+
+`/memory_candidate_help` provides Telegram-side guidance for the memory
+candidate workflow. It is intentionally read-only and summarizes preview,
+proposal-preview, candidate-propose, proposal review, and proposal rejection
+without adding approval authority.
+
 `/memory_candidate_propose <project> | <text>` exposes the controlled
 candidate-to-pending-proposal bridge in Telegram. It writes only pending
 proposals and only when deterministic candidate preview returns
