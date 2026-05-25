@@ -20,6 +20,9 @@ Highlights:
 
 ## Unreleased
 
+- Added CLI-only approval for pending `summary` memory proposals, creating
+  reviewed summary records while preserving the Telegram durable-memory
+  approval boundary.
 - Added CLI-only approval for pending `event` memory proposals, creating
   reviewed event ledger entries while preserving the Telegram durable-memory
   approval boundary.

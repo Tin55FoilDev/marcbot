@@ -732,32 +732,6 @@ def test_approve_memory_proposal_rejects_non_pending_proposal(tmp_path: Path) ->
 
 
 
-def test_approve_memory_proposal_rejects_unsupported_proposal_type(
-    tmp_path: Path,
-) -> None:
-    import pytest
-
-    from marcbot.memory_store import add_memory_proposal, approve_memory_proposal
-
-    add_memory_proposal(
-        root=tmp_path,
-        proposal_id="summary-proposal",
-        proposed_type="summary",
-        proposed_statement="A summary proposal.",
-        source="test",
-        rationale="Test.",
-        risk_level="low",
-    )
-
-    with pytest.raises(
-        ValueError,
-        match="only fact and event proposal approval is supported",
-    ):
-        approve_memory_proposal(
-            proposal_id="summary-proposal",
-            source="test-review",
-            root=tmp_path,
-        )
 
 def test_get_memory_status_counts_proposals_by_status(tmp_path: Path) -> None:
     from marcbot.memory_store import (
@@ -1948,3 +1922,95 @@ def test_approve_memory_event_proposal_rejects_invalid_event_type(tmp_path):
     proposal = get_memory_proposal(proposal_id="bad-event-type", root=tmp_path)
     assert proposal.status == "pending"
     assert list_memory_events(root=tmp_path) == ()
+
+def test_approve_memory_summary_proposal_creates_summary(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        approve_memory_proposal,
+        get_memory_proposal,
+        list_memory_summaries,
+    )
+
+    add_memory_proposal(
+        proposal_id="session-handoff",
+        proposed_type="summary",
+        proposed_statement="Session handoff summary",
+        source="test",
+        rationale="Useful session handoff context.",
+        risk_level="low",
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 25, 13, 0, tzinfo=UTC),
+        project="marcbot",
+        details="Completed CLI event proposal approval and validation.",
+    )
+
+    result = approve_memory_proposal(
+        proposal_id="session-handoff",
+        source="test-review",
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 25, 13, 5, tzinfo=UTC),
+        review_reason="Low-risk handoff summary approved.",
+        confidence="high",
+    )
+
+    assert result.created_type == "summary"
+    assert result.proposal_id == "session-handoff"
+    assert result.created_id == "2026-05-25-session-handoff-summary"
+    assert result.created_path == (
+        tmp_path / "summaries" / "2026-05-25-session-handoff-summary.md"
+    )
+
+    summaries = list_memory_summaries(root=tmp_path)
+    assert len(summaries) == 1
+    assert summaries[0].title == "Session handoff summary"
+    assert summaries[0].source == "test-review"
+    assert summaries[0].project == "marcbot"
+    assert "Completed CLI event proposal approval" in summaries[0].body
+
+    proposal = get_memory_proposal(proposal_id="session-handoff", root=tmp_path)
+    assert proposal.status == "approved"
+    assert proposal.reviewed_at == "2026-05-25T13:05:00+00:00"
+    assert proposal.review_reason == "Low-risk handoff summary approved."
+
+    correction_file = tmp_path / "corrections" / "2026-05.jsonl"
+    correction_text = correction_file.read_text(encoding="utf-8")
+    assert '"type": "proposal_approved"' in correction_text
+    assert '"created_type": "summary"' in correction_text
+    assert '"created_id": "2026-05-25-session-handoff-summary"' in correction_text
+
+
+def test_approve_memory_summary_proposal_uses_rationale_without_details(
+    tmp_path: Path,
+) -> None:
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        approve_memory_proposal,
+        list_memory_summaries,
+    )
+
+    add_memory_proposal(
+        proposal_id="rationale-summary",
+        proposed_type="summary",
+        proposed_statement="Rationale-only summary",
+        source="test",
+        rationale="Use this rationale as the summary body.",
+        risk_level="low",
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 25, 14, 0, tzinfo=UTC),
+    )
+
+    approve_memory_proposal(
+        proposal_id="rationale-summary",
+        source="test-review",
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 25, 14, 5, tzinfo=UTC),
+        confidence="high",
+    )
+
+    summaries = list_memory_summaries(root=tmp_path)
+    assert len(summaries) == 1
+    assert "Use this rationale as the summary body." in summaries[0].body

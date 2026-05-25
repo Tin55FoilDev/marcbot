@@ -1481,8 +1481,10 @@ def approve_memory_proposal(
     proposal = _load_memory_proposal(proposal_path)
     if proposal.status != "pending":
         raise ValueError(f"proposal is not pending: {safe_id}")
-    if proposal.proposed_type not in ("fact", "event"):
-        raise ValueError("only fact and event proposal approval is supported")
+    if proposal.proposed_type not in ("fact", "event", "summary"):
+        raise ValueError(
+            "only fact, event, and summary proposal approval is supported"
+        )
 
     current_time = timestamp or datetime.now(UTC)
     timestamp_text = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
@@ -1510,7 +1512,7 @@ def approve_memory_proposal(
         created_path = fact_result.path
         created_id = fact_result.fact.id
         created_type = "fact"
-    else:
+    elif proposal.proposed_type == "event":
         event_result = add_memory_event(
             event_type=event_type,
             summary=proposal.proposed_statement,
@@ -1524,6 +1526,18 @@ def approve_memory_proposal(
         created_path = event_result.path
         created_id = event_result.event.timestamp
         created_type = "event"
+    else:
+        summary_result = add_memory_summary(
+            title=proposal.proposed_statement,
+            body=proposal.details or proposal.rationale,
+            source=safe_source,
+            root=root,
+            timestamp=current_time,
+            project=proposal.project,
+        )
+        created_path = summary_result.path
+        created_id = summary_result.path.stem
+        created_type = "summary"
 
     approved = MemoryProposal(
         id=proposal.id,

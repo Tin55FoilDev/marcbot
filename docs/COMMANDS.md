@@ -727,3 +727,16 @@ with a more specific event type can still use the CLI memory event add command
 or the controlled candidate record-event workflow.
 
 Telegram cannot approve durable memory proposals.
+
+### CLI memory proposal approve summary
+
+`python -m marcbot memory proposal approve --id PROPOSAL_ID --source SOURCE --confidence high`
+
+When the pending proposal has `proposed_type = "summary"`, approval creates
+a memory summary, marks the proposal approved, and records review/audit
+metadata. The proposal statement becomes the summary title. Proposal details
+become the summary body when present; otherwise the proposal rationale is used.
+
+This remains CLI-only and provider-contact-free. Telegram cannot approve
+durable memory proposals.
+
