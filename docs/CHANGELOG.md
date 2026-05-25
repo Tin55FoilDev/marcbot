@@ -20,6 +20,14 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.19 - Memory candidate workflow status and docs
+
+- Added Telegram `/memory_candidate_help`.
+- Added Telegram `/memory_candidate_status`.
+- Added CLI `memory candidate status`.
+- Documented the CLI candidate-propose JSON contract.
+- Documented the standard MarcBot development workflow and session-start pointer.
+- Preserved candidate workflow boundaries: provider contact is no, preview writes no memory, and Telegram cannot approve durable facts.
 ## 0.3.18 - Controlled memory candidate proposal bridge
 
 - Added CLI `memory candidate propose` to create pending proposals from candidate text.
