@@ -20,6 +20,15 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.18 - Controlled memory candidate proposal bridge
+
+- Added CLI `memory candidate propose` to create pending proposals from candidate text.
+- Added Telegram `/memory_candidate_propose` for explicit pending proposal creation.
+- Preserved the approval boundary: candidate propose creates pending proposals only.
+- Preserved provider-contact-free behavior for candidate/proposal memory commands.
+- Validated non-write behavior for non-proposal candidate text.
+- Validated pending-proposal creation, SQLite sync, detail display, rejection cleanup, and empty pending queue after cleanup.
+- Documented the standard MarcBot development workflow in project docs.
 ## 0.3.17 - Memory candidate preview foundation
 
 - Added deterministic CLI memory candidate preview.

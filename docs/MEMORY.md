@@ -1409,6 +1409,15 @@ Example:
 
 
 
+
+The Telegram candidate-propose bridge was validated end-to-end:
+
+- non-proposal candidate text reports `Created: no` and writes nothing
+- durable-signal candidate text creates a pending proposal only
+- pending proposal details show source `telegram_memory_candidate_propose`
+- SQLite validation remains valid after create and cleanup rejection
+- cleanup returns the pending proposal queue to empty
+- Telegram still cannot approve durable facts
 `/memory_candidate_propose <project> | <text>` exposes the controlled
 candidate-to-pending-proposal bridge in Telegram. It writes only pending
 proposals and only when deterministic candidate preview returns

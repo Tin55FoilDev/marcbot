@@ -629,6 +629,10 @@ Example:
 
 ### Telegram memory candidate propose
 
+
+This command has been validated with a non-write case and a
+write-pending-proposal case. The write case creates only a pending
+proposal; durable approval remains CLI-only.
 `/memory_candidate_propose <project> | <text>` creates a pending fact
 proposal only when deterministic candidate preview classifies the text as
 `propose_fact`. It is provider-contact-free and does not approve durable
