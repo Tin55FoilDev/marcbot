@@ -650,6 +650,15 @@ Example:
 For non-proposal candidates, the command reports `Created: no` and writes
 nothing.
 
+### CLI memory candidate record-event validation
+
+The record-event bridge has been live-tested. Non-event candidate text writes
+nothing. Event-like candidate text records a local memory event in the monthly
+JSONL event log and keeps SQLite validation valid.
+
+This command is intended for low-risk operational event capture only. It does
+not create or approve durable facts.
+
 ### CLI memory candidate record-event
 
 `python -m marcbot memory candidate record-event --project PROJECT TEXT`

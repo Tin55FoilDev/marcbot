@@ -20,6 +20,15 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.20 - Controlled candidate memory writes
+
+- Added CLI `memory candidate record-event` for low-risk operational event capture.
+- Added JSON output for candidate record-event write and non-write paths.
+- Validated candidate record-event non-write behavior.
+- Validated candidate record-event event-write behavior into the monthly JSONL event log.
+- Confirmed SQLite validation remains valid after event write.
+- Documented candidate memory write validation discipline.
+- Preserved durable fact boundary: facts still require pending proposal approval and Telegram cannot approve durable facts.
 ## 0.3.19 - Memory candidate workflow status and docs
 
 - Added Telegram `/memory_candidate_help`.

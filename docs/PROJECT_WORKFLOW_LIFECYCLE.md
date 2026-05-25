@@ -810,6 +810,21 @@ Telegram: restarted and verified when relevant
 Server: backed up
 ```
 
+### Candidate memory write validation discipline
+
+For candidate memory write bridges, validate both paths before treating the
+bridge as complete:
+
+- non-write path: candidate classifier does not match the write action
+- write path: candidate classifier matches the write action
+- structured JSON confirms `provider_contact` and `writes`
+- SQLite validation remains valid after the write
+- cleanup is performed where the workflow supports cleanup
+
+For pending proposal tests, reject the validation proposal afterward. For
+event-write tests, the validation event may remain as audit history unless
+an explicit event cleanup workflow exists.
+
 ### Structured output discipline
 
 Future automation should consume JSON contracts from CLI commands rather

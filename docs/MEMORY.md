@@ -1449,6 +1449,21 @@ This lets Marc verify what a future bridge would propose before any
 automatic or semi-automatic write path exists.
 
 
+### Memory candidate record-event live validation
+
+The CLI candidate record-event bridge was validated end-to-end:
+
+- non-event candidate text returns `created: false`, `event_path: null`, and `writes: false`
+- event-like candidate text returns `created: true`, a monthly JSONL `event_path`, and `writes: true`
+- the event is recorded as `workflow_completed` with source `memory_candidate_cli_record_event`
+- provider contact remains `false`
+- SQLite validation remains valid after the event write
+- Git status remains clean because memory data is outside the app repo
+
+This is intentionally lower risk than durable facts: it records operational
+history only. Durable facts remain on the pending-proposal path and still
+require explicit CLI approval.
+
 ### Memory candidate record-event
 
 `python -m marcbot memory candidate record-event` is the first controlled
