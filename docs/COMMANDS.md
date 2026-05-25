@@ -588,6 +588,9 @@ read-only, provider-contact-free, and writes no memory.
 `--format json` returns the same preview as structured JSON for future
 workflow automation.
 
+`--format json` returns the same preview as structured JSON for future
+workflow automation.
+
 ### Telegram memory candidate preview
 
 `/memory_candidate_preview <project> | <text>` previews how MarcBot would
