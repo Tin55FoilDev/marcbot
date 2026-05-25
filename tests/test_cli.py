@@ -2655,3 +2655,138 @@ def test_memory_candidate_status_command_outputs_status(capsys) -> None:
     assert "Provider contact: no" in captured.out
     assert "Writes: no for this status command" in captured.out
     assert captured.err == ""
+
+
+def test_memory_candidate_record_event_command_creates_event(
+    capsys, monkeypatch, tmp_path
+) -> None:
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_event
+
+    monkeypatch.setattr(
+        cli,
+        "add_memory_event",
+        lambda **kwargs: add_memory_event(root=tmp_path, **kwargs),
+    )
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "record-event",
+            "Source-monitor summary generated successfully.",
+            "--project",
+            "source-monitor",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Memory event added:" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert "Writes: yes" in captured.out
+    assert captured.err == ""
+
+
+def test_memory_candidate_record_event_command_skips_non_event_candidate(
+    capsys, monkeypatch
+) -> None:
+    import marcbot.cli as cli
+
+    def fail_add_memory_event(**kwargs):
+        raise AssertionError("add_memory_event should not be called")
+
+    monkeypatch.setattr(cli, "add_memory_event", fail_add_memory_event)
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "record-event",
+            "Source-monitor summaries should use explicit memory profiles.",
+            "--project",
+            "source-monitor",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory candidate event" in captured.out
+    assert "Created: no" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert "Writes: no" in captured.out
+    assert captured.err == ""
+
+
+def test_memory_candidate_record_event_command_outputs_json_for_write(
+    capsys, monkeypatch, tmp_path
+) -> None:
+    import json
+
+    import marcbot.cli as cli
+    from marcbot.memory_store import add_memory_event
+
+    monkeypatch.setattr(
+        cli,
+        "add_memory_event",
+        lambda **kwargs: add_memory_event(root=tmp_path, **kwargs),
+    )
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "record-event",
+            "Source-monitor summary generated successfully.",
+            "--project",
+            "source-monitor",
+            "--format",
+            "json",
+        ]
+    )
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+
+    assert result == 0
+    assert payload["created"] is True
+    assert payload["event_index"] is None
+    assert payload["event_path"].endswith(".jsonl")
+    assert payload["provider_contact"] is False
+    assert payload["writes"] is True
+    assert captured.err == ""
+
+
+def test_memory_candidate_record_event_command_outputs_json_for_non_write(
+    capsys, monkeypatch
+) -> None:
+    import json
+
+    import marcbot.cli as cli
+
+    def fail_add_memory_event(**kwargs):
+        raise AssertionError("add_memory_event should not be called")
+
+    monkeypatch.setattr(cli, "add_memory_event", fail_add_memory_event)
+
+    result = main(
+        [
+            "memory",
+            "candidate",
+            "record-event",
+            "Source-monitor summaries should use explicit memory profiles.",
+            "--project",
+            "source-monitor",
+            "--format",
+            "json",
+        ]
+    )
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+
+    assert result == 0
+    assert payload["created"] is False
+    assert payload["event_index"] is None
+    assert payload["event_path"] is None
+    assert payload["provider_contact"] is False
+    assert payload["writes"] is False
+    assert captured.err == ""

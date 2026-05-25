@@ -650,6 +650,20 @@ Example:
 For non-proposal candidates, the command reports `Created: no` and writes
 nothing.
 
+### CLI memory candidate record-event
+
+`python -m marcbot memory candidate record-event --project PROJECT TEXT`
+records a memory event only when deterministic candidate preview classifies
+the text as `record_event`. It is CLI-only and provider-contact-free.
+
+`--format json` returns `created`, `event_index`, `event_path`,
+`provider_contact`, and `writes` fields. `event_index` is currently
+`null`; use `event_path` as the stable created-event log file identifier.
+Events are stored in monthly JSONL files.
+
+This command records low-risk operational events only. It does not create
+or approve durable facts.
+
 ### CLI memory candidate propose JSON output
 
 `python -m marcbot memory candidate propose --format json --project PROJECT TEXT`

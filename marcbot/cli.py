@@ -652,6 +652,17 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["text", "json"],
         default="text",
     )
+    memory_candidate_record_event_parser = memory_candidate_subparsers.add_parser(
+        "record-event",
+        help="record a memory event from candidate text when appropriate",
+    )
+    memory_candidate_record_event_parser.add_argument("text")
+    memory_candidate_record_event_parser.add_argument("--project", required=True)
+    memory_candidate_record_event_parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+    )
     memory_search_parser = memory_subparsers.add_parser(
         "search",
         help="search local memory files",
@@ -1514,6 +1525,66 @@ def main(argv: list[str] | None = None) -> int:
                         else format_memory_proposal_preview
                     )
                     print(formatter(preview))
+                    return 0
+                if args.memory_candidate_command == "record-event":
+                    preview = preview_memory_candidate(
+                        text=args.text,
+                        project=args.project,
+                    )
+                    if preview.action != "record_event":
+                        if args.format == "json":
+                            print(
+                                json.dumps(
+                                    {
+                                        "created": False,
+                                        "event_index": None,
+                                        "event_path": None,
+                                        "reason": preview.reason,
+                                        "provider_contact": False,
+                                        "writes": False,
+                                    },
+                                    indent=2,
+                                    sort_keys=True,
+                                )
+                            )
+                            return 0
+                        print("MarcBot memory candidate event")
+                        print("Created: no")
+                        print(f"Reason: {preview.reason}")
+                        print("Provider contact: no")
+                        print("Writes: no")
+                        return 0
+
+                    result = add_memory_event(
+                        event_type="workflow_completed",
+                        summary=preview.input_text,
+                        source="memory_candidate_cli_record_event",
+                        confidence="medium",
+                        project=preview.project,
+                        details=(
+                            "Created by memory candidate record-event. "
+                            "Candidate preview action was record_event."
+                        ),
+                    )
+                    if args.format == "json":
+                        print(
+                            json.dumps(
+                                {
+                                    "created": True,
+                                    "event_index": None,
+                                    "event_path": str(result.path),
+                                    "reason": preview.reason,
+                                    "provider_contact": False,
+                                    "writes": True,
+                                },
+                                indent=2,
+                                sort_keys=True,
+                            )
+                        )
+                        return 0
+                    print(result.message)
+                    print("Provider contact: no")
+                    print("Writes: yes")
                     return 0
                 if args.memory_candidate_command == "propose":
                     preview = preview_memory_candidate_proposal(

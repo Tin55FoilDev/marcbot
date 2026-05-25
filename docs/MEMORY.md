@@ -1449,6 +1449,24 @@ This lets Marc verify what a future bridge would propose before any
 automatic or semi-automatic write path exists.
 
 
+### Memory candidate record-event
+
+`python -m marcbot memory candidate record-event` is the first controlled
+low-risk candidate-to-event bridge. It records a local memory event only
+when deterministic candidate preview returns `record_event`.
+
+For non-event candidates, the command reports `Created: no` and writes
+nothing. This keeps durable facts on the pending-proposal path and avoids
+automatic fact approval.
+
+Use `--format json` when future automation needs a structured result rather
+than human-readable text.
+
+The JSON result includes `event_path` as the stable created-event log file
+identifier. Events are stored in monthly JSONL files. `event_index` is
+currently `null` because the memory event result object does not expose a
+stable index.
+
 ### Memory candidate status
 
 `python -m marcbot memory candidate status` provides a read-only CLI
