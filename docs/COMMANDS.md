@@ -712,3 +712,18 @@ and writes no memory.
 It lists the candidate preview, proposal preview, candidate propose,
 proposal list/detail, and proposal rejection commands, and states that
 Telegram cannot approve durable facts.
+
+### CLI memory proposal approve event
+
+`python -m marcbot memory proposal approve --id PROPOSAL_ID --source SOURCE --confidence high`
+
+When the pending proposal has `proposed_type = "event"`, approval creates
+a memory event through the existing event ledger, marks the proposal approved,
+and records review/audit metadata. This remains CLI-only and
+provider-contact-free.
+
+The default approved event type is `workflow_completed`. Direct event writes
+with a more specific event type can still use the CLI memory event add command
+or the controlled candidate record-event workflow.
+
+Telegram cannot approve durable memory proposals.

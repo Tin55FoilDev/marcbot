@@ -1000,6 +1000,18 @@ Approval behavior:
 Approval remains CLI-only and provider-contact-free. Event and summary proposal
 approval are deferred.
 
+
+## Implemented M8D event proposal approval
+
+MarcBot supports CLI-only approval of pending memory proposals where
+`proposed_type = "event"`. Approval creates an event using the existing
+event ledger, marks the proposal approved, records review metadata, and
+appends a proposal-approved correction/audit record.
+
+This is intentionally not exposed as Telegram approval authority. Telegram
+memory proposal commands remain read-only/review-oriented unless explicitly
+expanded by a later design step.
+
 ## Implemented M8C richer memory status visibility
 
 The read-only memory status output now reports proposal counts by review status.

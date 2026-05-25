@@ -20,6 +20,9 @@ Highlights:
 
 ## Unreleased
 
+- Added CLI-only approval for pending `event` memory proposals, creating
+  reviewed event ledger entries while preserving the Telegram durable-memory
+  approval boundary.
 - Added a session-start public repo review rule so future development
   sessions use the clean pushed GitHub repo for source inspection before
   asking Marc to paste source listings.

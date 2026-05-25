@@ -731,28 +731,33 @@ def test_approve_memory_proposal_rejects_non_pending_proposal(tmp_path: Path) ->
         )
 
 
-def test_approve_memory_proposal_rejects_non_fact_proposal(tmp_path: Path) -> None:
+
+def test_approve_memory_proposal_rejects_unsupported_proposal_type(
+    tmp_path: Path,
+) -> None:
     import pytest
 
     from marcbot.memory_store import add_memory_proposal, approve_memory_proposal
 
     add_memory_proposal(
         root=tmp_path,
-        proposal_id="event-proposal",
-        proposed_type="event",
-        proposed_statement="An event proposal.",
+        proposal_id="summary-proposal",
+        proposed_type="summary",
+        proposed_statement="A summary proposal.",
         source="test",
         rationale="Test.",
         risk_level="low",
     )
 
-    with pytest.raises(ValueError, match="only fact proposal approval is supported"):
+    with pytest.raises(
+        ValueError,
+        match="only fact and event proposal approval is supported",
+    ):
         approve_memory_proposal(
+            proposal_id="summary-proposal",
+            source="test-review",
             root=tmp_path,
-            proposal_id="event-proposal",
-            source="test",
         )
-
 
 def test_get_memory_status_counts_proposals_by_status(tmp_path: Path) -> None:
     from marcbot.memory_store import (
@@ -1848,3 +1853,98 @@ def test_approve_memory_proposal_syncs_proposal_fact_and_correction(
         ("correction", "proposal_approved"),
     ]
 
+
+def test_approve_memory_event_proposal_creates_event(tmp_path):
+    from datetime import UTC, datetime
+
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        approve_memory_proposal,
+        get_memory_proposal,
+        list_memory_events,
+    )
+
+    add_memory_proposal(
+        proposal_id="cron-debug-fix",
+        proposed_type="event",
+        proposed_statement="Cron job failed because of ownership and was fixed.",
+        source="test",
+        rationale="Useful troubleshooting history for future cron failures.",
+        risk_level="low",
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 25, 12, 0, tzinfo=UTC),
+        project="marcbot",
+        details="Debugged timer status, journal output, ownership, and validation.",
+    )
+
+    result = approve_memory_proposal(
+        proposal_id="cron-debug-fix",
+        source="test-review",
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 25, 12, 5, tzinfo=UTC),
+        review_reason="Low-risk troubleshooting event approved.",
+        confidence="high",
+        event_type="issue_resolved",
+    )
+
+    assert result.created_type == "event"
+    assert result.proposal_id == "cron-debug-fix"
+    assert result.created_id == "2026-05-25T12:05:00+00:00"
+    assert result.created_path == tmp_path / "events" / "2026-05.jsonl"
+
+    events = list_memory_events(root=tmp_path)
+    assert len(events) == 1
+    assert events[0].type == "issue_resolved"
+    assert events[0].summary == "Cron job failed because of ownership and was fixed."
+    assert events[0].source == "test-review"
+    assert events[0].confidence == "high"
+    assert events[0].project == "marcbot"
+    assert events[0].details == "Debugged timer status, journal output, ownership, and validation."
+
+    proposal = get_memory_proposal(proposal_id="cron-debug-fix", root=tmp_path)
+    assert proposal.status == "approved"
+    assert proposal.reviewed_at == "2026-05-25T12:05:00+00:00"
+    assert proposal.review_reason == "Low-risk troubleshooting event approved."
+
+    correction_file = tmp_path / "corrections" / "2026-05.jsonl"
+    correction_text = correction_file.read_text(encoding="utf-8")
+    assert '"type": "proposal_approved"' in correction_text
+    assert '"created_type": "event"' in correction_text
+    assert '"created_id": "2026-05-25T12:05:00+00:00"' in correction_text
+
+
+def test_approve_memory_event_proposal_rejects_invalid_event_type(tmp_path):
+    from datetime import UTC, datetime
+
+    import pytest
+
+    from marcbot.memory_store import (
+        add_memory_proposal,
+        approve_memory_proposal,
+        get_memory_proposal,
+        list_memory_events,
+    )
+
+    add_memory_proposal(
+        proposal_id="bad-event-type",
+        proposed_type="event",
+        proposed_statement="Something happened.",
+        source="test",
+        rationale="Exercise validation.",
+        risk_level="low",
+        root=tmp_path,
+        timestamp=datetime(2026, 5, 25, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(ValueError, match="type must be one of"):
+        approve_memory_proposal(
+            proposal_id="bad-event-type",
+            source="test-review",
+            root=tmp_path,
+            timestamp=datetime(2026, 5, 25, 12, 5, tzinfo=UTC),
+            event_type="not-a-real-event-type",
+        )
+
+    proposal = get_memory_proposal(proposal_id="bad-event-type", root=tmp_path)
+    assert proposal.status == "pending"
+    assert list_memory_events(root=tmp_path) == ()

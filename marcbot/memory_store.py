@@ -1471,43 +1471,59 @@ def approve_memory_proposal(
     fact_id: str | None = None,
     category: str = "general",
     confidence: str = "high",
+    event_type: str = "workflow_completed",
 ) -> MemoryProposalApproveResult:
     init_memory_store(root=root)
-
     safe_id = _slugify_fact_id(_validate_nonempty_text(proposal_id, "id"))
     proposal_path = _proposal_path(root, safe_id)
-
     if not proposal_path.is_file():
         raise ValueError(f"proposal does not exist: {safe_id}")
-
     proposal = _load_memory_proposal(proposal_path)
     if proposal.status != "pending":
         raise ValueError(f"proposal is not pending: {safe_id}")
-
-    if proposal.proposed_type != "fact":
-        raise ValueError("only fact proposal approval is supported")
+    if proposal.proposed_type not in ("fact", "event"):
+        raise ValueError("only fact and event proposal approval is supported")
 
     current_time = timestamp or datetime.now(UTC)
     timestamp_text = current_time.astimezone(UTC).replace(microsecond=0).isoformat()
     safe_source = _validate_nonempty_text(source, "source")
+    safe_confidence = _validate_confidence(confidence)
     safe_reason = (
         review_reason.strip()
         if review_reason and review_reason.strip()
         else "Approved after review."
     )
-    safe_fact_id = _slugify_fact_id(fact_id) if fact_id else proposal.id
 
-    fact_result = add_memory_fact(
-        fact_id=safe_fact_id,
-        statement=proposal.proposed_statement,
-        category=category,
-        source=safe_source,
-        confidence=confidence,
-        root=root,
-        timestamp=current_time,
-        project=proposal.project,
-        details=proposal.details or proposal.rationale,
-    )
+    if proposal.proposed_type == "fact":
+        safe_fact_id = _slugify_fact_id(fact_id) if fact_id else proposal.id
+        fact_result = add_memory_fact(
+            fact_id=safe_fact_id,
+            statement=proposal.proposed_statement,
+            category=category,
+            source=safe_source,
+            confidence=safe_confidence,
+            root=root,
+            timestamp=current_time,
+            project=proposal.project,
+            details=proposal.details or proposal.rationale,
+        )
+        created_path = fact_result.path
+        created_id = fact_result.fact.id
+        created_type = "fact"
+    else:
+        event_result = add_memory_event(
+            event_type=event_type,
+            summary=proposal.proposed_statement,
+            source=safe_source,
+            confidence=safe_confidence,
+            root=root,
+            timestamp=current_time,
+            project=proposal.project,
+            details=proposal.details or proposal.rationale,
+        )
+        created_path = event_result.path
+        created_id = event_result.event.timestamp
+        created_type = "event"
 
     approved = MemoryProposal(
         id=proposal.id,
@@ -1531,26 +1547,24 @@ def approve_memory_proposal(
         "timestamp": timestamp_text,
         "type": "proposal_approved",
         "proposal_id": proposal.id,
-        "created_type": "fact",
-        "created_id": fact_result.fact.id,
+        "created_type": created_type,
+        "created_id": created_id,
         "source": safe_source,
         "reason": safe_reason,
-        "confidence": _validate_confidence(confidence),
+        "confidence": safe_confidence,
     }
     _append_memory_correction(
         root=root,
         timestamp=timestamp_text,
         correction=correction,
     )
-
     return MemoryProposalApproveResult(
         proposal_path=proposal_path,
-        created_path=fact_result.path,
+        created_path=created_path,
         proposal_id=proposal.id,
-        created_id=fact_result.fact.id,
-        created_type="fact",
+        created_id=created_id,
+        created_type=created_type,
     )
-
 def get_memory_fact(
     *,
     fact_id: str,
