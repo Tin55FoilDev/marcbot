@@ -20,6 +20,8 @@ Highlights:
 
 ## Unreleased
 
+- Added CLI-only workflow status visibility for registered source-monitor
+  workflows, reusing existing source-monitor artifact status output.
 - Added CLI-only workflow run v2 for `source-monitor-ai-summary`, reusing
   the existing source-monitor summarize-latest path with explicit provider
   contact disclosure.

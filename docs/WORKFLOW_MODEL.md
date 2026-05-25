@@ -397,3 +397,16 @@ python -m marcbot workflow run source-monitor-ai-summary --project ai --memory-p
 Workflow run v2 reuses the existing bounded `source-monitor summarize-latest`
 CLI path. It explicitly discloses provider contact, writes a summary artifact,
 writes no memory, and has no Telegram execution surface.
+## Implemented workflow status v1
+
+MarcBot supports CLI-only workflow status for registered source-monitor
+workflows:
+
+```text
+python -m marcbot workflow status source-monitor-ai-report --project ai
+python -m marcbot workflow status source-monitor-ai-summary --project ai
+```
+
+Workflow status v1 reuses existing source-monitor artifact status visibility.
+It is read-only and provider-contact-free. It does not run workflows, write
+artifacts, write memory, or expose Telegram execution.

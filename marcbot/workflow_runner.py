@@ -8,6 +8,7 @@ from pathlib import Path
 
 from marcbot.source_config import DEFAULT_SOURCE_PROJECT_NAME
 from marcbot.source_monitor import write_source_monitor_report
+from marcbot.source_status import format_source_monitor_cli_status
 from marcbot.workflow_registry import get_workflow_definition
 
 SUMMARY_TASK_DEFAULT = "source_monitor_analysis"
@@ -146,6 +147,43 @@ def run_workflow(
 
 def _yes_no(value: bool) -> str:
     return "yes" if value else "no"
+
+
+def format_workflow_status(
+    workflow_id: str,
+    *,
+    project: str | None = None,
+) -> str:
+    """Return read-only workflow status and artifact visibility."""
+    workflow = get_workflow_definition(workflow_id)
+    project_name = project or DEFAULT_SOURCE_PROJECT_NAME
+
+    if workflow.workflow_id not in (
+        "source-monitor-ai-report",
+        "source-monitor-ai-summary",
+    ):
+        raise ValueError(
+            "workflow status is not implemented for "
+            f"{workflow.workflow_id}; valid workflows: "
+            "source-monitor-ai-report, source-monitor-ai-summary"
+        )
+
+    source_status = format_source_monitor_cli_status(project_name=project_name)
+    lines = [
+        "MarcBot workflow status",
+        f"Workflow: {workflow.workflow_id}",
+        f"Project: {project_name}",
+        f"Status: {workflow.status}",
+        "Provider contact for status: no",
+        f"Provider contact when run: {_yes_no(workflow.provider_contact)}",
+        f"Writes artifacts when run: {_yes_no(workflow.writes_artifacts)}",
+        f"Writes memory when run: {_yes_no(workflow.writes_memory)}",
+        f"Telegram executable: {_yes_no(workflow.telegram_executable)}",
+        "",
+        "Underlying source-monitor status:",
+        source_status,
+    ]
+    return "\n".join(lines)
 
 
 def format_workflow_run_result(result: WorkflowRunResult) -> str:

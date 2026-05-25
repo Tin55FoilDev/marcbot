@@ -104,7 +104,7 @@ from marcbot.workflow_registry import (
     format_workflow_detail,
     format_workflow_list,
 )
-from marcbot.workflow_runner import format_workflow_run
+from marcbot.workflow_runner import format_workflow_run, format_workflow_status
 
 LOGGER = logging.getLogger(__name__)
 
@@ -534,6 +534,9 @@ def build_parser() -> argparse.ArgumentParser:
     workflow_subparsers.add_parser("list", help="list approved workflows")
     workflow_show_parser = workflow_subparsers.add_parser("show", help="show one approved workflow")
     workflow_show_parser.add_argument("workflow_id")
+    workflow_status_parser = workflow_subparsers.add_parser("status", help="show workflow status")
+    workflow_status_parser.add_argument("workflow_id")
+    workflow_status_parser.add_argument("--project", default=None)
     workflow_run_parser = workflow_subparsers.add_parser("run", help="run one approved workflow")
     workflow_run_parser.add_argument("workflow_id")
     workflow_run_parser.add_argument("--project", default=None)
@@ -1430,6 +1433,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.workflow_command == "show":
                 print(format_workflow_detail(args.workflow_id))
                 return 0
+            if args.workflow_command == "status":
+                print(format_workflow_status(args.workflow_id, project=args.project))
+                return 0
             if args.workflow_command == "run":
                 print(
                     format_workflow_run(
@@ -1445,7 +1451,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 )
                 return 0
-            print("usage: marcbot workflow {list,show,run} ...", file=sys.stderr)
+            print("usage: marcbot workflow {list,show,status,run} ...", file=sys.stderr)
             return 2
         if args.command == "memory":
             if args.memory_command == "init":

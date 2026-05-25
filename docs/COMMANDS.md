@@ -810,3 +810,11 @@ Example summary workflow:
 ```text
 python -m marcbot workflow run source-monitor-ai-summary --project ai --memory-profile source-monitor
 ```
+### Workflow status CLI command
+
+`python -m marcbot workflow status WORKFLOW_ID --project ai` shows
+read-only workflow status and artifact visibility for registered
+source-monitor workflows.
+
+Workflow status is provider-contact-free and does not run workflows, write
+artifacts, write memory, or expose Telegram execution.

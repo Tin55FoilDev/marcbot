@@ -7,7 +7,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from marcbot.workflow_runner import format_workflow_run, run_workflow
+from marcbot.workflow_runner import (
+    format_workflow_run,
+    format_workflow_status,
+    run_workflow,
+)
 
 
 def test_run_workflow_source_monitor_ai_report_calls_report_writer() -> None:
@@ -129,3 +133,38 @@ def test_run_workflow_summary_reports_subprocess_failure() -> None:
     with patch("marcbot.workflow_runner.subprocess.run", return_value=completed):
         with pytest.raises(RuntimeError, match="summary failed"):
             run_workflow("source-monitor-ai-summary", project="ai")
+
+def test_format_workflow_status_reuses_source_monitor_status() -> None:
+    with patch(
+        "marcbot.workflow_runner.format_source_monitor_cli_status",
+        return_value="MarcBot source monitor status\nLatest report: report.md",
+    ) as mock_status:
+        output = format_workflow_status(
+            "source-monitor-ai-summary",
+            project="ai",
+        )
+
+    mock_status.assert_called_once_with(project_name="ai")
+    assert "MarcBot workflow status" in output
+    assert "Workflow: source-monitor-ai-summary" in output
+    assert "Project: ai" in output
+    assert "Provider contact for status: no" in output
+    assert "Provider contact when run: yes" in output
+    assert "Writes artifacts when run: yes" in output
+    assert "Writes memory when run: no" in output
+    assert "Underlying source-monitor status:" in output
+    assert "Latest report: report.md" in output
+
+
+def test_format_workflow_status_reports_report_workflow_boundaries() -> None:
+    with patch(
+        "marcbot.workflow_runner.format_source_monitor_cli_status",
+        return_value="MarcBot source monitor status",
+    ):
+        output = format_workflow_status("source-monitor-ai-report", project="ai")
+
+    assert "Workflow: source-monitor-ai-report" in output
+    assert "Provider contact for status: no" in output
+    assert "Provider contact when run: no" in output
+    assert "Writes artifacts when run: yes" in output
+    assert "Telegram executable: no" in output
