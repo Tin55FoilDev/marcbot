@@ -1449,6 +1449,13 @@ This lets Marc verify what a future bridge would propose before any
 automatic or semi-automatic write path exists.
 
 
+### Memory candidate status
+
+`python -m marcbot memory candidate status` provides a read-only CLI
+summary of the memory candidate workflow. It mirrors the Telegram
+`/memory_candidate_status` boundary summary and is intended for scripts,
+future sessions, and operator checks.
+
 ### Memory candidate propose JSON contract
 
 `python -m marcbot memory candidate propose --format json` returns a

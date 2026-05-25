@@ -2642,3 +2642,16 @@ def test_memory_candidate_propose_command_outputs_json_for_write(
     assert payload["provider_contact"] is False
     assert payload["writes"] is True
     assert captured.err == ""
+
+
+def test_memory_candidate_status_command_outputs_status(capsys) -> None:
+    result = main(["memory", "candidate", "status"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "MarcBot memory candidate status" in captured.out
+    assert "CLI commands:" in captured.out
+    assert "Telegram commands:" in captured.out
+    assert "Provider contact: no" in captured.out
+    assert "Writes: no for this status command" in captured.out
+    assert captured.err == ""

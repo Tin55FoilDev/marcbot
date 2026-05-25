@@ -137,3 +137,19 @@ def test_format_memory_proposal_preview_json_is_structured() -> None:
     assert payload["project"] == "source-monitor"
     assert payload["provider_contact"] is False
     assert payload["writes"] is False
+
+
+def test_format_memory_candidate_status_lists_boundaries() -> None:
+    from marcbot.memory_candidate import format_memory_candidate_status
+
+    message = format_memory_candidate_status()
+
+    assert "MarcBot memory candidate status" in message
+    assert "CLI commands:" in message
+    assert "Telegram commands:" in message
+    assert "memory candidate propose" in message
+    assert "/memory_candidate_propose <project> | <text>" in message
+    assert "Candidate propose writes pending proposals only." in message
+    assert "Telegram cannot approve durable facts." in message
+    assert "Provider contact: no" in message
+    assert "Writes: no for this status command" in message

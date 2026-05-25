@@ -36,6 +36,7 @@ from marcbot.logging_setup import configure_logging
 from marcbot.memory_candidate import (
     format_memory_candidate_preview,
     format_memory_candidate_preview_json,
+    format_memory_candidate_status,
     format_memory_proposal_preview,
     format_memory_proposal_preview_json,
     preview_memory_candidate,
@@ -613,6 +614,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     memory_candidate_subparsers = memory_candidate_parser.add_subparsers(
         dest="memory_candidate_command"
+    )
+    memory_candidate_subparsers.add_parser(
+        "status",
+        help="show memory candidate workflow status",
     )
     memory_candidate_preview_parser = memory_candidate_subparsers.add_parser(
         "preview",
@@ -1483,6 +1488,9 @@ def main(argv: list[str] | None = None) -> int:
                     return 0
                 parser.error("memory sqlite requires a subcommand")
             if args.memory_command == "candidate":
+                if args.memory_candidate_command == "status":
+                    print(format_memory_candidate_status())
+                    return 0
                 if args.memory_candidate_command == "preview":
                     preview = preview_memory_candidate(
                         text=args.text,

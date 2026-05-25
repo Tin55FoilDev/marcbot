@@ -73,6 +73,38 @@ _DURABLE_FACT_TERMS = (
 )
 
 
+def format_memory_candidate_status() -> str:
+    """Return read-only status for the memory candidate workflow."""
+
+    return "\n".join(
+        [
+            "MarcBot memory candidate status",
+            "",
+            "CLI commands:",
+            "- memory candidate preview [--format text|json] --project PROJECT TEXT",
+            "- memory candidate proposal-preview [--format text|json] --project PROJECT TEXT",
+            "- memory candidate propose [--format text|json] --project PROJECT TEXT",
+            "",
+            "Telegram commands:",
+            "- /memory_candidate_help",
+            "- /memory_candidate_status",
+            "- /memory_candidate_preview <project> | <text>",
+            "- /memory_proposal_preview <project> | <text>",
+            "- /memory_candidate_propose <project> | <text>",
+            "- /memory_proposals",
+            "- /memory_proposal <id>",
+            "- /memory_reject_proposal <id> | <reason>",
+            "",
+            "Boundaries:",
+            "- Preview commands write no memory.",
+            "- Candidate propose writes pending proposals only.",
+            "- Durable approval remains CLI-only and explicit.",
+            "- Telegram cannot approve durable facts.",
+            "- Provider contact: no",
+            "- Writes: no for this status command",
+        ]
+    )
+
 def preview_memory_candidate(
     *,
     text: str,
