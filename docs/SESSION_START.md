@@ -219,3 +219,7 @@ When in doubt:
 - run `./scripts/check.sh`
 - inspect diff before commit
 - Review `docs/WORKFLOW_MODEL.md` before designing new project workflows or Telegram exposure.
+
+## Development workflow reference
+
+For normal development workflow, command wrapper pattern, validation sequence, commit/push, Telegram restart, and backup checkpoints, see `docs/PROJECT_WORKFLOW_LIFECYCLE.md#standard-marcbot-development-workflow-example`.

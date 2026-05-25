@@ -572,3 +572,263 @@ The project validated several useful process rules:
 
 This makes `weather-report` a reference pattern for future small approved
 workflows.
+
+## Standard MarcBot development workflow example
+
+MarcBot development should proceed in small, validated increments. The normal pattern is:
+
+1. Confirm clean working tree.
+2. Make one bounded change.
+3. Run focused Ruff/compile checks.
+4. Run targeted tests for the changed area.
+5. Run the full project check.
+6. Run SQLite memory validation when memory-related code or data changed.
+7. Show diff stat and a bounded diff summary inside the same script.
+8. Commit with a clear message.
+9. Push to GitHub.
+10. Restart the Telegram service when Telegram-facing behavior changed.
+11. Validate the new behavior from Telegram.
+12. Verify `/about` and `/version` after a version bump.
+13. Back up the server at meaningful checkpoints.
+
+The goal is not speed. The goal is to keep MarcBot stable, understandable, testable, and recoverable.
+
+### Command wrapper pattern
+
+Most repo/app commands are run from the `adminuser` login, but executed as the non-sudo runtime user `marc`.
+
+Use this pattern:
+
+```bash
+sudo -u marc env HOME=/home/marc GIT_PAGER=cat PATH="/srv/marcbot/app/.venv/bin:/usr/local/bin:/usr/bin:/bin" bash -s <<'SCRIPT'
+set -e
+cd /srv/marcbot/app
+
+# commands go here
+SCRIPT
+```
+
+Do not assume `adminuser` can directly work inside `/srv/marcbot/app`. Put `cd /srv/marcbot/app` inside the `sudo -u marc` block.
+
+### Typical bounded change script
+
+Most MarcBot changes should follow this general shape. The changed file list, targeted tests, and commit message should be adjusted for the specific change.
+
+```bash
+sudo -u marc env HOME=/home/marc GIT_PAGER=cat PATH="/srv/marcbot/app/.venv/bin:/usr/local/bin:/usr/bin:/bin" bash -s <<'SCRIPT'
+set -e
+cd /srv/marcbot/app
+
+echo "=== confirm clean working tree ==="
+if [ -n "$(git status --short)" ]; then
+  git status --short
+  echo "Working tree is not clean; stop before patching."
+  exit 1
+fi
+
+echo
+echo "=== apply bounded patch ==="
+# Apply one narrow code/doc/test change here.
+# Prefer small Python rewrite scripts or heredocs.
+# Avoid large, unrelated edits.
+
+echo
+echo "=== ruff/compile check ==="
+ruff check --fix <changed-python-files-and-tests>
+python -m py_compile <changed-python-files-and-tests>
+
+echo
+echo "=== targeted tests ==="
+pytest <targeted-test-files>
+
+echo
+echo "=== full check ==="
+./scripts/check.sh
+
+echo
+echo "=== SQLite validation ==="
+python -m marcbot memory sqlite validate
+
+echo
+echo "=== diff stat ==="
+git diff --stat
+
+echo
+echo "=== diff summary ==="
+git diff -- <changed-files> | sed -n "1,1000p"
+
+echo
+echo "=== commit change ==="
+git add <changed-files>
+git commit -m "Clear concise commit message"
+
+echo
+echo "=== push change ==="
+git push
+
+echo
+echo "=== final status ==="
+git status --short
+
+echo
+echo "=== latest commits ==="
+git log --oneline -n 8
+SCRIPT
+```
+
+For non-memory changes, SQLite validation can be skipped if clearly irrelevant. For memory-related code, memory files, proposal/fact/event behavior, or SQLite sync behavior, include it.
+
+### Telegram-facing change workflow
+
+If the change affects Telegram commands, handlers, help text, command output, or Telegram-visible behavior, restart the service after commit/push:
+
+```bash
+echo "=== restart Telegram service ==="
+sudo systemctl restart marcbot-telegram.service
+
+echo
+echo "=== service status ==="
+systemctl --no-pager --full status marcbot-telegram.service | sed -n "1,80p"
+
+echo
+echo "=== recent service logs ==="
+journalctl -u marcbot-telegram.service -n 80 --no-pager
+```
+
+Then verify the command directly in Telegram.
+
+Examples:
+
+```text
+/memory_profiles
+/memory_context source-monitor
+/memory_candidate_preview source-monitor | Source-monitor summaries should use explicit memory profiles.
+/memory_proposal_preview source-monitor | Source-monitor summaries should use explicit memory profiles.
+/help
+```
+
+For Telegram command changes, `/help` must remain alphabetical. This is enforced by tests and should also be spot-checked from Telegram.
+
+Telegram command names must also satisfy Telegram's command constraints. In practice, keep command names short enough for Telegram. For example, `/memory_proposal_preview` is acceptable, while a longer name such as `/memory_candidate_proposal_preview` is too long.
+
+### Version bump workflow
+
+A version bump should usually happen after a meaningful user-visible checkpoint. Update:
+
+```text
+marcbot/__init__.py
+pyproject.toml
+README.md
+docs/CHANGELOG.md
+```
+
+The version bump should also follow the same validation pattern:
+
+```bash
+sudo -u marc env HOME=/home/marc GIT_PAGER=cat PATH="/srv/marcbot/app/.venv/bin:/usr/local/bin:/usr/bin:/bin" bash -s <<'SCRIPT'
+set -e
+cd /srv/marcbot/app
+
+echo "=== confirm clean working tree ==="
+if [ -n "$(git status --short)" ]; then
+  git status --short
+  echo "Working tree is not clean; stop before version bump."
+  exit 1
+fi
+
+echo
+echo "=== apply version bump ==="
+# Update marcbot/__init__.py, pyproject.toml, README.md, docs/CHANGELOG.md.
+
+echo
+echo "=== version check ==="
+python -m marcbot --version
+
+echo
+echo "=== full check ==="
+./scripts/check.sh
+
+echo
+echo "=== SQLite validation ==="
+python -m marcbot memory sqlite validate
+
+echo
+echo "=== diff stat ==="
+git diff --stat
+
+echo
+echo "=== diff summary ==="
+git diff -- marcbot/__init__.py pyproject.toml README.md docs/CHANGELOG.md | sed -n "1,360p"
+
+echo
+echo "=== commit version bump ==="
+git add marcbot/__init__.py pyproject.toml README.md docs/CHANGELOG.md
+git commit -m "Bump MarcBot to X.Y.Z"
+
+echo
+echo "=== push version bump ==="
+git push
+
+echo
+echo "=== final status ==="
+git status --short
+
+echo
+echo "=== latest commits ==="
+git log --oneline -n 10
+SCRIPT
+```
+
+After restarting Telegram, verify:
+
+```text
+/about
+/version
+```
+
+Both should report the new version.
+
+### Backup checkpoints
+
+Back up the server after meaningful clean checkpoints, especially after:
+
+- a version bump
+- a new Telegram-visible command is deployed and tested
+- a new memory write path is validated
+- SQLite memory validation passes after memory schema or sync changes
+- a significant workflow milestone is completed
+
+The preferred checkpoint state is:
+
+```text
+Git status: clean
+GitHub: pushed
+Tests: passing
+SQLite validation: valid
+Telegram: restarted and verified when relevant
+/about and /version verified after version bump
+Server: backed up
+```
+
+### Design discipline
+
+MarcBot should remain reliable and useful. New features should be added only through bounded, testable surfaces.
+
+Avoid:
+
+- arbitrary Telegram shell access
+- arbitrary Telegram file access
+- secrets in chat, Git, logs, reports, or memory
+- unreviewed durable memory writes
+- provider contact from read-only status commands
+- large untested feature jumps
+
+Prefer:
+
+- deterministic CLI first
+- tests before Telegram exposure
+- provider-contact-free status and memory visibility
+- pending proposals before durable memory approval
+- explicit restart and Telegram validation
+- docs updated with behavior changes
+
