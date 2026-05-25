@@ -507,6 +507,22 @@ before contacting the configured provider. This applies to explicit
 `llm status` remains provider-contact-free and does not require provider
 contact to report configured providers, profiles, tasks, and route validity.
 
+### CLI memory context v1 baseline
+
+`python -m marcbot memory profiles` lists deterministic context profiles.
+
+`python -m marcbot memory context --profile PROFILE` assembles bounded local
+memory context using a named profile.
+
+`python -m marcbot memory context --query QUERY --project PROJECT` assembles
+bounded local memory context using explicit filters.
+
+`python -m marcbot memory context --format json --query QUERY` returns the
+same context as structured JSON.
+
+The v1 context interface is read-only, SQLite-backed, and provider-contact-free.
+It does not write memory, approve proposals, or contact an LLM provider.
+
 ### Memory profile commands
 
 `python -m marcbot memory profiles` lists deterministic memory context

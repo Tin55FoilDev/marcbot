@@ -1741,6 +1741,34 @@ should not require Marc to manually approve every low-risk write, but it
 must remain auditable and correctable, with explicit approval for high-risk
 or sensitive memory.
 
+## Implemented M12 memory context v1 baseline
+
+MarcBot has a local, deterministic memory context v1 interface.
+
+CLI commands:
+
+```text
+python -m marcbot memory profiles
+python -m marcbot memory profiles --format json
+python -m marcbot memory context --query QUERY
+python -m marcbot memory context --project PROJECT --query QUERY
+python -m marcbot memory context --profile PROFILE
+python -m marcbot memory context --format json --query QUERY
+```
+
+The `memory profiles` command lists deterministic memory context profiles.
+The `memory context --profile PROFILE` command uses one of those profiles to
+assemble bounded local context.
+
+The v1 context assembler is read-only, provider-contact-free, and SQLite-backed.
+It returns facts, summaries, recent events, section counts, limits, SQLite
+status, and warnings. It does not write memory, approve proposals, contact an
+LLM provider, or inject context automatically into every workflow.
+
+Telegram visibility exists through read-only memory profile/context commands.
+Telegram memory context visibility must remain provider-contact-free and must
+not approve, reject, or mutate durable memory.
+
 ## Memory context profiles
 
 MarcBot supports deterministic memory context profiles for common workflows.

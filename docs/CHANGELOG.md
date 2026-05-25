@@ -20,6 +20,10 @@ Highlights:
 
 ## Unreleased
 
+- Documented the implemented memory context v1 baseline, including
+  `memory profiles`, `memory context`, JSON output, SQLite-backed retrieval,
+  and provider-contact-free boundaries.
+
 - Improved CLI memory proposal detail output with explicit review metadata
   and consistent provider-contact-free review fields.
 - Reconciled COMMANDS.md SQLite wording with the current memory storage
