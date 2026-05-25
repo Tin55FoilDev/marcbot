@@ -29,7 +29,9 @@ from marcbot.llm_status import format_llm_status_message
 from marcbot.log_reader import format_logs_message, read_last_log_lines
 from marcbot.memory_candidate import (
     format_memory_candidate_preview,
+    format_memory_proposal_preview,
     preview_memory_candidate,
+    preview_memory_candidate_proposal,
 )
 from marcbot.memory_context import (
     format_memory_context,
@@ -512,6 +514,59 @@ async def memory_facts_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 
+
+
+
+async def memory_candidate_proposal_preview_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /memory_proposal_preview."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning(
+            "Rejected unauthorized /memory_proposal_preview from chat_id=%s",
+            chat_id,
+        )
+        await _reject_unauthorized(update)
+        return
+
+    raw_text = " ".join(context.args).strip()
+    if " | " not in raw_text:
+        await update.message.reply_text(
+            "Usage: /memory_proposal_preview <project> | <text>"
+        )
+        LOGGER.info(
+            "Handled /memory_proposal_preview for chat_id=%s "
+            "ok=false invalid_format",
+            chat_id,
+        )
+        return
+
+    project, candidate_text = [part.strip() for part in raw_text.split(" | ", 1)]
+    if not project or not candidate_text:
+        await update.message.reply_text(
+            "Usage: /memory_proposal_preview <project> | <text>"
+        )
+        LOGGER.info(
+            "Handled /memory_proposal_preview for chat_id=%s "
+            "ok=false missing_value",
+            chat_id,
+        )
+        return
+
+    preview = preview_memory_candidate_proposal(text=candidate_text, project=project)
+    message = format_memory_proposal_preview(preview)
+    await update.message.reply_text(message)
+    LOGGER.info(
+        "Handled /memory_proposal_preview for chat_id=%s "
+        "ok=true would_create=%s risk=%s",
+        chat_id,
+        preview.would_create_proposal,
+        preview.risk_level,
+    )
 
 
 async def memory_candidate_preview_command(
@@ -1424,6 +1479,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/memory_facts - show active local memory facts\n"
         "/memory_profiles - list deterministic memory context profiles\n"
         "/memory_proposal <id> - show one memory proposal\n"
+        "/memory_proposal_preview <project> | <text> - preview proposal handling\n"
         "/memory_proposals - show pending memory proposals\n"
         "/memory_propose_fact <project> | <statement> - propose a pending memory fact\n"
         "/memory_reject_proposal <id> | <reason> - reject a pending memory proposal\n"
@@ -1513,6 +1569,12 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("weather_status", weather_status_command))
     application.add_handler(CommandHandler("memory_events", memory_events_command))
     application.add_handler(CommandHandler("memory_facts", memory_facts_command))
+    application.add_handler(
+        CommandHandler(
+            "memory_proposal_preview",
+            memory_candidate_proposal_preview_command,
+        )
+    )
     application.add_handler(
         CommandHandler("memory_candidate_preview", memory_candidate_preview_command)
     )

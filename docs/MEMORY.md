@@ -1414,6 +1414,12 @@ test memory-candidate classification from chat before automatic capture
 is introduced.
 
 
+
+`/memory_proposal_preview <project> | <text>` exposes
+candidate-to-proposal preview in Telegram without creating a proposal.
+This lets Marc verify what a future bridge would propose before any
+automatic or semi-automatic write path exists.
+
 ### Memory candidate proposal preview
 
 `python -m marcbot memory candidate proposal-preview` bridges

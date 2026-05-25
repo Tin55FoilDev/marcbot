@@ -608,3 +608,15 @@ Example:
 ```text
 /memory_candidate_preview source-monitor | Source-monitor summaries should use explicit memory profiles.
 ```
+
+### Telegram memory candidate proposal preview
+
+`/memory_proposal_preview <project> | <text>` previews whether
+candidate text would become a pending fact proposal. It is read-only,
+provider-contact-free, and writes no memory.
+
+Example:
+
+```text
+/memory_proposal_preview source-monitor | Source-monitor summaries should use explicit memory profiles.
+```
