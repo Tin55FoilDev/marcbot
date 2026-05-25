@@ -517,6 +517,104 @@ async def memory_facts_command(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 
+async def memory_candidate_propose_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /memory_candidate_propose."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning(
+            "Rejected unauthorized /memory_candidate_propose from chat_id=%s",
+            chat_id,
+        )
+        await _reject_unauthorized(update)
+        return
+
+    raw_text = " ".join(context.args).strip()
+    if " | " not in raw_text:
+        await update.message.reply_text(
+            "Usage: /memory_candidate_propose <project> | <text>"
+        )
+        LOGGER.info(
+            "Handled /memory_candidate_propose for chat_id=%s "
+            "ok=false invalid_format",
+            chat_id,
+        )
+        return
+
+    project, candidate_text = [part.strip() for part in raw_text.split(" | ", 1)]
+    if not project or not candidate_text:
+        await update.message.reply_text(
+            "Usage: /memory_candidate_propose <project> | <text>"
+        )
+        LOGGER.info(
+            "Handled /memory_candidate_propose for chat_id=%s "
+            "ok=false missing_value",
+            chat_id,
+        )
+        return
+
+    preview = preview_memory_candidate_proposal(text=candidate_text, project=project)
+    if not preview.would_create_proposal:
+        await update.message.reply_text(
+            "MarcBot memory candidate proposal\n"
+            "Created: no\n"
+            f"Reason: {preview.reason}\n"
+            "Provider contact: no\n"
+            "Writes: no"
+        )
+        LOGGER.info(
+            "Handled /memory_candidate_propose for chat_id=%s "
+            "ok=true created=false reason=%s",
+            chat_id,
+            preview.reason,
+        )
+        return
+
+    proposal_id = (
+        "telegram-candidate-fact-"
+        f"{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+    )
+    try:
+        result = add_memory_proposal(
+            proposal_id=proposal_id,
+            proposed_type="fact",
+            proposed_statement=preview.proposed_statement or "",
+            source="telegram_memory_candidate_propose",
+            rationale=preview.rationale,
+            risk_level=preview.risk_level,
+            project=preview.project,
+            details=(
+                "Created by /memory_candidate_propose. "
+                "Candidate preview action was propose_fact. This is a "
+                "pending proposal, not an approved durable fact."
+            ),
+        )
+    except ValueError as exc:
+        await update.message.reply_text(f"Memory candidate propose failed: {exc}")
+        LOGGER.info(
+            "Handled /memory_candidate_propose for chat_id=%s ok=false error=%s",
+            chat_id,
+            exc,
+        )
+        return
+
+    await update.message.reply_text(
+        "Memory proposal added:\n"
+        f"ID: {result.proposal.id}\n"
+        "Status: pending\n"
+        "Provider contact: no\n"
+        "Writes: yes"
+    )
+    LOGGER.info(
+        "Handled /memory_candidate_propose for chat_id=%s ok=true proposal=%s",
+        chat_id,
+        result.proposal.id,
+    )
+
 async def memory_candidate_proposal_preview_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -1474,6 +1572,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/logs - show recent MarcBot application logs\n"
         "/ls - list workspace root entries\n"
         "/memory_candidate_preview <project> | <text> - preview memory candidate handling\n"
+        "/memory_candidate_propose <project> | <text> - create candidate proposal\n"
         "/memory_context <profile> - show bounded memory context for a profile\n"
         "/memory_events - show recent local memory events\n"
         "/memory_facts - show active local memory facts\n"
@@ -1569,6 +1668,9 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("weather_status", weather_status_command))
     application.add_handler(CommandHandler("memory_events", memory_events_command))
     application.add_handler(CommandHandler("memory_facts", memory_facts_command))
+    application.add_handler(
+        CommandHandler("memory_candidate_propose", memory_candidate_propose_command)
+    )
     application.add_handler(
         CommandHandler(
             "memory_proposal_preview",

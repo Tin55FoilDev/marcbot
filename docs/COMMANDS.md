@@ -626,3 +626,19 @@ Example:
 ```text
 /memory_proposal_preview source-monitor | Source-monitor summaries should use explicit memory profiles.
 ```
+
+### Telegram memory candidate propose
+
+`/memory_candidate_propose <project> | <text>` creates a pending fact
+proposal only when deterministic candidate preview classifies the text as
+`propose_fact`. It is provider-contact-free and does not approve durable
+memory.
+
+Example:
+
+```text
+/memory_candidate_propose source-monitor | Source-monitor summaries should use explicit memory profiles.
+```
+
+For non-proposal candidates, the command reports `Created: no` and writes
+nothing.

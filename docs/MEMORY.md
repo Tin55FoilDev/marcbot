@@ -1408,6 +1408,12 @@ Example:
 
 
 
+
+`/memory_candidate_propose <project> | <text>` exposes the controlled
+candidate-to-pending-proposal bridge in Telegram. It writes only pending
+proposals and only when deterministic candidate preview returns
+`propose_fact`. It does not approve durable facts.
+
 `/memory_candidate_preview <project> | <text>` exposes deterministic
 candidate preview in Telegram without writing memory. This allows Marc to
 test memory-candidate classification from chat before automatic capture
