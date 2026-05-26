@@ -12,6 +12,7 @@ from marcbot.source_status import (
     find_recent_source_monitor_reports,
     find_recent_source_monitor_summaries,
     format_source_monitor_cli_status,
+    resolve_source_monitor_artifact,
     source_monitor_artifact_id,
 )
 from marcbot.workflow_registry import get_workflow_definition
@@ -190,6 +191,35 @@ def format_workflow_status(
     ]
     return "\n".join(lines)
 
+
+def resolve_workflow_artifact(
+    workflow_id: str,
+    artifact_id: str,
+    *,
+    project: str | None = None,
+    reports_dir: Path | None = None,
+    summaries_dir: Path | None = None,
+) -> Path | None:
+    """Resolve a workflow artifact ID through workflow-specific safety gates."""
+    workflow = get_workflow_definition(workflow_id)
+    project_name = project or DEFAULT_SOURCE_PROJECT_NAME
+    normalized_artifact_id = artifact_id.strip()
+
+    if workflow.workflow_id == "source-monitor-ai-report":
+        if not normalized_artifact_id.startswith("report:"):
+            return None
+    elif workflow.workflow_id == "source-monitor-ai-summary":
+        if not normalized_artifact_id.startswith("summary:"):
+            return None
+    else:
+        return None
+
+    return resolve_source_monitor_artifact(
+        normalized_artifact_id,
+        project_name=project_name,
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
 
 
 def _format_workflow_artifact_lines(label: str, paths: list[Path]) -> list[str]:

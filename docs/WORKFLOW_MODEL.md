@@ -90,6 +90,11 @@ Implemented read-only Telegram workflow visibility examples:
 - `/workflow_artifacts source-monitor-ai-report`
 - `/workflow_artifacts source-monitor-ai-summary`
 
+Implemented bounded Telegram workflow artifact send examples:
+
+- `/workflow_send_artifact source-monitor-ai-report report:...`
+- `/workflow_send_artifact source-monitor-ai-summary summary:...`
+
 Possible future Telegram examples after explicit safety design:
 
 - `/source_status ai`
@@ -451,3 +456,21 @@ status formatting, and workflow artifact visibility paths. They are read-only
 and provider-contact-free. They do not run workflows, send files, write
 artifacts, write memory, or approve durable memory changes. Telegram workflow
 execution remains intentionally absent.
+
+## Implemented Telegram workflow artifact sending v1
+
+MarcBot supports bounded Telegram sending for existing workflow artifacts:
+
+```text
+/workflow_send_artifact source-monitor-ai-report report:2026-05-26-113618
+/workflow_send_artifact source-monitor-ai-summary summary:2026-05-24-113518
+```
+
+The command resolves artifacts through workflow-specific safety gates. Report
+workflows accept only `report:...` IDs, and summary workflows accept only
+`summary:...` IDs. The resolver then reuses the existing source-monitor
+artifact ID path resolution, so Telegram never receives arbitrary paths.
+
+This sends only existing approved artifacts. It does not run workflows,
+contact providers, write artifacts, write memory, or approve durable memory
+changes. Telegram workflow execution remains intentionally absent.

@@ -20,6 +20,14 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.25 - Telegram workflow artifact sending
+
+- Added workflow-level artifact resolution with workflow/artifact kind compatibility checks.
+- Added Telegram `/workflow_send_artifact <workflow-id> <artifact-id>` for bounded sending of existing approved workflow artifacts.
+- Reused existing source-monitor artifact ID path resolution so Telegram never receives arbitrary paths.
+- Kept workflow artifact sending provider-contact-free, memory-write-free, artifact-write-free, and execution-free.
+- Added tests for workflow artifact resolution, bounded Telegram sending, usage, missing artifacts, and authorization.
+
 ## 0.3.24 - Telegram workflow artifact visibility
 
 - Added read-only Telegram `/workflow_artifacts <workflow-id>` for fixed-project `ai` workflow artifact IDs.

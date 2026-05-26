@@ -2918,3 +2918,168 @@ def test_workflow_artifacts_command_real_formatter_smoke() -> None:
     assert "MarcBot workflow artifacts" in message.replies[0]
     assert "Workflow: source-monitor-ai-report" in message.replies[0]
     assert "Provider contact: no" in message.replies[0]
+
+
+def test_workflow_send_artifact_command_sends_resolved_artifact(monkeypatch, tmp_path) -> None:
+    import asyncio
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+            self.documents: list[dict[str, object]] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+        async def reply_document(
+            self, *, document: Path, filename: str, caption: str
+        ) -> None:
+            self.documents.append(
+                {"document": document, "filename": filename, "caption": caption}
+            )
+
+    artifact = tmp_path / "source-monitor-2026-05-26-113618.md"
+    artifact.write_text("# report\n", encoding="utf-8")
+    calls: list[tuple[str, str, str]] = []
+
+    def fake_resolve_workflow_artifact(
+        workflow_id: str,
+        artifact_id: str,
+        *,
+        project: str,
+    ) -> Path | None:
+        calls.append((workflow_id, artifact_id, project))
+        return artifact
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    context = SimpleNamespace(
+        args=["source-monitor-ai-report", "report:2026-05-26-113618"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    monkeypatch.setattr(
+        telegram_bot, "resolve_workflow_artifact", fake_resolve_workflow_artifact
+    )
+
+    asyncio.run(telegram_bot.workflow_send_artifact_command(update, context))
+
+    assert calls == [("source-monitor-ai-report", "report:2026-05-26-113618", "ai")]
+    assert message.replies == []
+    assert message.documents == [
+        {
+            "document": artifact,
+            "filename": "source-monitor-2026-05-26-113618.md",
+            "caption": (
+                "🤖 MarcBot workflow artifact\n"
+                "Workflow: source-monitor-ai-report\n"
+                "Artifact: report:2026-05-26-113618"
+            ),
+        }
+    ]
+
+
+def test_workflow_send_artifact_command_reports_usage() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    context = SimpleNamespace(
+        args=["source-monitor-ai-report"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.workflow_send_artifact_command(update, context))
+
+    assert len(message.replies) == 1
+    assert "Usage: /workflow_send_artifact <workflow-id> <artifact-id>" in message.replies[0]
+
+
+def test_workflow_send_artifact_command_reports_missing_artifact(monkeypatch) -> None:
+    import asyncio
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+            self.documents: list[dict[str, object]] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+        async def reply_document(
+            self, *, document: Path, filename: str, caption: str
+        ) -> None:
+            self.documents.append(
+                {"document": document, "filename": filename, "caption": caption}
+            )
+
+    def fake_resolve_workflow_artifact(
+        workflow_id: str,
+        artifact_id: str,
+        *,
+        project: str,
+    ) -> Path | None:
+        return None
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    context = SimpleNamespace(
+        args=["source-monitor-ai-report", "summary:2026-05-26-113618"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    monkeypatch.setattr(
+        telegram_bot, "resolve_workflow_artifact", fake_resolve_workflow_artifact
+    )
+
+    asyncio.run(telegram_bot.workflow_send_artifact_command(update, context))
+
+    assert message.replies == [
+        "No matching workflow artifact found for that workflow/id pair. "
+        "Report workflows require report:... IDs; summary workflows "
+        "require summary:... IDs."
+    ]
+    assert message.documents == []
+
+
+def test_workflow_send_artifact_command_rejects_unauthorized_chat() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=999), message=message)
+    context = SimpleNamespace(
+        args=["source-monitor-ai-report", "report:2026-05-26-113618"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.workflow_send_artifact_command(update, context))
+
+    assert message.replies == ["Unauthorized chat."]

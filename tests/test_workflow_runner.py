@@ -251,3 +251,141 @@ def test_format_workflow_artifacts_handles_empty_artifact_list(tmp_path: Path) -
 
     assert "Recent report artifacts:" in output
     assert "- none" in output
+
+
+def test_resolve_workflow_artifact_accepts_report_for_report_workflow(
+    tmp_path: Path,
+) -> None:
+    from marcbot.workflow_runner import resolve_workflow_artifact
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    report = reports_dir / "source-monitor-2026-05-26-113618.md"
+    report.write_text("# report\n", encoding="utf-8")
+
+    resolved = resolve_workflow_artifact(
+        "source-monitor-ai-report",
+        "report:2026-05-26-113618",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert resolved == report
+
+
+def test_resolve_workflow_artifact_rejects_summary_for_report_workflow(
+    tmp_path: Path,
+) -> None:
+    from marcbot.workflow_runner import resolve_workflow_artifact
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    summary = summaries_dir / "source-monitor-2026-05-26-113618.summary.md"
+    summary.write_text("# summary\n", encoding="utf-8")
+
+    resolved = resolve_workflow_artifact(
+        "source-monitor-ai-report",
+        "summary:2026-05-26-113618",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert resolved is None
+
+
+def test_resolve_workflow_artifact_accepts_summary_for_summary_workflow(
+    tmp_path: Path,
+) -> None:
+    from marcbot.workflow_runner import resolve_workflow_artifact
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    summary = summaries_dir / "source-monitor-2026-05-26-113618.summary.md"
+    summary.write_text("# summary\n", encoding="utf-8")
+
+    resolved = resolve_workflow_artifact(
+        "source-monitor-ai-summary",
+        "summary:2026-05-26-113618",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert resolved == summary
+
+
+def test_resolve_workflow_artifact_rejects_report_for_summary_workflow(
+    tmp_path: Path,
+) -> None:
+    from marcbot.workflow_runner import resolve_workflow_artifact
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    report = reports_dir / "source-monitor-2026-05-26-113618.md"
+    report.write_text("# report\n", encoding="utf-8")
+
+    resolved = resolve_workflow_artifact(
+        "source-monitor-ai-summary",
+        "report:2026-05-26-113618",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert resolved is None
+
+
+def test_resolve_workflow_artifact_rejects_invalid_artifact_id(
+    tmp_path: Path,
+) -> None:
+    from marcbot.workflow_runner import resolve_workflow_artifact
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    resolved = resolve_workflow_artifact(
+        "source-monitor-ai-report",
+        "../source-monitor-2026-05-26-113618.md",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert resolved is None
+
+
+def test_resolve_workflow_artifact_rejects_missing_artifact(
+    tmp_path: Path,
+) -> None:
+    from marcbot.workflow_runner import resolve_workflow_artifact
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    resolved = resolve_workflow_artifact(
+        "source-monitor-ai-report",
+        "report:2026-05-26-113618",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert resolved is None

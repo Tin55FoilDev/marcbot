@@ -63,6 +63,7 @@ from marcbot.workflow_registry import format_workflow_list
 from marcbot.workflow_runner import (
     format_workflow_artifacts,
     format_workflow_status,
+    resolve_workflow_artifact,
 )
 from marcbot.workspace_list import format_workspace_ls_message
 from marcbot.workspace_sender import validate_workspace_send
@@ -1659,6 +1660,62 @@ async def workflow_list_command(
         await update.message.reply_text(format_workflow_list())
 
 
+async def workflow_send_artifact_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /workflow_send_artifact <workflow-id> <artifact-id>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning(
+            "Rejected unauthorized /workflow_send_artifact from chat_id=%s", chat_id
+        )
+        await _reject_unauthorized(update)
+        return
+
+    args = context.args
+    LOGGER.info("Handled /workflow_send_artifact for chat_id=%s args=%s", chat_id, args)
+
+    if len(args) != 2:
+        if update.message is not None:
+            await update.message.reply_text(
+                "Usage: /workflow_send_artifact <workflow-id> <artifact-id>\n"
+                "Example: /workflow_send_artifact source-monitor-ai-report "
+                "report:2026-05-26-113618"
+            )
+        return
+
+    workflow_id, artifact_id = args
+    artifact_path = resolve_workflow_artifact(
+        workflow_id,
+        artifact_id,
+        project="ai",
+    )
+    if artifact_path is None:
+        if update.message is not None:
+            await update.message.reply_text(
+                "No matching workflow artifact found for that workflow/id pair. "
+                "Report workflows require report:... IDs; summary workflows "
+                "require summary:... IDs."
+            )
+        return
+
+    if update.message is None:
+        return
+
+    await update.message.reply_document(
+        document=artifact_path,
+        filename=artifact_path.name,
+        caption=(
+            "🤖 MarcBot workflow artifact\n"
+            f"Workflow: {workflow_id}\n"
+            f"Artifact: {artifact_id}"
+        ),
+    )
+
+
 async def workflow_artifacts_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -1788,6 +1845,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/weather_status - show latest weather report status\n"
         "/workflow_artifacts <workflow-id> - show read-only workflow artifacts for ai\n"
         "/workflow_list - list approved workflows\n"
+        "/workflow_send_artifact <workflow-id> <artifact-id> - send approved workflow artifact\n"
         "/workflow_status <workflow-id> - show read-only workflow status for ai"
     )
 
@@ -1891,6 +1949,9 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("send_source_artifact", send_source_artifact_command))
     application.add_handler(CommandHandler("workflow_artifacts", workflow_artifacts_command))
     application.add_handler(CommandHandler("workflow_list", workflow_list_command))
+    application.add_handler(
+        CommandHandler("workflow_send_artifact", workflow_send_artifact_command)
+    )
     application.add_handler(CommandHandler("workflow_status", workflow_status_command))
     application.add_handler(CommandHandler("llm_status", llm_status_command))
     application.add_handler(CommandHandler("chat_start", chat_start_command))
