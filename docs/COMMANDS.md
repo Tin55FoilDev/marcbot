@@ -74,6 +74,8 @@ The exact command list may evolve, but the current MarcBot surface is intended t
 | `/report_status source ai` | Show source-monitor AI report status and recent artifact IDs. | Read-only and provider-contact-free. |
 | `/send_source_artifact <project> <artifact-id>` | Send an approved source-monitor report or summary by safe artifact ID. | Telegram-facing, bounded artifact retrieval, provider-contact-free. |
 | `/llm_status` | Show configured LLM profile/task-route status without contacting providers. | Read-only and provider-contact-free. |
+| `/workflow_list` | List approved workflow definitions. | Read-only and provider-contact-free. Does not run workflows. |
+| `/workflow_status <workflow-id>` | Show read-only workflow status and artifact visibility for the `ai` project. | Read-only and provider-contact-free. Does not run workflows, write artifacts, or write memory. |
 
 ### Git and service inspection commands
 
@@ -818,3 +820,15 @@ source-monitor workflows.
 
 Workflow status is provider-contact-free and does not run workflows, write
 artifacts, write memory, or expose Telegram execution.
+
+### Telegram workflow visibility commands
+
+`/workflow_list` lists approved workflow definitions from Telegram.
+
+`/workflow_status <workflow-id>` shows read-only workflow status and
+artifact visibility for the fixed `ai` project from Telegram.
+
+Telegram workflow visibility is provider-contact-free and does not run
+workflows, write artifacts, write memory, or approve durable memory changes.
+Telegram does not expose `/workflow_run` or any equivalent workflow execution
+command.

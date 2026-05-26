@@ -82,7 +82,13 @@ Examples:
 
 Telegram should expose only safe workflow handles, not arbitrary execution.
 
-Good future Telegram examples:
+Implemented read-only Telegram workflow visibility examples:
+
+- `/workflow_list`
+- `/workflow_status source-monitor-ai-report`
+- `/workflow_status source-monitor-ai-summary`
+
+Possible future Telegram examples after explicit safety design:
 
 - `/source_status ai`
 - `/source_run ai`
@@ -410,3 +416,18 @@ python -m marcbot workflow status source-monitor-ai-summary --project ai
 Workflow status v1 reuses existing source-monitor artifact status visibility.
 It is read-only and provider-contact-free. It does not run workflows, write
 artifacts, write memory, or expose Telegram execution.
+
+## Implemented Telegram workflow visibility v1
+
+MarcBot exposes read-only workflow visibility through Telegram:
+
+```text
+/workflow_list
+/workflow_status source-monitor-ai-report
+/workflow_status source-monitor-ai-summary
+```
+
+These Telegram commands reuse the existing workflow registry and workflow
+status formatting paths. They are read-only and provider-contact-free. They
+do not run workflows, write artifacts, write memory, or approve durable memory
+changes. Telegram workflow execution remains intentionally absent.

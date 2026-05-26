@@ -20,6 +20,13 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.21 - Workflow registry and Telegram visibility
+
+- Added read-only Telegram `/workflow_list` for approved workflow registry visibility.
+- Added read-only Telegram `/workflow_status <workflow-id>` for fixed-project `ai` workflow status and artifact visibility.
+- Kept Telegram workflow visibility provider-contact-free, memory-write-free, artifact-write-free, and execution-free.
+- Updated workflow documentation to clarify that Telegram workflow execution remains intentionally absent.
+
 - Added CLI-only workflow status visibility for registered source-monitor
   workflows, reusing existing source-monitor artifact status output.
 - Added CLI-only workflow run v2 for `source-monitor-ai-summary`, reusing

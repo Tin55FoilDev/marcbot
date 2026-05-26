@@ -59,6 +59,8 @@ from marcbot.timer_status import format_timer_status_message
 from marcbot.uptime import format_uptime_report
 from marcbot.weather_report import find_latest_weather_report
 from marcbot.weather_status import format_weather_status_message
+from marcbot.workflow_registry import format_workflow_list
+from marcbot.workflow_runner import format_workflow_status
 from marcbot.workspace_list import format_workspace_ls_message
 from marcbot.workspace_sender import validate_workspace_send
 
@@ -1636,6 +1638,57 @@ async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(logs_text)
 
 
+async def workflow_list_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /workflow_list."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /workflow_list from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    LOGGER.info("Handled /workflow_list for chat_id=%s", chat_id)
+    if update.message is not None:
+        await update.message.reply_text(format_workflow_list())
+
+
+async def workflow_status_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /workflow_status <workflow-id>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /workflow_status from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    workflow_id = " ".join(context.args).strip()
+    if not workflow_id:
+        if update.message is not None:
+            await update.message.reply_text("Usage: /workflow_status <workflow-id>")
+        LOGGER.info(
+            "Handled /workflow_status for chat_id=%s ok=false missing_workflow_id",
+            chat_id,
+        )
+        return
+
+    message = format_workflow_status(workflow_id=workflow_id, project_name="ai")
+    LOGGER.info(
+        "Handled /workflow_status for chat_id=%s workflow_id=%s project=ai",
+        chat_id,
+        workflow_id,
+    )
+    if update.message is not None:
+        await update.message.reply_text(message)
+
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /help."""
     allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
@@ -1696,7 +1749,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/timer_status - show MarcBot scheduled timer status\n"
         "/uptime - show host and MarcBot process uptime\n"
         "/version - show MarcBot and Python version\n"
-        "/weather_status - show latest weather report status"
+        "/weather_status - show latest weather report status\n"
+        "/workflow_list - list approved workflows\n"
+        "/workflow_status <workflow-id> - show read-only workflow status for ai"
     )
 
     if update.message is not None:
@@ -1797,6 +1852,8 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("send_weather_report", send_weather_report_command))
     application.add_handler(CommandHandler("report_status", report_status_command))
     application.add_handler(CommandHandler("send_source_artifact", send_source_artifact_command))
+    application.add_handler(CommandHandler("workflow_list", workflow_list_command))
+    application.add_handler(CommandHandler("workflow_status", workflow_status_command))
     application.add_handler(CommandHandler("llm_status", llm_status_command))
     application.add_handler(CommandHandler("chat_start", chat_start_command))
     application.add_handler(CommandHandler("chat_status", chat_status_command))
