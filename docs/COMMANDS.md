@@ -821,6 +821,22 @@ source-monitor workflows.
 Workflow status is provider-contact-free and does not run workflows, write
 artifacts, write memory, or expose Telegram execution.
 
+### Workflow artifacts CLI command
+
+`python -m marcbot workflow artifacts WORKFLOW_ID --project ai` shows
+recent artifact IDs for a registered workflow.
+
+Examples:
+
+```text
+python -m marcbot workflow artifacts source-monitor-ai-report --project ai
+python -m marcbot workflow artifacts source-monitor-ai-summary --project ai
+```
+
+Workflow artifact visibility is CLI-only, read-only, and
+provider-contact-free. It does not run workflows, write artifacts, write
+memory, send files, or expose Telegram workflow execution.
+
 ### Telegram workflow visibility commands
 
 `/workflow_list` lists approved workflow definitions from Telegram.

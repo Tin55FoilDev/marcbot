@@ -168,3 +168,86 @@ def test_format_workflow_status_reports_report_workflow_boundaries() -> None:
     assert "Provider contact when run: no" in output
     assert "Writes artifacts when run: yes" in output
     assert "Telegram executable: no" in output
+
+
+def test_format_workflow_artifacts_lists_recent_report_artifacts(tmp_path: Path) -> None:
+    from marcbot.workflow_runner import format_workflow_artifacts
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    newest = reports_dir / "source-monitor-2026-05-03-120000.md"
+    older = reports_dir / "source-monitor-2026-05-02-120000.md"
+    newest.write_text("# newest\n", encoding="utf-8")
+    older.write_text("# older\n", encoding="utf-8")
+
+    output = format_workflow_artifacts(
+        "source-monitor-ai-report",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert "MarcBot workflow artifacts" in output
+    assert "Workflow: source-monitor-ai-report" in output
+    assert "Project: ai" in output
+    assert "Provider contact: no" in output
+    assert "Writes memory when run: no" in output
+    assert "Telegram executable: no" in output
+    assert "Recent report artifacts:" in output
+    assert "report:2026-05-03-120000" in output
+    assert "source-monitor-2026-05-03-120000.md" in output
+    assert "Recent summary artifacts:" not in output
+
+
+def test_format_workflow_artifacts_lists_recent_summary_artifacts(tmp_path: Path) -> None:
+    from marcbot.workflow_runner import format_workflow_artifacts
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    newest = summaries_dir / "source-monitor-2026-05-03-120000.summary.md"
+    older = summaries_dir / "source-monitor-2026-05-02-120000.summary.md"
+    newest.write_text("# newest\n", encoding="utf-8")
+    older.write_text("# older\n", encoding="utf-8")
+
+    output = format_workflow_artifacts(
+        "source-monitor-ai-summary",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert "MarcBot workflow artifacts" in output
+    assert "Workflow: source-monitor-ai-summary" in output
+    assert "Project: ai" in output
+    assert "Provider contact: no" in output
+    assert "Writes memory when run: no" in output
+    assert "Telegram executable: no" in output
+    assert "Recent summary artifacts:" in output
+    assert "summary:2026-05-03-120000" in output
+    assert "source-monitor-2026-05-03-120000.summary.md" in output
+    assert "Recent report artifacts:" not in output
+
+
+def test_format_workflow_artifacts_handles_empty_artifact_list(tmp_path: Path) -> None:
+    from marcbot.workflow_runner import format_workflow_artifacts
+
+    reports_dir = tmp_path / "reports"
+    summaries_dir = tmp_path / "summaries"
+    reports_dir.mkdir()
+    summaries_dir.mkdir()
+
+    output = format_workflow_artifacts(
+        "source-monitor-ai-report",
+        project="ai",
+        reports_dir=reports_dir,
+        summaries_dir=summaries_dir,
+    )
+
+    assert "Recent report artifacts:" in output
+    assert "- none" in output

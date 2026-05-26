@@ -20,6 +20,13 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.23 - Workflow artifact visibility
+
+- Added CLI-only `workflow artifacts` visibility for registered source-monitor workflows.
+- Reused existing source-monitor artifact ID discovery for report and summary artifacts.
+- Kept workflow artifact visibility read-only, provider-contact-free, memory-write-free, artifact-write-free, and Telegram-execution-free.
+- Documented the CLI-only workflow artifact visibility boundary.
+
 ## 0.3.22 - Telegram workflow status hotfix
 
 - Fixed Telegram `/workflow_status <workflow-id>` delivery by calling the workflow status formatter with the correct `project` keyword.

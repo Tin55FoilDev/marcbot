@@ -8,7 +8,12 @@ from pathlib import Path
 
 from marcbot.source_config import DEFAULT_SOURCE_PROJECT_NAME
 from marcbot.source_monitor import write_source_monitor_report
-from marcbot.source_status import format_source_monitor_cli_status
+from marcbot.source_status import (
+    find_recent_source_monitor_reports,
+    find_recent_source_monitor_summaries,
+    format_source_monitor_cli_status,
+    source_monitor_artifact_id,
+)
 from marcbot.workflow_registry import get_workflow_definition
 
 SUMMARY_TASK_DEFAULT = "source_monitor_analysis"
@@ -185,6 +190,76 @@ def format_workflow_status(
     ]
     return "\n".join(lines)
 
+
+
+def _format_workflow_artifact_lines(label: str, paths: list[Path]) -> list[str]:
+    """Return human-readable artifact lines for workflow artifact output."""
+    lines = [f"{label}:"]
+    if not paths:
+        lines.append("- none")
+        return lines
+
+    for path in paths:
+        artifact_id = source_monitor_artifact_id(path)
+        if artifact_id is not None:
+            lines.append(f"- {artifact_id} — {path.name}")
+
+    if len(lines) == 1:
+        lines.append("- none")
+
+    return lines
+
+
+def format_workflow_artifacts(
+    workflow_id: str,
+    *,
+    project: str | None = None,
+    reports_dir: Path | None = None,
+    summaries_dir: Path | None = None,
+    limit: int = 3,
+) -> str:
+    """Return read-only artifact visibility for a registered workflow."""
+    workflow = get_workflow_definition(workflow_id)
+    project_name = project or DEFAULT_SOURCE_PROJECT_NAME
+
+    if workflow.workflow_id not in (
+        "source-monitor-ai-report",
+        "source-monitor-ai-summary",
+    ):
+        valid_ids = "source-monitor-ai-report, source-monitor-ai-summary"
+        raise ValueError(
+            "workflow artifact visibility is not implemented for "
+            f"{workflow.workflow_id}; valid workflows: {valid_ids}"
+        )
+
+    reports = find_recent_source_monitor_reports(
+        project_name=project_name,
+        reports_dir=reports_dir,
+        limit=limit,
+    )
+    summaries = find_recent_source_monitor_summaries(
+        project_name=project_name,
+        summaries_dir=summaries_dir,
+        limit=limit,
+    )
+
+    lines = [
+        "MarcBot workflow artifacts",
+        f"Workflow: {workflow.workflow_id}",
+        f"Project: {project_name}",
+        "Provider contact: no",
+        f"Writes artifacts when run: {_yes_no(workflow.writes_artifacts)}",
+        f"Writes memory when run: {_yes_no(workflow.writes_memory)}",
+        f"Telegram executable: {_yes_no(workflow.telegram_executable)}",
+        "",
+    ]
+
+    if workflow.workflow_id == "source-monitor-ai-report":
+        lines.extend(_format_workflow_artifact_lines("Recent report artifacts", reports))
+    else:
+        lines.extend(_format_workflow_artifact_lines("Recent summary artifacts", summaries))
+
+    return "\n".join(lines)
 
 def format_workflow_run_result(result: WorkflowRunResult) -> str:
     """Return a human-readable workflow run result."""

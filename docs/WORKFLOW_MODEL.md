@@ -417,6 +417,21 @@ Workflow status v1 reuses existing source-monitor artifact status visibility.
 It is read-only and provider-contact-free. It does not run workflows, write
 artifacts, write memory, or expose Telegram execution.
 
+## Implemented workflow artifact visibility v1
+
+MarcBot supports CLI-only workflow artifact visibility for registered
+source-monitor workflows:
+
+```text
+python -m marcbot workflow artifacts source-monitor-ai-report --project ai
+python -m marcbot workflow artifacts source-monitor-ai-summary --project ai
+```
+
+Workflow artifact visibility reuses existing source-monitor artifact ID
+discovery. It is read-only and provider-contact-free. It does not run
+workflows, write artifacts, write memory, send files, or expose Telegram
+workflow execution.
+
 ## Implemented Telegram workflow visibility v1
 
 MarcBot exposes read-only workflow visibility through Telegram:

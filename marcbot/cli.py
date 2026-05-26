@@ -104,7 +104,11 @@ from marcbot.workflow_registry import (
     format_workflow_detail,
     format_workflow_list,
 )
-from marcbot.workflow_runner import format_workflow_run, format_workflow_status
+from marcbot.workflow_runner import (
+    format_workflow_artifacts,
+    format_workflow_run,
+    format_workflow_status,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -537,6 +541,12 @@ def build_parser() -> argparse.ArgumentParser:
     workflow_status_parser = workflow_subparsers.add_parser("status", help="show workflow status")
     workflow_status_parser.add_argument("workflow_id")
     workflow_status_parser.add_argument("--project", default=None)
+    workflow_artifacts_parser = workflow_subparsers.add_parser(
+        "artifacts", help="show workflow artifact visibility"
+    )
+    workflow_artifacts_parser.add_argument("workflow_id")
+    workflow_artifacts_parser.add_argument("--project", default=None)
+    workflow_artifacts_parser.add_argument("--limit", type=int, default=3)
     workflow_run_parser = workflow_subparsers.add_parser("run", help="run one approved workflow")
     workflow_run_parser.add_argument("workflow_id")
     workflow_run_parser.add_argument("--project", default=None)
@@ -1435,6 +1445,15 @@ def main(argv: list[str] | None = None) -> int:
                 return 0
             if args.workflow_command == "status":
                 print(format_workflow_status(args.workflow_id, project=args.project))
+                return 0
+            if args.workflow_command == "artifacts":
+                print(
+                    format_workflow_artifacts(
+                        args.workflow_id,
+                        project=args.project,
+                        limit=args.limit,
+                    )
+                )
                 return 0
             if args.workflow_command == "run":
                 print(
