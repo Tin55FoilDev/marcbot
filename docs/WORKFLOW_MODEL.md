@@ -87,6 +87,8 @@ Implemented read-only Telegram workflow visibility examples:
 - `/workflow_list`
 - `/workflow_status source-monitor-ai-report`
 - `/workflow_status source-monitor-ai-summary`
+- `/workflow_artifacts source-monitor-ai-report`
+- `/workflow_artifacts source-monitor-ai-summary`
 
 Possible future Telegram examples after explicit safety design:
 
@@ -440,9 +442,12 @@ MarcBot exposes read-only workflow visibility through Telegram:
 /workflow_list
 /workflow_status source-monitor-ai-report
 /workflow_status source-monitor-ai-summary
+/workflow_artifacts source-monitor-ai-report
+/workflow_artifacts source-monitor-ai-summary
 ```
 
-These Telegram commands reuse the existing workflow registry and workflow
-status formatting paths. They are read-only and provider-contact-free. They
-do not run workflows, write artifacts, write memory, or approve durable memory
-changes. Telegram workflow execution remains intentionally absent.
+These Telegram commands reuse the existing workflow registry, workflow
+status formatting, and workflow artifact visibility paths. They are read-only
+and provider-contact-free. They do not run workflows, send files, write
+artifacts, write memory, or approve durable memory changes. Telegram workflow
+execution remains intentionally absent.

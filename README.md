@@ -4,7 +4,7 @@ MarcBot is Marc's personal-only Telegram bot and automation project.
 
 It is intended to replace the reliable subset of OpenClaw workflows with a smaller, safer, more testable system that Marc can maintain over time.
 
-Current baseline: **MarcBot 0.3.23**.
+Current baseline: **MarcBot 0.3.24**.
 
 Project direction: see `docs/PROJECT_DIRECTION.md` for the long-term target: a personal Telegram-facing OpenClaw replacement for chat, commands, workflows, local models, and frontier model profiles.
 
@@ -65,7 +65,7 @@ MarcBot currently includes:
 
 ## Session restart support
 
-MarcBot 0.3.23 adds CLI-only workflow artifact visibility with `workflow artifacts`, while keeping Telegram workflow execution absent.
+MarcBot 0.3.24 adds read-only Telegram `/workflow_artifacts <workflow-id>` visibility, while keeping workflow execution and file sending absent.
 
 
 Memory context helper:

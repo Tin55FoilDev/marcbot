@@ -20,6 +20,13 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.24 - Telegram workflow artifact visibility
+
+- Added read-only Telegram `/workflow_artifacts <workflow-id>` for fixed-project `ai` workflow artifact IDs.
+- Reused the existing workflow artifact visibility formatter from the Telegram command path.
+- Kept Telegram workflow artifact visibility provider-contact-free, memory-write-free, artifact-write-free, file-send-free, and execution-free.
+- Updated command and workflow documentation for the Telegram artifact visibility boundary.
+
 ## 0.3.23 - Workflow artifact visibility
 
 - Added CLI-only `workflow artifacts` visibility for registered source-monitor workflows.

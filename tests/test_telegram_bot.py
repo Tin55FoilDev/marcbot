@@ -2804,3 +2804,117 @@ def test_workflow_status_command_rejects_unauthorized_chat() -> None:
     asyncio.run(telegram_bot.workflow_status_command(update, context))
 
     assert message.replies == ["Unauthorized chat."]
+
+
+def test_workflow_artifacts_command_replies_with_artifacts(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    calls: list[tuple[str, str]] = []
+
+    def fake_format_workflow_artifacts(*, workflow_id: str, project: str) -> str:
+        calls.append((workflow_id, project))
+        return "MarcBot workflow artifacts\nProvider contact: no"
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    context = SimpleNamespace(
+        args=["source-monitor-ai-report"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    monkeypatch.setattr(
+        telegram_bot, "format_workflow_artifacts", fake_format_workflow_artifacts
+    )
+
+    asyncio.run(telegram_bot.workflow_artifacts_command(update, context))
+
+    assert calls == [("source-monitor-ai-report", "ai")]
+    assert message.replies == ["MarcBot workflow artifacts\nProvider contact: no"]
+
+
+def test_workflow_artifacts_command_reports_missing_workflow_id() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    context = SimpleNamespace(
+        args=[],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.workflow_artifacts_command(update, context))
+
+    assert message.replies == ["Usage: /workflow_artifacts <workflow-id>"]
+
+
+def test_workflow_artifacts_command_rejects_unauthorized_chat() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=999), message=message)
+    context = SimpleNamespace(
+        args=["source-monitor-ai-report"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.workflow_artifacts_command(update, context))
+
+    assert message.replies == ["Unauthorized chat."]
+
+
+def test_workflow_artifacts_command_real_formatter_smoke() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    context = SimpleNamespace(
+        args=["source-monitor-ai-report"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.workflow_artifacts_command(update, context))
+
+    assert len(message.replies) == 1
+    assert "MarcBot workflow artifacts" in message.replies[0]
+    assert "Workflow: source-monitor-ai-report" in message.replies[0]
+    assert "Provider contact: no" in message.replies[0]
