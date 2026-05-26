@@ -1679,7 +1679,7 @@ async def workflow_status_command(
         )
         return
 
-    message = format_workflow_status(workflow_id=workflow_id, project_name="ai")
+    message = format_workflow_status(workflow_id=workflow_id, project="ai")
     LOGGER.info(
         "Handled /workflow_status for chat_id=%s workflow_id=%s project=ai",
         chat_id,

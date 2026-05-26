@@ -20,6 +20,12 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.22 - Telegram workflow status hotfix
+
+- Fixed Telegram `/workflow_status <workflow-id>` delivery by calling the workflow status formatter with the correct `project` keyword.
+- Strengthened the Telegram workflow status unit test so formatter keyword mismatches are caught.
+- Preserved read-only, provider-contact-free, memory-write-free, artifact-write-free, and execution-free Telegram workflow visibility.
+
 ## 0.3.21 - Workflow registry and Telegram visibility
 
 - Added read-only Telegram `/workflow_list` for approved workflow registry visibility.

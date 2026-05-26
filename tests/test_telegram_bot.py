@@ -2737,8 +2737,8 @@ def test_workflow_status_command_replies_with_workflow_status(monkeypatch) -> No
 
     calls: list[tuple[str, str]] = []
 
-    def fake_format_workflow_status(*, workflow_id: str, project_name: str) -> str:
-        calls.append((workflow_id, project_name))
+    def fake_format_workflow_status(*, workflow_id: str, project: str) -> str:
+        calls.append((workflow_id, project))
         return "MarcBot workflow status\nProvider contact when run: no"
 
     message = FakeMessage()
