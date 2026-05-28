@@ -95,6 +95,10 @@ Implemented bounded Telegram workflow artifact send examples:
 - `/workflow_send_artifact source-monitor-ai-report report:...`
 - `/workflow_send_artifact source-monitor-ai-summary summary:...`
 
+Implemented controlled Telegram workflow execution example:
+
+- `/workflow_run source-monitor-ai-report`
+
 Possible future Telegram examples after explicit safety design:
 
 - `/source_status ai`
@@ -473,4 +477,22 @@ artifact ID path resolution, so Telegram never receives arbitrary paths.
 
 This sends only existing approved artifacts. It does not run workflows,
 contact providers, write artifacts, write memory, or approve durable memory
-changes. Telegram workflow execution remains intentionally absent.
+changes. Broader Telegram workflow execution remains intentionally absent.
+
+## Implemented controlled Telegram workflow execution v1
+
+MarcBot supports one controlled Telegram workflow execution command:
+
+```text
+/workflow_run source-monitor-ai-report
+```
+
+This first execution surface is intentionally narrow. It accepts exactly one
+workflow ID, allows only `source-monitor-ai-report`, uses the fixed `ai`
+project, contacts no providers, and writes no memory. It runs the existing
+deterministic source-monitor report workflow and writes the resulting report
+artifact through the approved workflow implementation.
+
+`source-monitor-ai-summary` and other provider-contacting workflows remain
+CLI-only until an explicit provider-contact policy, timeout/error behavior,
+and Telegram UX are designed.

@@ -20,6 +20,14 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.26 - Controlled Telegram workflow execution
+
+- Added Telegram `/workflow_run source-monitor-ai-report` for the first controlled workflow execution surface.
+- Limited Telegram workflow execution to the deterministic, provider-contact-free source-monitor report workflow for fixed project `ai`.
+- Rejected provider-contacting workflows such as `source-monitor-ai-summary` from Telegram execution.
+- Required exact one-argument command shape for Telegram workflow execution.
+- Documented that broader Telegram workflow execution remains intentionally absent pending explicit provider-contact policy and UX design.
+
 ## 0.3.25 - Telegram workflow artifact sending
 
 - Added workflow-level artifact resolution with workflow/artifact kind compatibility checks.

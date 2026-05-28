@@ -62,6 +62,7 @@ from marcbot.weather_status import format_weather_status_message
 from marcbot.workflow_registry import format_workflow_list
 from marcbot.workflow_runner import (
     format_workflow_artifacts,
+    format_workflow_run,
     format_workflow_status,
     resolve_workflow_artifact,
 )
@@ -1660,6 +1661,55 @@ async def workflow_list_command(
         await update.message.reply_text(format_workflow_list())
 
 
+async def workflow_run_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+    """Handle /workflow_run <workflow-id>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /workflow_run from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    args = context.args
+    if len(args) != 1:
+        if update.message is not None:
+            await update.message.reply_text("Usage: /workflow_run source-monitor-ai-report")
+        LOGGER.info(
+            "Handled /workflow_run for chat_id=%s ok=false invalid_args",
+            chat_id,
+        )
+        return
+
+    workflow_id = args[0]
+
+    if workflow_id != "source-monitor-ai-report":
+        if update.message is not None:
+            await update.message.reply_text(
+                "Telegram workflow execution is currently approved only for "
+                "source-monitor-ai-report. Provider-contacting workflows such "
+                "as source-monitor-ai-summary remain CLI-only."
+            )
+        LOGGER.info(
+            "Handled /workflow_run for chat_id=%s workflow_id=%s ok=false unsupported",
+            chat_id,
+            workflow_id,
+        )
+        return
+
+    message = format_workflow_run(workflow_id, project="ai")
+    LOGGER.info(
+        "Handled /workflow_run for chat_id=%s workflow_id=%s project=ai",
+        chat_id,
+        workflow_id,
+    )
+    if update.message is not None:
+        await update.message.reply_text(message)
+
+
 async def workflow_send_artifact_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -1845,6 +1895,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/weather_status - show latest weather report status\n"
         "/workflow_artifacts <workflow-id> - show read-only workflow artifacts for ai\n"
         "/workflow_list - list approved workflows\n"
+        "/workflow_run source-monitor-ai-report - run approved deterministic report workflow\n"
         "/workflow_send_artifact <workflow-id> <artifact-id> - send approved workflow artifact\n"
         "/workflow_status <workflow-id> - show read-only workflow status for ai"
     )
@@ -1949,6 +2000,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("send_source_artifact", send_source_artifact_command))
     application.add_handler(CommandHandler("workflow_artifacts", workflow_artifacts_command))
     application.add_handler(CommandHandler("workflow_list", workflow_list_command))
+    application.add_handler(CommandHandler("workflow_run", workflow_run_command))
     application.add_handler(
         CommandHandler("workflow_send_artifact", workflow_send_artifact_command)
     )

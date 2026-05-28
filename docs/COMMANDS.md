@@ -75,6 +75,7 @@ The exact command list may evolve, but the current MarcBot surface is intended t
 | `/send_source_artifact <project> <artifact-id>` | Send an approved source-monitor report or summary by safe artifact ID. | Telegram-facing, bounded artifact retrieval, provider-contact-free. |
 | `/llm_status` | Show configured LLM profile/task-route status without contacting providers. | Read-only and provider-contact-free. |
 | `/workflow_list` | List approved workflow definitions. | Read-only and provider-contact-free. Does not run workflows. |
+| `/workflow_run source-monitor-ai-report` | Run the approved deterministic source-monitor report workflow for the fixed `ai` project. | Telegram-facing controlled execution. Provider-contact-free. Writes a report artifact; writes no memory. |
 | `/workflow_artifacts <workflow-id>` | Show read-only workflow artifact IDs for the `ai` project. | Read-only and provider-contact-free. Does not run workflows, send files, write artifacts, or write memory. |
 | `/workflow_send_artifact <workflow-id> <artifact-id>` | Send an existing approved workflow artifact by safe workflow/artifact ID pair. | Telegram-facing bounded file send. Does not run workflows, contact providers, write artifacts, or write memory. |
 | `/workflow_status <workflow-id>` | Show read-only workflow status and artifact visibility for the `ai` project. | Read-only and provider-contact-free. Does not run workflows, write artifacts, or write memory. |
@@ -862,6 +863,17 @@ Example:
 ```
 
 Telegram workflow visibility and bounded artifact sending are
-provider-contact-free and do not run workflows, write artifacts, write
-memory, or approve durable memory changes. Telegram does not expose
-`/workflow_run` or any equivalent workflow execution command.
+provider-contact-free and do not write memory or approve durable memory
+changes. Telegram workflow execution is limited to the explicitly approved
+deterministic report workflow described below.
+
+### Telegram workflow execution command
+
+`/workflow_run source-monitor-ai-report` runs the approved deterministic
+source-monitor report workflow for the fixed `ai` project from Telegram.
+
+This command is intentionally narrow: it accepts exactly one workflow ID,
+allows only `source-monitor-ai-report`, contacts no providers, writes one
+report artifact through the existing workflow implementation, and writes no
+memory. Provider-contacting workflows such as `source-monitor-ai-summary`
+remain CLI-only.
