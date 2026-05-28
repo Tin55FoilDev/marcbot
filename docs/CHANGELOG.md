@@ -20,6 +20,13 @@ Highlights:
 
 ## Unreleased
 
+## 0.3.27 - Provider-contact workflow preflight
+
+- Added Telegram provider-contact preflight for `/workflow_run source-monitor-ai-summary`.
+- Kept the provider-contacting summary workflow CLI-only; the preflight does not contact providers or run the workflow.
+- Documented that provider-contacting Telegram execution still requires an explicit confirmation path, timeout/error behavior, and Telegram UX design.
+- Added tests proving summary preflight does not call the workflow runner.
+
 ## 0.3.26 - Controlled Telegram workflow execution
 
 - Added Telegram `/workflow_run source-monitor-ai-report` for the first controlled workflow execution surface.

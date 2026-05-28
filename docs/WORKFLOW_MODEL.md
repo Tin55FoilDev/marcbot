@@ -493,6 +493,11 @@ project, contacts no providers, and writes no memory. It runs the existing
 deterministic source-monitor report workflow and writes the resulting report
 artifact through the approved workflow implementation.
 
+`/workflow_run source-monitor-ai-summary` returns a provider-contact
+preflight from Telegram. It discloses provider contact, artifact/memory
+boundaries, and the fact that Telegram execution is not enabled. It does not
+contact providers or run the workflow.
+
 `source-monitor-ai-summary` and other provider-contacting workflows remain
-CLI-only until an explicit provider-contact policy, timeout/error behavior,
-and Telegram UX are designed.
+CLI-only until an explicit provider-contact confirmation path, timeout/error
+behavior, and Telegram UX are designed.

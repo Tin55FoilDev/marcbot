@@ -3129,7 +3129,7 @@ def test_workflow_run_command_runs_report_workflow(monkeypatch) -> None:
     ]
 
 
-def test_workflow_run_command_rejects_summary_workflow() -> None:
+def test_workflow_run_command_returns_summary_preflight(monkeypatch) -> None:
     import asyncio
     from types import SimpleNamespace
 
@@ -3142,6 +3142,9 @@ def test_workflow_run_command_rejects_summary_workflow() -> None:
         async def reply_text(self, text: str) -> None:
             self.replies.append(text)
 
+    def fail_format_workflow_run(*args, **kwargs) -> str:
+        raise AssertionError("summary preflight must not run workflow")
+
     message = FakeMessage()
     update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
     context = SimpleNamespace(
@@ -3149,11 +3152,16 @@ def test_workflow_run_command_rejects_summary_workflow() -> None:
         application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
     )
 
+    monkeypatch.setattr(telegram_bot, "format_workflow_run", fail_format_workflow_run)
+
     asyncio.run(telegram_bot.workflow_run_command(update, context))
 
     assert len(message.replies) == 1
-    assert "approved only for source-monitor-ai-report" in message.replies[0]
-    assert "source-monitor-ai-summary remain CLI-only" in message.replies[0]
+    assert "MarcBot workflow provider-contact preflight" in message.replies[0]
+    assert "Workflow: source-monitor-ai-summary" in message.replies[0]
+    assert "Provider contact when run: yes" in message.replies[0]
+    assert "Telegram execution: not enabled" in message.replies[0]
+    assert "No provider was contacted and no workflow was run." in message.replies[0]
 
 
 def test_workflow_run_command_reports_missing_workflow_id() -> None:
@@ -3229,3 +3237,30 @@ def test_workflow_run_command_rejects_extra_args() -> None:
     asyncio.run(telegram_bot.workflow_run_command(update, context))
 
     assert message.replies == ["Usage: /workflow_run source-monitor-ai-report"]
+
+
+def test_workflow_run_command_rejects_unknown_workflow() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    context = SimpleNamespace(
+        args=["unknown-workflow"],
+        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+    )
+
+    asyncio.run(telegram_bot.workflow_run_command(update, context))
+
+    assert len(message.replies) == 1
+    assert "approved only for source-monitor-ai-report" in message.replies[0]
+    assert "preflight and CLI-only execution" in message.replies[0]

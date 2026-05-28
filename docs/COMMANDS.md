@@ -875,5 +875,7 @@ source-monitor report workflow for the fixed `ai` project from Telegram.
 This command is intentionally narrow: it accepts exactly one workflow ID,
 allows only `source-monitor-ai-report`, contacts no providers, writes one
 report artifact through the existing workflow implementation, and writes no
-memory. Provider-contacting workflows such as `source-monitor-ai-summary`
-remain CLI-only.
+memory. `/workflow_run source-monitor-ai-summary` now returns a
+provider-contact preflight from Telegram, but the provider-contacting summary
+workflow remains CLI-only until an explicit confirmation path, timeout/error
+behavior, and Telegram UX are implemented.

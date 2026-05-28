@@ -1686,12 +1686,34 @@ async def workflow_run_command(
 
     workflow_id = args[0]
 
+    if workflow_id == "source-monitor-ai-summary":
+        if update.message is not None:
+            await update.message.reply_text(
+                "MarcBot workflow provider-contact preflight\n"
+                "Workflow: source-monitor-ai-summary\n"
+                "Project: ai\n"
+                "Provider contact when run: yes\n"
+                "Writes artifacts when run: yes\n"
+                "Writes memory when run: no\n"
+                "Telegram execution: not enabled\n\n"
+                "This workflow remains CLI-only until an explicit provider-contact "
+                "confirmation path, timeout/error behavior, and Telegram UX are "
+                "implemented. No provider was contacted and no workflow was run."
+            )
+        LOGGER.info(
+            "Handled /workflow_run for chat_id=%s workflow_id=%s ok=false preflight",
+            chat_id,
+            workflow_id,
+        )
+        return
+
     if workflow_id != "source-monitor-ai-report":
         if update.message is not None:
             await update.message.reply_text(
                 "Telegram workflow execution is currently approved only for "
                 "source-monitor-ai-report. Provider-contacting workflows such "
-                "as source-monitor-ai-summary remain CLI-only."
+                "as source-monitor-ai-summary remain gated by preflight and CLI-only "
+                "execution."
             )
         LOGGER.info(
             "Handled /workflow_run for chat_id=%s workflow_id=%s ok=false unsupported",
