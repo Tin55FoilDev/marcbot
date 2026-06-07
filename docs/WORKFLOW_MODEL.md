@@ -501,3 +501,33 @@ contact providers or run the workflow.
 `source-monitor-ai-summary` and other provider-contacting workflows remain
 CLI-only until an explicit provider-contact confirmation path, timeout/error
 behavior, and Telegram UX are designed.
+
+## Planned provider-contact Telegram confirmation policy
+
+`source-monitor-ai-summary` is the first registered workflow that is useful from Telegram but requires model/provider contact. Telegram must not run this workflow directly from `/workflow_run source-monitor-ai-summary` until the provider-contact confirmation policy is implemented and tested.
+
+The current `/workflow_run source-monitor-ai-summary` behavior is intentionally preflight-only. It should disclose that the workflow would contact a configured provider/task route, write a bounded summary artifact, and write no memory, but it must not contact a provider or run the summary workflow.
+
+The planned execution model is a two-step confirmation flow:
+
+    /workflow_run source-monitor-ai-summary
+    /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN
+
+The confirmation command name is the preferred design target, not an implemented command until the corresponding implementation milestone lands.
+
+The confirmation policy should be narrow:
+
+1. It should allow only explicitly approved provider-contacting workflow IDs.
+2. The first allowed workflow should be `source-monitor-ai-summary`.
+3. It should use the fixed `ai` source-monitor project for the initial Telegram surface.
+4. It should not accept arbitrary project names, paths, URLs, prompts, providers, models, task routes, or workflow arguments.
+5. It should bind each confirmation token to the requesting Telegram chat and workflow ID.
+6. It should make each token single-use and short-lived.
+7. It should reject expired, reused, malformed, mismatched, or unauthorized tokens.
+8. It should log preflight issuance, confirmation acceptance/rejection, workflow start, artifact result, and failure outcome.
+9. It should keep provider details safe: Telegram may disclose provider contact in general terms, but should not expose secret values, local config paths, raw prompts, provider keys, unrestricted model inventories, or environment details.
+10. It should preserve the durable-memory boundary. Running the summary workflow from Telegram must not approve durable memory writes or expand Telegram memory authority.
+
+The confirmed workflow result should remain artifact-oriented. A successful confirmation may create a bounded summary artifact, and Marc can inspect or send that artifact through the existing workflow artifact commands. Failures should be summarized without dumping unrestricted logs, stack traces, config contents, or provider internals into Telegram.
+
+Implementation should wait until tests cover the preflight-only path, the confirmation-token lifecycle, authorization failures, unsupported workflow IDs, provider-contact disclosure text, artifact result reporting, and the no-memory-write boundary.

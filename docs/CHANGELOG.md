@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.28 - Provider-contact Telegram confirmation design
+
+- Documented the planned two-step Telegram confirmation policy for provider-contacting workflow execution.
+- Kept `/workflow_run source-monitor-ai-summary` as preflight-only until confirmation-token handling is implemented and tested.
+- Documented that future provider-contacting Telegram execution must be workflow-specific, token-bound, short-lived, single-use, chat-bound, artifact-oriented, and memory-write-free.
+- Documented that the initial future confirmation surface should allow only `source-monitor-ai-summary` with the fixed `ai` project and must not expose arbitrary paths, prompts, providers, models, task routes, or project arguments.
+
+
 MarcBot 0.3.4 captures the memory automation and read-only Telegram visibility baseline.
 
 Highlights:

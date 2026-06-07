@@ -879,3 +879,22 @@ memory. `/workflow_run source-monitor-ai-summary` now returns a
 provider-contact preflight from Telegram, but the provider-contacting summary
 workflow remains CLI-only until an explicit confirmation path, timeout/error
 behavior, and Telegram UX are implemented.
+
+### Planned /workflow_confirm provider-contact confirmation
+
+Planned, not implemented in MarcBot 0.3.28:
+
+    /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN
+
+This command is the preferred future confirmation surface for provider-contacting Telegram workflow execution.
+
+The intended flow is:
+
+    /workflow_run source-monitor-ai-summary
+    /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN
+
+`/workflow_run source-monitor-ai-summary` should remain preflight-only until this confirmation path is implemented. The preflight should disclose provider contact, artifact writes, memory-write boundaries, and the fact that the workflow did not run.
+
+The future `/workflow_confirm` command should be workflow-specific, token-bound, single-use, short-lived, and tied to the same authorized Telegram chat that requested the preflight. The initial implementation should allow only `source-monitor-ai-summary` with the fixed `ai` project.
+
+The command must not accept arbitrary shell commands, file paths, URLs, prompts, provider names, model names, task routes, or project names. It must not approve durable memory writes.
