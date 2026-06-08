@@ -3147,9 +3147,15 @@ def test_workflow_run_command_returns_summary_preflight(monkeypatch) -> None:
 
     message = FakeMessage()
     update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    store = telegram_bot.WorkflowConfirmationStore(token_factory=lambda: "token-1")
     context = SimpleNamespace(
         args=["source-monitor-ai-summary"],
-        application=SimpleNamespace(bot_data={"allowed_chat_ids": {123}}),
+        application=SimpleNamespace(
+            bot_data={
+                "allowed_chat_ids": {123},
+                "workflow_confirmation_store": store,
+            }
+        ),
     )
 
     monkeypatch.setattr(telegram_bot, "format_workflow_run", fail_format_workflow_run)
@@ -3161,8 +3167,44 @@ def test_workflow_run_command_returns_summary_preflight(monkeypatch) -> None:
     assert "Workflow: source-monitor-ai-summary" in message.replies[0]
     assert "Provider contact when run: yes" in message.replies[0]
     assert "Telegram execution: not enabled" in message.replies[0]
+    assert "Provider contact: no" in message.replies[0]
+    assert "Workflow ran: no" in message.replies[0]
+    assert "Writes: no" in message.replies[0]
+    assert "Confirmation token issued for future confirmation UX." in message.replies[0]
+    assert "/workflow_confirm source-monitor-ai-summary token-1" in message.replies[0]
     assert "No provider was contacted and no workflow was run." in message.replies[0]
 
+
+
+def test_workflow_run_command_creates_confirmation_store_when_missing() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    message = FakeMessage()
+    bot_data = {"allowed_chat_ids": {123}}
+    update = SimpleNamespace(effective_chat=SimpleNamespace(id=123), message=message)
+    context = SimpleNamespace(
+        args=["source-monitor-ai-summary"],
+        application=SimpleNamespace(bot_data=bot_data),
+    )
+
+    asyncio.run(telegram_bot.workflow_run_command(update, context))
+
+    assert "workflow_confirmation_store" in bot_data
+    assert len(message.replies) == 1
+    assert "Confirmation token issued for future confirmation UX." in message.replies[0]
+    assert "Provider contact: no" in message.replies[0]
+    assert "Workflow ran: no" in message.replies[0]
+    assert "Writes: no" in message.replies[0]
 
 def test_workflow_run_command_reports_missing_workflow_id() -> None:
     import asyncio

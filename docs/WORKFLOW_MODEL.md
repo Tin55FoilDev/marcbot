@@ -551,3 +551,11 @@ The command accepts the planned shape:
 In 0.3.30 this command does not consume confirmation tokens, does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory. It returns safe status text documenting that provider-contacting Telegram execution is not enabled yet.
 
 This milestone exists to make the user-facing command surface testable before any provider-contacting workflow execution is wired to Telegram.
+
+## Provider-contact preflight token issuance v1
+
+MarcBot 0.3.31 updates `/workflow_run source-monitor-ai-summary` to issue a short-lived in-memory confirmation token during provider-contact preflight.
+
+The preflight still does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory. The token is issued only to exercise the planned provider-contact confirmation UX.
+
+`/workflow_confirm` remains non-executing in this milestone. It does not consume confirmation tokens and cannot trigger provider-contacting workflow execution.

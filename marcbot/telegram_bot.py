@@ -59,7 +59,12 @@ from marcbot.timer_status import format_timer_status_message
 from marcbot.uptime import format_uptime_report
 from marcbot.weather_report import find_latest_weather_report
 from marcbot.weather_status import format_weather_status_message
-from marcbot.workflow_confirmation import ALLOWED_PROVIDER_CONTACT_WORKFLOWS
+from marcbot.workflow_confirmation import (
+    ALLOWED_PROVIDER_CONTACT_WORKFLOWS,
+    DEFAULT_CONFIRMATION_TTL_SECONDS,
+    WorkflowConfirmation,
+    WorkflowConfirmationStore,
+)
 from marcbot.workflow_registry import format_workflow_list
 from marcbot.workflow_runner import (
     format_workflow_artifacts,
@@ -1644,6 +1649,48 @@ async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(logs_text)
 
 
+def _workflow_confirmation_store(context: ContextTypes.DEFAULT_TYPE) -> WorkflowConfirmationStore:
+    """Return the Telegram application workflow-confirmation store."""
+    store = context.application.bot_data.get("workflow_confirmation_store")
+    if store is None:
+        store = WorkflowConfirmationStore()
+        context.application.bot_data["workflow_confirmation_store"] = store
+    if not isinstance(store, WorkflowConfirmationStore):
+        raise TypeError("workflow_confirmation_store must be a WorkflowConfirmationStore")
+    return store
+
+
+def format_provider_contact_preflight_message(
+    *,
+    record: WorkflowConfirmation,
+    ttl_seconds: int = DEFAULT_CONFIRMATION_TTL_SECONDS,
+) -> str:
+    """Return the provider-contact preflight message with a confirmation token."""
+    return "\n".join(
+        [
+            "MarcBot workflow provider-contact preflight",
+            f"Workflow: {record.workflow_id}",
+            "Project: ai",
+            "Provider contact when run: yes",
+            "Writes artifacts when run: yes",
+            "Writes memory when run: no",
+            "Telegram execution: not enabled",
+            "Provider contact: no",
+            "Workflow ran: no",
+            "Writes: no",
+            "",
+            "Confirmation token issued for future confirmation UX.",
+            f"Token expires in: {ttl_seconds} seconds",
+            "",
+            "Planned confirmation command:",
+            f"/workflow_confirm {record.workflow_id} {record.token}",
+            "",
+            "In MarcBot 0.3.31, /workflow_confirm remains non-executing. "
+            "No provider was contacted and no workflow was run.",
+        ]
+    )
+
+
 async def workflow_list_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -1688,21 +1735,30 @@ async def workflow_run_command(
     workflow_id = args[0]
 
     if workflow_id == "source-monitor-ai-summary":
+        if not isinstance(chat_id, int):
+            if update.message is not None:
+                await update.message.reply_text("Unable to issue confirmation token.")
+            LOGGER.info(
+                "Handled /workflow_run for chat_id=%s workflow_id=%s ok=false "
+                "missing_chat_id",
+                chat_id,
+                workflow_id,
+            )
+            return
+
+        store = _workflow_confirmation_store(context)
+        record = store.issue(
+            workflow_id=workflow_id,
+            chat_id=chat_id,
+            ttl_seconds=DEFAULT_CONFIRMATION_TTL_SECONDS,
+        )
         if update.message is not None:
             await update.message.reply_text(
-                "MarcBot workflow provider-contact preflight\n"
-                "Workflow: source-monitor-ai-summary\n"
-                "Project: ai\n"
-                "Provider contact when run: yes\n"
-                "Writes artifacts when run: yes\n"
-                "Writes memory when run: no\n"
-                "Telegram execution: not enabled\n\n"
-                "This workflow remains CLI-only until an explicit provider-contact "
-                "confirmation path, timeout/error behavior, and Telegram UX are "
-                "implemented. No provider was contacted and no workflow was run."
+                format_provider_contact_preflight_message(record=record)
             )
         LOGGER.info(
-            "Handled /workflow_run for chat_id=%s workflow_id=%s ok=false preflight",
+            "Handled /workflow_run for chat_id=%s workflow_id=%s ok=false "
+            "preflight_token_issued",
             chat_id,
             workflow_id,
         )
@@ -1758,7 +1814,7 @@ def format_workflow_confirm_skeleton_message(*, workflow_id: str) -> str:
             "Workflow ran: no",
             "Writes: no",
             "",
-            "This command is a non-executing skeleton in MarcBot 0.3.30.",
+            "This command is a non-executing skeleton in MarcBot 0.3.31.",
             "Use /workflow_run source-monitor-ai-summary for preflight only.",
         ]
     )
@@ -2036,6 +2092,7 @@ def build_application(config: MarcBotConfig) -> Application:
 
     application = Application.builder().token(config.telegram.bot_token).build()
     application.bot_data["allowed_chat_ids"] = config.telegram.allowed_chat_ids
+    application.bot_data["workflow_confirmation_store"] = WorkflowConfirmationStore()
     application.bot_data["app_environment"] = config.app.environment
     application.bot_data["process_started_at"] = datetime.now(UTC)
 

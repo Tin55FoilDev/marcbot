@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.31 - Provider-contact preflight token issuance
+
+- Updated `/workflow_run source-monitor-ai-summary` to issue a short-lived in-memory confirmation token during provider-contact preflight.
+- Kept `/workflow_confirm` non-executing; it does not consume tokens, run workflows, contact providers, write artifacts, or write memory.
+- Added tests for preflight token issuance and lazy Telegram confirmation-store creation.
+- Preserved the provider-contact boundary: preflight reports provider contact as no, workflow ran as no, and writes as no.
+
+
 ## 0.3.30 - Non-executing workflow confirmation skeleton
 
 - Added a Telegram `/workflow_confirm` command skeleton for the planned provider-contact confirmation UX.
