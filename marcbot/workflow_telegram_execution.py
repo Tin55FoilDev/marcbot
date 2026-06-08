@@ -12,6 +12,9 @@ from marcbot.workflow_runner import SUMMARY_TASK_DEFAULT, WorkflowRunResult, run
 TELEGRAM_SUMMARY_WORKFLOW_ID = "source-monitor-ai-summary"
 TELEGRAM_SUMMARY_PROJECT = "ai"
 TELEGRAM_SUMMARY_MEMORY_PROFILE = "source-monitor"
+TELEGRAM_SUMMARY_MEMORY_FACTS_LIMIT = 0
+TELEGRAM_SUMMARY_MEMORY_SUMMARIES_LIMIT = 0
+TELEGRAM_SUMMARY_MEMORY_EVENTS_LIMIT = 0
 
 
 def format_telegram_source_monitor_summary_execution(
@@ -58,7 +61,7 @@ def _run_telegram_source_monitor_summary(
         memory_profile=TELEGRAM_SUMMARY_MEMORY_PROFILE,
         memory_query=None,
         memory_project=None,
-        memory_facts_limit=5,
-        memory_summaries_limit=3,
-        memory_events_limit=5,
+        memory_facts_limit=TELEGRAM_SUMMARY_MEMORY_FACTS_LIMIT,
+        memory_summaries_limit=TELEGRAM_SUMMARY_MEMORY_SUMMARIES_LIMIT,
+        memory_events_limit=TELEGRAM_SUMMARY_MEMORY_EVENTS_LIMIT,
     )

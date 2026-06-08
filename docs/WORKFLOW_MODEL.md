@@ -614,3 +614,11 @@ The execution-enabled path remains narrow:
 Successful execution returns a bounded artifact-oriented response with provider contact yes, workflow ran yes, writes summary artifact, and a safe `summary:...` artifact ID.
 
 Execution failures are bounded through the safe workflow result formatter and must not expose arbitrary local paths, raw prompts, provider keys, local config, environment values, unrestricted logs, or full provider internals.
+
+## Telegram summary prompt-budget hardening v1
+
+MarcBot 0.3.40 hardens the Telegram-safe `source-monitor-ai-summary` execution adapter by setting memory-context limits to zero for Telegram-triggered execution.
+
+The adapter still uses fixed workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, and memory profile `source-monitor`, but it does not expand memory facts, summaries, or events into the Telegram execution prompt.
+
+This preserves the LLM prompt-size safety cap and reduces the chance that a confirmed Telegram execution fails due to oversized prompt input. Telegram still accepts no arbitrary project, prompt, path, provider, model, task route, memory query, or workflow arguments.

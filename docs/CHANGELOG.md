@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.40 - Telegram summary prompt-budget hardening
+
+- Reduced the Telegram-safe `source-monitor-ai-summary` execution adapter memory-context limits to zero.
+- Preserved the LLM prompt-size safety cap instead of relaxing it.
+- Kept the confirmed execution boundary fixed to workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, and memory profile `source-monitor`.
+- Kept the no-arbitrary-arguments boundary for Telegram execution.
+
+
 ## 0.3.39 - Enable confirmed Telegram summary execution
 
 - Enabled `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` to execute the provider-contacting summary workflow after successful token validation.
