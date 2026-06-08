@@ -898,3 +898,21 @@ The intended flow is:
 The future `/workflow_confirm` command should be workflow-specific, token-bound, single-use, short-lived, and tied to the same authorized Telegram chat that requested the preflight. The initial implementation should allow only `source-monitor-ai-summary` with the fixed `ai` project.
 
 The command must not accept arbitrary shell commands, file paths, URLs, prompts, provider names, model names, task routes, or project names. It must not approve durable memory writes.
+
+### /workflow_confirm source-monitor-ai-summary <token>
+
+Implemented as a non-executing skeleton in MarcBot 0.3.30.
+
+This command is reserved for the future provider-contact confirmation flow. In 0.3.30 it parses the expected command shape and returns safe status text, but it does not consume confirmation tokens, does not run workflows, does not contact providers, does not write artifacts, and does not write memory.
+
+Current behavior:
+
+    /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN
+
+returns a not-enabled response with:
+
+- Provider contact: no
+- Workflow ran: no
+- Writes: no
+
+Unsupported workflow IDs are rejected. Missing or malformed arguments return usage text. Unauthorized chats are rejected through the standard Telegram authorization path.

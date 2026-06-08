@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.30 - Non-executing workflow confirmation skeleton
+
+- Added a Telegram `/workflow_confirm` command skeleton for the planned provider-contact confirmation UX.
+- Registered the command in Telegram help while keeping it non-executing.
+- Added tests proving the command returns usage, rejects unsupported workflows, rejects unauthorized chats, and reports that provider-contacting execution is not enabled.
+- Kept `source-monitor-ai-summary` Telegram execution disabled; this milestone performs no provider contact, artifact writes, or memory writes.
+
+
 ## 0.3.29 - Provider-contact confirmation token lifecycle prep
 
 - Added an internal provider-contact confirmation-token lifecycle helper for future Telegram workflow confirmation.

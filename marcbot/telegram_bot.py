@@ -59,6 +59,7 @@ from marcbot.timer_status import format_timer_status_message
 from marcbot.uptime import format_uptime_report
 from marcbot.weather_report import find_latest_weather_report
 from marcbot.weather_status import format_weather_status_message
+from marcbot.workflow_confirmation import ALLOWED_PROVIDER_CONTACT_WORKFLOWS
 from marcbot.workflow_registry import format_workflow_list
 from marcbot.workflow_runner import (
     format_workflow_artifacts,
@@ -1732,6 +1733,74 @@ async def workflow_run_command(
         await update.message.reply_text(message)
 
 
+def format_workflow_confirm_skeleton_message(*, workflow_id: str) -> str:
+    """Return the non-executing Telegram workflow-confirmation skeleton message."""
+    if workflow_id not in ALLOWED_PROVIDER_CONTACT_WORKFLOWS:
+        return "\n".join(
+            [
+                "MarcBot workflow confirmation",
+                f"Workflow: {workflow_id}",
+                "Status: rejected",
+                "Reason: unsupported provider-contact workflow",
+                "Provider contact: no",
+                "Workflow ran: no",
+                "Writes: no",
+            ]
+        )
+
+    return "\n".join(
+        [
+            "MarcBot workflow confirmation",
+            f"Workflow: {workflow_id}",
+            "Status: not enabled",
+            "Reason: provider-contacting Telegram execution is not enabled yet",
+            "Provider contact: no",
+            "Workflow ran: no",
+            "Writes: no",
+            "",
+            "This command is a non-executing skeleton in MarcBot 0.3.30.",
+            "Use /workflow_run source-monitor-ai-summary for preflight only.",
+        ]
+    )
+
+
+async def workflow_confirm_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """Handle /workflow_confirm <workflow-id> <confirmation-token>."""
+    allowed_chat_ids = context.application.bot_data["allowed_chat_ids"]
+    chat_id = _chat_id_from_update(update)
+    if not is_authorized_chat(chat_id, allowed_chat_ids):
+        LOGGER.warning("Rejected unauthorized /workflow_confirm from chat_id=%s", chat_id)
+        await _reject_unauthorized(update)
+        return
+
+    args = list(context.args)
+    if len(args) != 2 or not args[0].strip() or not args[1].strip():
+        if update.message is not None:
+            await update.message.reply_text(
+                "Usage: /workflow_confirm source-monitor-ai-summary "
+                "CONFIRMATION_TOKEN"
+            )
+        LOGGER.info(
+            "Handled /workflow_confirm for chat_id=%s ok=false invalid_args",
+            chat_id,
+        )
+        return
+
+    workflow_id = args[0].strip()
+    message = format_workflow_confirm_skeleton_message(workflow_id=workflow_id)
+
+    LOGGER.info(
+        "Handled /workflow_confirm for chat_id=%s workflow_id=%s ok=false "
+        "skeleton_only",
+        chat_id,
+        workflow_id,
+    )
+    if update.message is not None:
+        await update.message.reply_text(message)
+
+
 async def workflow_send_artifact_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -1916,6 +1985,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/version - show MarcBot and Python version\n"
         "/weather_status - show latest weather report status\n"
         "/workflow_artifacts <workflow-id> - show read-only workflow artifacts for ai\n"
+        "/workflow_confirm source-monitor-ai-summary <token> - provider-confirm skeleton\n"
         "/workflow_list - list approved workflows\n"
         "/workflow_run source-monitor-ai-report - run approved deterministic report workflow\n"
         "/workflow_send_artifact <workflow-id> <artifact-id> - send approved workflow artifact\n"
@@ -2023,6 +2093,7 @@ def build_application(config: MarcBotConfig) -> Application:
     application.add_handler(CommandHandler("workflow_artifacts", workflow_artifacts_command))
     application.add_handler(CommandHandler("workflow_list", workflow_list_command))
     application.add_handler(CommandHandler("workflow_run", workflow_run_command))
+    application.add_handler(CommandHandler("workflow_confirm", workflow_confirm_command))
     application.add_handler(
         CommandHandler("workflow_send_artifact", workflow_send_artifact_command)
     )

@@ -3264,3 +3264,140 @@ def test_workflow_run_command_rejects_unknown_workflow() -> None:
     assert len(message.replies) == 1
     assert "approved only for source-monitor-ai-report" in message.replies[0]
     assert "preflight and CLI-only execution" in message.replies[0]
+
+def test_workflow_confirm_command_reports_usage() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeChat:
+        id = 123
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    class FakeApplication:
+        bot_data = {"allowed_chat_ids": (123,)}
+
+    class FakeContext:
+        args: list[str] = []
+        application = FakeApplication()
+
+    message = FakeMessage()
+
+    update = SimpleNamespace(effective_chat=FakeChat(), message=message)
+
+    asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
+
+    assert message.replies == [
+        "Usage: /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN"
+    ]
+
+
+def test_workflow_confirm_command_returns_non_executing_skeleton() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeChat:
+        id = 123
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    class FakeApplication:
+        bot_data = {"allowed_chat_ids": (123,)}
+
+    class FakeContext:
+        args = ["source-monitor-ai-summary", "token-1"]
+        application = FakeApplication()
+
+    message = FakeMessage()
+
+    update = SimpleNamespace(effective_chat=FakeChat(), message=message)
+
+    asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
+
+    assert len(message.replies) == 1
+    assert "Status: not enabled" in message.replies[0]
+    assert "Provider contact: no" in message.replies[0]
+    assert "Workflow ran: no" in message.replies[0]
+    assert "Writes: no" in message.replies[0]
+
+
+def test_workflow_confirm_command_rejects_unknown_workflow() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeChat:
+        id = 123
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    class FakeApplication:
+        bot_data = {"allowed_chat_ids": (123,)}
+
+    class FakeContext:
+        args = ["unknown-workflow", "token-1"]
+        application = FakeApplication()
+
+    message = FakeMessage()
+
+    update = SimpleNamespace(effective_chat=FakeChat(), message=message)
+
+    asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
+
+    assert len(message.replies) == 1
+    assert "Status: rejected" in message.replies[0]
+    assert "unsupported provider-contact workflow" in message.replies[0]
+    assert "Provider contact: no" in message.replies[0]
+    assert "Workflow ran: no" in message.replies[0]
+
+
+def test_workflow_confirm_command_rejects_unauthorized_chat() -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    class FakeChat:
+        id = 456
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    class FakeApplication:
+        bot_data = {"allowed_chat_ids": (123,)}
+
+    class FakeContext:
+        args = ["source-monitor-ai-summary", "token-1"]
+        application = FakeApplication()
+
+    message = FakeMessage()
+
+    update = SimpleNamespace(effective_chat=FakeChat(), message=message)
+
+    asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
+
+    assert message.replies == ["Unauthorized chat."]

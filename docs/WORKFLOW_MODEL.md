@@ -539,3 +539,15 @@ MarcBot includes an internal provider-contact confirmation-token helper for futu
 The helper supports issuing and consuming short-lived, single-use, chat-bound confirmation tokens for explicitly allowed provider-contacting workflow IDs. The initial allowlist is limited to `source-monitor-ai-summary`.
 
 This helper does not register `/workflow_confirm`, does not run `source-monitor-ai-summary` from Telegram, does not contact providers, does not write artifacts, and does not write memory. It exists so token lifecycle behavior can be tested before any Telegram execution path is enabled.
+
+## Telegram workflow confirmation skeleton v1
+
+MarcBot 0.3.30 registers `/workflow_confirm` as a non-executing Telegram skeleton for provider-contact confirmation UX.
+
+The command accepts the planned shape:
+
+    /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN
+
+In 0.3.30 this command does not consume confirmation tokens, does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory. It returns safe status text documenting that provider-contacting Telegram execution is not enabled yet.
+
+This milestone exists to make the user-facing command surface testable before any provider-contacting workflow execution is wired to Telegram.
