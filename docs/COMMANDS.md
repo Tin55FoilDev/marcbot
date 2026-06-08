@@ -927,3 +927,5 @@ In MarcBot 0.3.38, a Telegram-safe summary execution adapter exists for future `
 In MarcBot 0.3.39, `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` executes the provider-contacting summary workflow after a valid token is consumed. Execution uses the fixed Telegram-safe adapter only. Invalid confirmations are rejected before provider contact. Telegram still accepts no arbitrary project, prompt, URL, path, provider, model, task route, memory query, or workflow arguments.
 
 In MarcBot 0.3.40, Telegram summary execution uses zero memory-context limits to preserve the LLM prompt-size safety cap. The command remains fixed to the approved summary workflow path and still accepts no arbitrary execution arguments.
+
+In MarcBot 0.3.41, Telegram summary execution uses a fixed summary input limit of 1800 characters. The CLI source-monitor summary commands accept `--summary-input-limit`, but Telegram does not expose this as an argument.

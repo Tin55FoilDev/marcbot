@@ -6,6 +6,7 @@ import pytest
 
 from marcbot.workflow_runner import WorkflowRunResult
 from marcbot.workflow_telegram_execution import (
+    TELEGRAM_SUMMARY_INPUT_LIMIT,
     TELEGRAM_SUMMARY_MEMORY_EVENTS_LIMIT,
     TELEGRAM_SUMMARY_MEMORY_FACTS_LIMIT,
     TELEGRAM_SUMMARY_MEMORY_PROFILE,
@@ -47,6 +48,7 @@ def test_telegram_summary_execution_adapter_uses_fixed_safe_arguments() -> None:
                 "memory_facts_limit": TELEGRAM_SUMMARY_MEMORY_FACTS_LIMIT,
                 "memory_summaries_limit": TELEGRAM_SUMMARY_MEMORY_SUMMARIES_LIMIT,
                 "memory_events_limit": TELEGRAM_SUMMARY_MEMORY_EVENTS_LIMIT,
+                "summary_input_limit": TELEGRAM_SUMMARY_INPUT_LIMIT,
             },
         )
     ]
@@ -61,6 +63,10 @@ def test_telegram_summary_execution_adapter_uses_zero_memory_context_limits() ->
     assert TELEGRAM_SUMMARY_MEMORY_FACTS_LIMIT == 0
     assert TELEGRAM_SUMMARY_MEMORY_SUMMARIES_LIMIT == 0
     assert TELEGRAM_SUMMARY_MEMORY_EVENTS_LIMIT == 0
+
+
+def test_telegram_summary_execution_adapter_uses_tighter_summary_input_limit() -> None:
+    assert TELEGRAM_SUMMARY_INPUT_LIMIT == 1800
 
 
 def test_telegram_summary_execution_adapter_rejects_missing_artifact_id() -> None:

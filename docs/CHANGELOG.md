@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.41 - Telegram summary input-limit hardening
+
+- Added `--summary-input-limit` for source-monitor summary commands.
+- Plumbed summary input limits through workflow execution helpers.
+- Set Telegram-confirmed summary execution to use a tighter fixed summary input limit of 1800 characters.
+- Preserved the LLM prompt-size safety cap and the no-arbitrary-arguments Telegram boundary.
+
+
 ## 0.3.40 - Telegram summary prompt-budget hardening
 
 - Reduced the Telegram-safe `source-monitor-ai-summary` execution adapter memory-context limits to zero.

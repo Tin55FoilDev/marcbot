@@ -2306,6 +2306,23 @@ def test_optional_memory_context_allows_profile_query_override(
 
 
 
+def test_source_monitor_summarize_latest_accepts_summary_input_limit() -> None:
+    from marcbot.cli import main
+
+    result = main(
+        [
+            "source-monitor",
+            "summarize-latest",
+            "ai",
+            "--summary-input-limit",
+            "1800",
+            "--preview-prompt",
+        ]
+    )
+
+    assert result in {0, 1}
+
+
 def test_source_monitor_summarize_latest_accepts_memory_profile() -> None:
     parser = build_parser()
     args = parser.parse_args(

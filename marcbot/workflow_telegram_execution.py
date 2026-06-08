@@ -15,6 +15,7 @@ TELEGRAM_SUMMARY_MEMORY_PROFILE = "source-monitor"
 TELEGRAM_SUMMARY_MEMORY_FACTS_LIMIT = 0
 TELEGRAM_SUMMARY_MEMORY_SUMMARIES_LIMIT = 0
 TELEGRAM_SUMMARY_MEMORY_EVENTS_LIMIT = 0
+TELEGRAM_SUMMARY_INPUT_LIMIT = 1800
 
 
 def format_telegram_source_monitor_summary_execution(
@@ -64,4 +65,5 @@ def _run_telegram_source_monitor_summary(
         memory_facts_limit=TELEGRAM_SUMMARY_MEMORY_FACTS_LIMIT,
         memory_summaries_limit=TELEGRAM_SUMMARY_MEMORY_SUMMARIES_LIMIT,
         memory_events_limit=TELEGRAM_SUMMARY_MEMORY_EVENTS_LIMIT,
+        summary_input_limit=TELEGRAM_SUMMARY_INPUT_LIMIT,
     )

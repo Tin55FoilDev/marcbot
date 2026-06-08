@@ -255,6 +255,7 @@ def _write_source_monitor_summary_for_report(
     report_path: Path,
     task_name: str,
     memory_args: argparse.Namespace | None = None,
+    summary_input_limit: int | None = None,
     preview_prompt: bool = False,
     preview_prompt_save: str | None = None,
 ) -> Path | None:
@@ -270,10 +271,19 @@ def _write_source_monitor_summary_for_report(
         )
     )
     input_limit = (
-        SOURCE_MONITOR_SUMMARY_WITH_MEMORY_INPUT_LIMIT
-        if uses_memory_context
-        else SOURCE_MONITOR_SUMMARY_INPUT_LIMIT
+        summary_input_limit
+        if summary_input_limit is not None
+        else (
+            SOURCE_MONITOR_SUMMARY_WITH_MEMORY_INPUT_LIMIT
+            if uses_memory_context
+            else SOURCE_MONITOR_SUMMARY_INPUT_LIMIT
+        )
     )
+    if input_limit <= 0:
+        raise MarcBotError(
+            "MBOT-LLM-070",
+            "Source monitor summary input limit must be positive",
+        )
     summary_input = _build_source_monitor_summary_input(
         report_path,
         input_path,
@@ -914,6 +924,9 @@ def build_parser() -> argparse.ArgumentParser:
     source_monitor_run_summary_parser.add_argument(
         "--memory-events-limit", type=int, default=5
     )
+    source_monitor_run_summary_parser.add_argument(
+        "--summary-input-limit", type=int, default=None
+    )
     source_monitor_run_summary_parser.add_argument("--preview-prompt", action="store_true")
     source_monitor_run_summary_parser.add_argument("--preview-prompt-save", default=None)
     source_monitor_summarize_latest_parser = source_monitor_subparsers.add_parser(
@@ -942,6 +955,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     source_monitor_summarize_latest_parser.add_argument(
         "--memory-events-limit", type=int, default=5
+    )
+    source_monitor_summarize_latest_parser.add_argument(
+        "--summary-input-limit", type=int, default=None
     )
     source_monitor_summarize_latest_parser.add_argument("--preview-prompt", action="store_true")
     source_monitor_summarize_latest_parser.add_argument("--preview-prompt-save", default=None)
@@ -1986,6 +2002,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_path=latest_report,
                     task_name=args.task,
                     memory_args=args,
+                    summary_input_limit=args.summary_input_limit,
                     preview_prompt=args.preview_prompt,
                     preview_prompt_save=args.preview_prompt_save,
                 )
@@ -2002,6 +2019,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_path=result.path,
                     task_name=args.task,
                     memory_args=args,
+                    summary_input_limit=args.summary_input_limit,
                     preview_prompt=args.preview_prompt,
                     preview_prompt_save=args.preview_prompt_save,
                 )

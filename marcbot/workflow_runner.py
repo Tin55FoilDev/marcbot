@@ -54,6 +54,7 @@ def _run_source_monitor_summary_cli(
     memory_facts_limit: int,
     memory_summaries_limit: int,
     memory_events_limit: int,
+    summary_input_limit: int | None,
 ) -> tuple[str, Path | None]:
     """Run the existing source-monitor summarize-latest CLI path."""
     command = [
@@ -75,6 +76,8 @@ def _run_source_monitor_summary_cli(
     command.extend(["--memory-facts-limit", str(memory_facts_limit)])
     command.extend(["--memory-summaries-limit", str(memory_summaries_limit)])
     command.extend(["--memory-events-limit", str(memory_events_limit)])
+    if summary_input_limit is not None:
+        command.extend(["--summary-input-limit", str(summary_input_limit)])
 
     completed = subprocess.run(
         command,
@@ -104,6 +107,7 @@ def run_workflow(
     memory_facts_limit: int = 5,
     memory_summaries_limit: int = 3,
     memory_events_limit: int = 5,
+    summary_input_limit: int | None = None,
 ) -> WorkflowRunResult:
     """Run one approved workflow through a bounded implementation path."""
     workflow = get_workflow_definition(workflow_id)
@@ -132,6 +136,7 @@ def run_workflow(
             memory_facts_limit=memory_facts_limit,
             memory_summaries_limit=memory_summaries_limit,
             memory_events_limit=memory_events_limit,
+            summary_input_limit=summary_input_limit,
         )
         return WorkflowRunResult(
             workflow_id=workflow.workflow_id,
@@ -319,6 +324,7 @@ def format_workflow_run(
     memory_facts_limit: int = 5,
     memory_summaries_limit: int = 3,
     memory_events_limit: int = 5,
+    summary_input_limit: int | None = None,
 ) -> str:
     """Run one workflow and return formatted output."""
     return format_workflow_run_result(
@@ -332,5 +338,6 @@ def format_workflow_run(
             memory_facts_limit=memory_facts_limit,
             memory_summaries_limit=memory_summaries_limit,
             memory_events_limit=memory_events_limit,
+            summary_input_limit=summary_input_limit,
         )
     )
