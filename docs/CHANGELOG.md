@@ -1,5 +1,14 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.44 - Correct provider-contact current-state docs
+
+- Corrected command, workflow, and security docs to reflect confirmed Telegram execution for `source-monitor-ai-summary`.
+- Clarified that `/workflow_run source-monitor-ai-summary` performs preflight and issues a token without provider contact.
+- Clarified that `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` executes after a valid token.
+- Documented the fixed Telegram execution adapter settings: project `ai`, task `source_monitor_analysis`, no memory-profile expansion, zero memory limits, and summary input limit 1800.
+- Reaffirmed that invalid confirmations are rejected before provider contact and Telegram accepts no arbitrary execution arguments.
+
+
 ## 0.3.43 - Fix explicit Telegram memory-profile disable
 
 - Updated workflow execution plumbing so an explicit empty memory profile disables default workflow memory-profile expansion.

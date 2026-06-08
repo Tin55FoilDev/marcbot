@@ -524,18 +524,28 @@ chat commands.
 
 ## Provider-contacting Telegram workflow boundary
 
-Provider-contacting workflow execution from Telegram remains disabled.
+Provider-contacting summary execution from Telegram is enabled only through a confirmation-token gate.
 
-`/workflow_run source-monitor-ai-summary` may issue a short-lived in-memory confirmation token during provider-contact preflight. The preflight discloses that future execution would contact a provider, but the preflight itself does not contact providers, run workflows, write artifacts, or write memory.
+`/workflow_run source-monitor-ai-summary` performs preflight. It issues a short-lived in-memory confirmation token and discloses that confirmed execution will contact a provider. Preflight itself does not contact providers, run workflows, write artifacts, or write memory.
 
-`/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes the token, but remains non-executing. Valid confirmations report provider contact no, workflow ran no, and writes no. Invalid confirmations are rejected before any provider contact.
+`/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes the token. A valid token executes the fixed Telegram-safe source-monitor summary adapter. Invalid confirmations are rejected before provider contact.
 
-Provider contact from Telegram may be enabled only in a later explicit implementation milestone and only after confirmation validation is complete. The first enabled version must use fixed workflow arguments: workflow `source-monitor-ai-summary`, project `ai`, and no memory-profile expansion.
+The execution path is restricted to fixed arguments only:
 
-The implementation must reject invalid confirmations before provider contact. Invalid confirmations include unknown, expired, reused, wrong-chat, malformed, unsupported-workflow, and unauthorized requests.
+- workflow: `source-monitor-ai-summary`
+- project: `ai`
+- task: `source_monitor_analysis`
+- memory profile: none for Telegram execution
+- memory query: none
+- memory project: none
+- memory facts limit: 0
+- memory summaries limit: 0
+- memory events limit: 0
+- summary input limit: 1800
 
-Successful future execution may write only the approved bounded summary artifact. It must not write durable memory, approve durable memory proposals, expose arbitrary paths, expose raw prompts, expose provider keys, expose local config, expose environment values, dump stack traces, or send unrestricted logs to Telegram.
+Telegram accepts no arbitrary prompt, URL, path, provider, model, task route, shell command, project, memory-profile argument, memory-query argument, or summary-input-limit argument.
 
+Successful execution may write only the approved bounded summary artifact. It must not write durable memory or approve durable memory proposals. Telegram responses must remain bounded and must not expose arbitrary local paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.
 
 ## Confirmed provider-contact Telegram execution boundary
 

@@ -504,58 +504,47 @@ behavior, and Telegram UX are designed.
 
 ## Current provider-contact Telegram workflow state
 
-`source-monitor-ai-summary` is the first approved workflow that is useful from Telegram but requires model/provider contact. The CLI workflow exists and can run the bounded source-monitor summary path, but Telegram execution remains disabled until a later explicit implementation step.
+`source-monitor-ai-summary` is the first provider-contacting workflow enabled from Telegram. Execution is allowed only through the confirmation-token flow and only through the fixed Telegram-safe summary adapter.
 
-Current Telegram behavior is intentionally staged:
+Preflight behavior:
 
-1. `/workflow_run source-monitor-ai-summary` performs provider-contact preflight only.
-2. The preflight discloses that the workflow would contact a provider if eventually executed.
-3. The preflight issues a short-lived in-memory confirmation token for UX validation.
+1. `/workflow_run source-monitor-ai-summary` performs provider-contact preflight.
+2. The preflight discloses that confirmed execution will contact a provider.
+3. The preflight issues a short-lived in-memory confirmation token.
 4. The preflight does not contact providers.
 5. The preflight does not run the workflow.
 6. The preflight does not write artifacts.
 7. The preflight does not write memory.
-8. `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes the token.
-9. A valid token reports `Status: validated`.
-10. Invalid confirmations report `Status: rejected`.
-11. `/workflow_confirm` remains non-executing.
 
-The current successful confirmation response shape is:
+Confirmation behavior:
 
-    MarcBot workflow confirmation
-    Workflow: source-monitor-ai-summary
-    Status: validated
-    Provider contact: no
-    Workflow ran: no
-    Writes: no
-    Reason: confirmation token accepted; execution remains disabled
+1. `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes the token.
+2. Invalid confirmations are rejected before provider contact.
+3. A valid token executes the fixed Telegram-safe summary adapter exactly once.
+4. Successful execution contacts the configured provider.
+5. Successful execution runs `source-monitor-ai-summary`.
+6. Successful execution writes one bounded summary artifact.
+7. Successful execution returns a safe `summary:...` artifact ID.
+8. Execution writes no durable memory and approves no durable memory proposals.
 
-The current rejected confirmation response shape is the same bounded result format with `Status: rejected` and a safe reason. Rejected cases include unknown tokens, expired tokens, reused tokens, wrong-chat tokens, malformed requests, unsupported workflow IDs, and unauthorized chats.
+Invalid confirmations include unknown tokens, expired tokens, reused tokens, wrong-chat tokens, malformed requests, unsupported workflow IDs, and unauthorized chats.
 
-The confirmation-token implementation is intentionally in-memory. Tokens are short-lived, single-use, chat-bound, and workflow-bound. They are used to validate the Telegram confirmation UX before provider-contacting workflow execution is enabled.
+The execution path is fixed:
 
-## Provider-contact execution enablement gate
+- workflow: `source-monitor-ai-summary`
+- project: `ai`
+- task: `source_monitor_analysis`
+- memory profile: none for Telegram execution
+- memory query: none
+- memory project: none
+- memory facts limit: 0
+- memory summaries limit: 0
+- memory events limit: 0
+- summary input limit: 1800
 
-Telegram may execute `source-monitor-ai-summary` only after a separate implementation milestone explicitly enables execution after token validation.
+Telegram accepts no arbitrary project, prompt, path, provider, model, task route, memory query, memory profile, summary input limit, shell command, or workflow argument.
 
-The first execution-enabled version must preserve these boundaries:
-
-1. The only executable provider-contacting Telegram workflow is `source-monitor-ai-summary`.
-2. The project remains fixed to `ai`.
-3. The memory profile remains fixed to `source-monitor`.
-4. The command accepts no arbitrary project, memory profile, prompt, URL, path, provider, model, task route, shell command, or workflow argument.
-5. Token validation happens before provider contact.
-6. Invalid confirmations are rejected before provider contact.
-7. A valid token may trigger exactly one workflow run.
-8. Provider contact is disclosed before and after execution.
-9. The workflow may write only the approved bounded summary artifact.
-10. The workflow writes no durable memory and approves no durable memory proposals.
-11. The Telegram result is artifact-oriented and includes the summary artifact ID when successful.
-12. The Telegram result does not expose arbitrary paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.
-13. Failures are summarized safely with provider contact, workflow ran, writes, and a bounded reason.
-14. Logs audit preflight token issuance, confirmation validation, workflow start, provider-contacting execution attempt, artifact result, and failure outcome.
-
-The future execution-enabled success shape should remain bounded:
+The successful execution response shape is:
 
     MarcBot workflow confirmation
     Workflow: source-monitor-ai-summary
@@ -565,7 +554,7 @@ The future execution-enabled success shape should remain bounded:
     Writes: summary artifact
     Artifact: summary:...
 
-The future execution-enabled failure shape should remain bounded:
+Failure responses remain bounded:
 
     MarcBot workflow confirmation
     Workflow: source-monitor-ai-summary
@@ -575,74 +564,7 @@ The future execution-enabled failure shape should remain bounded:
     Writes: no|summary artifact|unknown
     Reason: SAFE_SUMMARY
 
-MarcBot already includes safe workflow execution result formatting helpers for these future responses. Those helpers normalize status fields, redact common local path prefixes in reasons, truncate long reasons, and reject path-like artifact IDs.
+Failure responses must not expose arbitrary paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.
 
-This section supersedes the earlier incremental provider-contact design notes from versions 0.3.28 through 0.3.36. The changelog retains the detailed milestone history.
+This section supersedes the earlier incremental provider-contact design notes from versions 0.3.28 through 0.3.43. The changelog retains the detailed milestone history.
 
-
-## Telegram-safe summary execution adapter v1
-
-MarcBot 0.3.38 adds a Telegram-safe adapter for the future execution-enabled `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` path.
-
-The adapter hardcodes the only allowed Telegram provider-contacting workflow execution shape:
-
-- workflow: `source-monitor-ai-summary`
-- project: `ai`
-- task: `source_monitor_analysis`
-- memory profile: none for Telegram execution
-- memory query: none
-- memory project: none
-- memory limits: fixed defaults
-
-The adapter returns bounded success/failure text through the safe workflow execution result formatter and converts the summary file path into a safe `summary:...` artifact ID.
-
-This milestone does not wire the adapter into `/workflow_confirm`, does not run the workflow from Telegram, does not contact providers during validation, does not write artifacts from Telegram, and does not write memory.
-
-## Confirmed Telegram summary execution v1
-
-MarcBot 0.3.39 enables provider-contacting `source-monitor-ai-summary` execution from Telegram after successful confirmation-token validation.
-
-The execution-enabled path remains narrow:
-
-- `/workflow_run source-monitor-ai-summary` issues the short-lived confirmation token.
-- `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes the token.
-- Only a valid token executes the Telegram-safe summary adapter.
-- Invalid, expired, reused, wrong-chat, malformed, unsupported-workflow, and unauthorized confirmations are rejected before provider contact.
-- The adapter fixes workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, no memory-profile expansion, no memory query, no memory project, and fixed memory limits.
-- Telegram accepts no arbitrary project, prompt, path, provider, model, task route, memory query, or workflow arguments.
-
-Successful execution returns a bounded artifact-oriented response with provider contact yes, workflow ran yes, writes summary artifact, and a safe `summary:...` artifact ID.
-
-Execution failures are bounded through the safe workflow result formatter and must not expose arbitrary local paths, raw prompts, provider keys, local config, environment values, unrestricted logs, or full provider internals.
-
-## Telegram summary prompt-budget hardening v1
-
-MarcBot 0.3.40 hardens the Telegram-safe `source-monitor-ai-summary` execution adapter by setting memory-context limits to zero for Telegram-triggered execution.
-
-The adapter still uses fixed workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, and no memory-profile expansion, but it does not expand memory facts, summaries, or events into the Telegram execution prompt.
-
-This preserves the LLM prompt-size safety cap and reduces the chance that a confirmed Telegram execution fails due to oversized prompt input. Telegram still accepts no arbitrary project, prompt, path, provider, model, task route, memory query, or workflow arguments.
-
-## Telegram summary input-limit hardening v1
-
-MarcBot 0.3.41 adds a bounded source-monitor summary input-limit control and uses it from the Telegram-safe summary execution adapter.
-
-The CLI source-monitor summary path now accepts `--summary-input-limit`. The Telegram adapter passes a fixed tighter input limit of 1800 characters. This leaves additional room for the summary prompt template while preserving the existing LLM prompt-size safety cap.
-
-Telegram still accepts no arbitrary project, prompt, path, provider, model, task route, memory query, summary input limit, or workflow argument.
-
-## Telegram summary memory-profile expansion disabled v1
-
-MarcBot 0.3.42 disables memory-profile expansion for Telegram-confirmed `source-monitor-ai-summary` execution.
-
-Earlier design notes expected the Telegram path to use memory profile `source-monitor`. Runtime preview showed that passing the profile injects default memory context even when explicit memory limits are set to zero. The Telegram execution adapter now passes no memory profile, no memory query, no memory project, and zero memory limits.
-
-This preserves the LLM prompt-size safety cap and keeps Telegram execution fixed and bounded.
-
-## Explicit Telegram memory-profile disable v1
-
-MarcBot 0.3.43 fixes the Telegram summary execution adapter so memory-profile expansion is explicitly disabled.
-
-`run_workflow()` keeps CLI backward compatibility: `memory_profile=None` means use the workflow registry default. For Telegram execution, the adapter passes an explicit empty memory profile, which prevents `--memory-profile` from being passed to the source-monitor summary subprocess.
-
-This keeps confirmed Telegram summary execution within the fixed no-memory-context boundary and preserves the LLM prompt-size safety cap.
