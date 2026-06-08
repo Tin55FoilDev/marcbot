@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.29 - Provider-contact confirmation token lifecycle prep
+
+- Added an internal provider-contact confirmation-token lifecycle helper for future Telegram workflow confirmation.
+- Added tests for issuing, consuming, expiring, rejecting, and single-use confirmation-token behavior.
+- Kept `/workflow_confirm` unimplemented and kept `source-monitor-ai-summary` Telegram execution disabled.
+- Confirmed this milestone performs no provider contact, artifact writes, or memory writes.
+
+
 ## 0.3.28 - Provider-contact Telegram confirmation design
 
 - Documented the planned two-step Telegram confirmation policy for provider-contacting workflow execution.

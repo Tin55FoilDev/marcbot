@@ -531,3 +531,11 @@ The confirmation policy should be narrow:
 The confirmed workflow result should remain artifact-oriented. A successful confirmation may create a bounded summary artifact, and Marc can inspect or send that artifact through the existing workflow artifact commands. Failures should be summarized without dumping unrestricted logs, stack traces, config contents, or provider internals into Telegram.
 
 Implementation should wait until tests cover the preflight-only path, the confirmation-token lifecycle, authorization failures, unsupported workflow IDs, provider-contact disclosure text, artifact result reporting, and the no-memory-write boundary.
+
+## Implemented provider-contact confirmation token lifecycle v1
+
+MarcBot includes an internal provider-contact confirmation-token helper for future Telegram workflow confirmation. This is implementation prep only.
+
+The helper supports issuing and consuming short-lived, single-use, chat-bound confirmation tokens for explicitly allowed provider-contacting workflow IDs. The initial allowlist is limited to `source-monitor-ai-summary`.
+
+This helper does not register `/workflow_confirm`, does not run `source-monitor-ai-summary` from Telegram, does not contact providers, does not write artifacts, and does not write memory. It exists so token lifecycle behavior can be tested before any Telegram execution path is enabled.
