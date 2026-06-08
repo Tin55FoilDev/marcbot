@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.32 - Non-executing confirmation token validation
+
+- Updated `/workflow_confirm` to validate and consume confirmation tokens issued by `/workflow_run source-monitor-ai-summary`.
+- Kept provider-contacting workflow execution disabled after token validation.
+- Added Telegram tests for accepted, reused, unknown, wrong-chat, unsupported-workflow, and unauthorized confirmation attempts.
+- Preserved the provider-contact boundary: confirmation reports provider contact as no, workflow ran as no, and writes as no.
+
+
 ## 0.3.31 - Provider-contact preflight token issuance
 
 - Updated `/workflow_run source-monitor-ai-summary` to issue a short-lived in-memory confirmation token during provider-contact preflight.

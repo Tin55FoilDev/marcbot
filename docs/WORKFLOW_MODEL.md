@@ -559,3 +559,11 @@ MarcBot 0.3.31 updates `/workflow_run source-monitor-ai-summary` to issue a shor
 The preflight still does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory. The token is issued only to exercise the planned provider-contact confirmation UX.
 
 `/workflow_confirm` remains non-executing in this milestone. It does not consume confirmation tokens and cannot trigger provider-contacting workflow execution.
+
+## Non-executing confirmation token validation v1
+
+MarcBot 0.3.32 updates `/workflow_confirm` to validate and consume confirmation tokens issued by `/workflow_run source-monitor-ai-summary`.
+
+A valid confirmation token is accepted once and then marked used. Unknown, malformed, expired, reused, wrong-chat, and unsupported-workflow confirmations are rejected.
+
+This remains non-executing. Token validation does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory.

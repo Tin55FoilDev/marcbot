@@ -60,7 +60,6 @@ from marcbot.uptime import format_uptime_report
 from marcbot.weather_report import find_latest_weather_report
 from marcbot.weather_status import format_weather_status_message
 from marcbot.workflow_confirmation import (
-    ALLOWED_PROVIDER_CONTACT_WORKFLOWS,
     DEFAULT_CONFIRMATION_TTL_SECONDS,
     WorkflowConfirmation,
     WorkflowConfirmationStore,
@@ -1789,33 +1788,25 @@ async def workflow_run_command(
         await update.message.reply_text(message)
 
 
-def format_workflow_confirm_skeleton_message(*, workflow_id: str) -> str:
-    """Return the non-executing Telegram workflow-confirmation skeleton message."""
-    if workflow_id not in ALLOWED_PROVIDER_CONTACT_WORKFLOWS:
-        return "\n".join(
-            [
-                "MarcBot workflow confirmation",
-                f"Workflow: {workflow_id}",
-                "Status: rejected",
-                "Reason: unsupported provider-contact workflow",
-                "Provider contact: no",
-                "Workflow ran: no",
-                "Writes: no",
-            ]
-        )
-
+def format_workflow_confirm_result_message(
+    *,
+    workflow_id: str,
+    status: str,
+    reason: str,
+) -> str:
+    """Return the non-executing Telegram workflow-confirmation result message."""
     return "\n".join(
         [
             "MarcBot workflow confirmation",
             f"Workflow: {workflow_id}",
-            "Status: not enabled",
-            "Reason: provider-contacting Telegram execution is not enabled yet",
+            f"Status: {status}",
+            f"Reason: {reason}",
             "Provider contact: no",
             "Workflow ran: no",
             "Writes: no",
             "",
-            "This command is a non-executing skeleton in MarcBot 0.3.31.",
-            "Use /workflow_run source-monitor-ai-summary for preflight only.",
+            "MarcBot 0.3.32 validates confirmation tokens but still does not "
+            "execute provider-contacting workflows.",
         ]
     )
 
@@ -1845,13 +1836,47 @@ async def workflow_confirm_command(
         return
 
     workflow_id = args[0].strip()
-    message = format_workflow_confirm_skeleton_message(workflow_id=workflow_id)
+    token = args[1].strip()
+
+    if not isinstance(chat_id, int):
+        message = format_workflow_confirm_result_message(
+            workflow_id=workflow_id,
+            status="rejected",
+            reason="missing chat id",
+        )
+        LOGGER.info(
+            "Handled /workflow_confirm for chat_id=%s workflow_id=%s ok=false "
+            "missing_chat_id",
+            chat_id,
+            workflow_id,
+        )
+        if update.message is not None:
+            await update.message.reply_text(message)
+        return
+
+    store = _workflow_confirmation_store(context)
+    result = store.consume(workflow_id=workflow_id, chat_id=chat_id, token=token)
+    if result.ok:
+        message = format_workflow_confirm_result_message(
+            workflow_id=workflow_id,
+            status="validated",
+            reason="confirmation token accepted; execution remains disabled",
+        )
+        log_reason = "token_validated_nonexecuting"
+    else:
+        message = format_workflow_confirm_result_message(
+            workflow_id=workflow_id,
+            status="rejected",
+            reason=result.message,
+        )
+        log_reason = result.reason
 
     LOGGER.info(
         "Handled /workflow_confirm for chat_id=%s workflow_id=%s ok=false "
-        "skeleton_only",
+        "reason=%s",
         chat_id,
         workflow_id,
+        log_reason,
     )
     if update.message is not None:
         await update.message.reply_text(message)
@@ -2041,7 +2066,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/version - show MarcBot and Python version\n"
         "/weather_status - show latest weather report status\n"
         "/workflow_artifacts <workflow-id> - show read-only workflow artifacts for ai\n"
-        "/workflow_confirm source-monitor-ai-summary <token> - provider-confirm skeleton\n"
+        "/workflow_confirm source-monitor-ai-summary <token> - validate confirmation token\n"
         "/workflow_list - list approved workflows\n"
         "/workflow_run source-monitor-ai-report - run approved deterministic report workflow\n"
         "/workflow_send_artifact <workflow-id> <artifact-id> - send approved workflow artifact\n"

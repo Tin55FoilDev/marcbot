@@ -918,3 +918,5 @@ returns a not-enabled response with:
 Unsupported workflow IDs are rejected. Missing or malformed arguments return usage text. Unauthorized chats are rejected through the standard Telegram authorization path.
 
 In MarcBot 0.3.31, `/workflow_run source-monitor-ai-summary` issues a short-lived in-memory confirmation token as part of the provider-contact preflight response. This token is for UX validation only. `/workflow_confirm` remains non-executing and does not consume the token or run the workflow.
+
+In MarcBot 0.3.32, `/workflow_confirm` validates and consumes confirmation tokens issued by `/workflow_run source-monitor-ai-summary`. A valid token is accepted once, but the command remains non-executing: it does not run the workflow, contact providers, write artifacts, or write memory.
