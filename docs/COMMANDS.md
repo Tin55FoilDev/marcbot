@@ -921,3 +921,5 @@ When execution is eventually enabled, a successful response should report:
 
 Failure responses must remain bounded and must not expose arbitrary paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.
 
+
+In MarcBot 0.3.38, a Telegram-safe summary execution adapter exists for future `/workflow_confirm` execution enablement. `/workflow_confirm` behavior is unchanged in this milestone: it validates tokens but does not run `source-monitor-ai-summary`, contact providers, write artifacts, or write memory.

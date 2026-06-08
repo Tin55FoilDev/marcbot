@@ -579,3 +579,21 @@ MarcBot already includes safe workflow execution result formatting helpers for t
 
 This section supersedes the earlier incremental provider-contact design notes from versions 0.3.28 through 0.3.36. The changelog retains the detailed milestone history.
 
+
+## Telegram-safe summary execution adapter v1
+
+MarcBot 0.3.38 adds a Telegram-safe adapter for the future execution-enabled `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` path.
+
+The adapter hardcodes the only allowed Telegram provider-contacting workflow execution shape:
+
+- workflow: `source-monitor-ai-summary`
+- project: `ai`
+- task: `source_monitor_analysis`
+- memory profile: `source-monitor`
+- memory query: none
+- memory project: none
+- memory limits: fixed defaults
+
+The adapter returns bounded success/failure text through the safe workflow execution result formatter and converts the summary file path into a safe `summary:...` artifact ID.
+
+This milestone does not wire the adapter into `/workflow_confirm`, does not run the workflow from Telegram, does not contact providers during validation, does not write artifacts from Telegram, and does not write memory.

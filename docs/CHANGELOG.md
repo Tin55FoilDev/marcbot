@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.38 - Telegram-safe summary execution adapter prep
+
+- Added a Telegram-safe source-monitor summary execution adapter for future provider-contact confirmation execution.
+- Hardcoded the future Telegram execution path to workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, and memory profile `source-monitor`.
+- Added tests proving the adapter accepts no arbitrary project, prompt, path, provider, model, task route, memory query, or workflow arguments.
+- Kept `/workflow_confirm` behavior unchanged and kept provider-contacting Telegram execution disabled.
+
+
 ## 0.3.37 - Provider-contact workflow docs consolidation
 
 - Consolidated provider-contact workflow documentation around the current Telegram token-validation state.
