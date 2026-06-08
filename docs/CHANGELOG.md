@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.34 - Safe workflow execution result formatting prep
+
+- Added safe Telegram workflow execution result formatting helpers for future provider-contact execution.
+- Added tests for bounded success, bounded failure, normalized status fields, path-prefix redaction, long-reason truncation, and path-like artifact IDs.
+- Kept `/workflow_confirm` behavior unchanged and kept provider-contacting summary execution disabled.
+- Preserved the provider-contact boundary: this milestone performs no provider contact, workflow execution, artifact writes, or memory writes.
+
+
 ## 0.3.33 - Provider-contact execution enablement design gate
 
 - Documented the final design gate before Telegram may execute `source-monitor-ai-summary` through `/workflow_confirm`.

@@ -612,3 +612,21 @@ Failure responses should use a bounded result shape similar to:
     Reason: SAFE_SUMMARY
 
 Execution-enablement tests must prove that provider contact is not attempted for invalid confirmations and that valid confirmations still preserve the artifact, memory, path, provider-detail, and logging boundaries.
+
+## Safe workflow execution result formatting v1
+
+MarcBot 0.3.34 adds bounded Telegram result formatting helpers for future provider-contacting workflow execution.
+
+The helper supports the planned success shape:
+
+    MarcBot workflow confirmation
+    Workflow: source-monitor-ai-summary
+    Status: executed
+    Provider contact: yes
+    Workflow ran: yes
+    Writes: summary artifact
+    Artifact: summary:...
+
+The helper also supports bounded failure responses with provider contact, workflow ran, writes, and a safe reason. Local path prefixes are redacted, long reasons are truncated, and path-like artifact IDs are not exposed.
+
+This milestone does not wire the helper into `/workflow_confirm`, does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory.
