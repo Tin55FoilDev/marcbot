@@ -536,3 +536,13 @@ The implementation must reject invalid confirmations before provider contact. In
 
 Successful future execution may write only the approved bounded summary artifact. It must not write durable memory, approve durable memory proposals, expose arbitrary paths, expose raw prompts, expose provider keys, expose local config, expose environment values, dump stack traces, or send unrestricted logs to Telegram.
 
+
+## Confirmed provider-contact Telegram execution boundary
+
+MarcBot 0.3.39 enables provider-contacting summary execution from Telegram only after confirmation-token validation.
+
+The execution path is restricted to `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` with a valid token previously issued by `/workflow_run source-monitor-ai-summary`. Invalid confirmations must be rejected before provider contact.
+
+The first enabled execution path uses fixed arguments only: workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, memory profile `source-monitor`, no memory query, no memory project, and fixed memory limits. Telegram accepts no arbitrary prompt, URL, path, provider, model, task route, shell command, project, or memory-profile argument.
+
+Successful execution may write only the approved bounded summary artifact. It must not write durable memory or approve durable memory proposals. Telegram responses must remain bounded and must not expose arbitrary local paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.

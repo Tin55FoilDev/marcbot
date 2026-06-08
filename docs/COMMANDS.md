@@ -923,3 +923,5 @@ Failure responses must remain bounded and must not expose arbitrary paths, raw p
 
 
 In MarcBot 0.3.38, a Telegram-safe summary execution adapter exists for future `/workflow_confirm` execution enablement. `/workflow_confirm` behavior is unchanged in this milestone: it validates tokens but does not run `source-monitor-ai-summary`, contact providers, write artifacts, or write memory.
+
+In MarcBot 0.3.39, `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` executes the provider-contacting summary workflow after a valid token is consumed. Execution uses the fixed Telegram-safe adapter only. Invalid confirmations are rejected before provider contact. Telegram still accepts no arbitrary project, prompt, URL, path, provider, model, task route, memory query, or workflow arguments.

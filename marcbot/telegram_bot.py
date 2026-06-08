@@ -71,6 +71,10 @@ from marcbot.workflow_runner import (
     format_workflow_status,
     resolve_workflow_artifact,
 )
+from marcbot.workflow_telegram_execution import (
+    format_telegram_source_monitor_summary_execution,
+    format_telegram_source_monitor_summary_failure,
+)
 from marcbot.workspace_list import format_workspace_ls_message
 from marcbot.workspace_sender import validate_workspace_send
 
@@ -1684,8 +1688,8 @@ def format_provider_contact_preflight_message(
             "Planned confirmation command:",
             f"/workflow_confirm {record.workflow_id} {record.token}",
             "",
-            "/workflow_confirm remains non-executing in this version. "
-            "No provider was contacted and no workflow was run.",
+            "/workflow_confirm will execute after a valid token. "
+            "No provider was contacted and no workflow was run during preflight.",
         ]
     )
 
@@ -1858,12 +1862,12 @@ async def workflow_confirm_command(
     store = _workflow_confirmation_store(context)
     result = store.consume(workflow_id=workflow_id, chat_id=chat_id, token=token)
     if result.ok:
-        message = format_workflow_confirm_result_message(
-            workflow_id=workflow_id,
-            status="validated",
-            reason="confirmation token accepted; execution remains disabled",
-        )
-        log_reason = "token_validated_nonexecuting"
+        try:
+            message = format_telegram_source_monitor_summary_execution()
+            log_reason = "token_validated_executed"
+        except Exception as exc:
+            message = format_telegram_source_monitor_summary_failure(exc)
+            log_reason = "token_validated_execution_failed"
     else:
         message = format_workflow_confirm_result_message(
             workflow_id=workflow_id,

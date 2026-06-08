@@ -3172,7 +3172,10 @@ def test_workflow_run_command_returns_summary_preflight(monkeypatch) -> None:
     assert "Writes: no" in message.replies[0]
     assert "Confirmation token issued for future confirmation UX." in message.replies[0]
     assert "/workflow_confirm source-monitor-ai-summary token-1" in message.replies[0]
-    assert "No provider was contacted and no workflow was run." in message.replies[0]
+    assert (
+        "No provider was contacted and no workflow was run during preflight."
+        in message.replies[0]
+    )
 
 
 
@@ -3341,11 +3344,99 @@ def test_workflow_confirm_command_reports_usage() -> None:
     ]
 
 
-def test_workflow_confirm_command_validates_token_without_executing() -> None:
+def test_workflow_confirm_command_executes_adapter_after_valid_token(monkeypatch) -> None:
     import asyncio
     from types import SimpleNamespace
 
     from marcbot import telegram_bot
+
+    calls = []
+
+    def fake_execute() -> str:
+        calls.append("executed")
+        return "\n".join(
+            [
+                "MarcBot workflow confirmation",
+                "Workflow: source-monitor-ai-summary",
+                "Status: executed",
+                "Provider contact: yes",
+                "Workflow ran: yes",
+                "Writes: summary artifact",
+                "Artifact: summary:2026-06-08-010203",
+            ]
+        )
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_telegram_source_monitor_summary_execution",
+        fake_execute,
+    )
+
+    class FakeChat:
+        id = 123
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    store = telegram_bot.WorkflowConfirmationStore(token_factory=lambda: "token-1")
+    store.issue(workflow_id="source-monitor-ai-summary", chat_id=123)
+
+    class FakeApplication:
+        bot_data = {
+            "allowed_chat_ids": (123,),
+            "workflow_confirmation_store": store,
+        }
+
+    class FakeContext:
+        args = ["source-monitor-ai-summary", "token-1"]
+        application = FakeApplication()
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=FakeChat(), message=message)
+
+    asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
+
+    assert calls == ["executed"]
+    assert len(message.replies) == 1
+    assert "Status: executed" in message.replies[0]
+    assert "Provider contact: yes" in message.replies[0]
+    assert "Workflow ran: yes" in message.replies[0]
+    assert "Writes: summary artifact" in message.replies[0]
+    assert "Artifact: summary:2026-06-08-010203" in message.replies[0]
+
+    second_message = FakeMessage()
+    second_update = SimpleNamespace(effective_chat=FakeChat(), message=second_message)
+
+    asyncio.run(telegram_bot.workflow_confirm_command(second_update, FakeContext()))
+
+    assert calls == ["executed"]
+    assert len(second_message.replies) == 1
+    assert "Status: rejected" in second_message.replies[0]
+    assert "Confirmation token was already used." in second_message.replies[0]
+    assert "Provider contact: no" in second_message.replies[0]
+
+
+
+def test_workflow_confirm_command_reports_execution_failure_after_valid_token(
+    monkeypatch,
+) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    def fake_execute() -> str:
+        raise RuntimeError("provider timeout at /srv/marcbot/app/private")
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_telegram_source_monitor_summary_execution",
+        fake_execute,
+    )
 
     class FakeChat:
         id = 123
@@ -3376,22 +3467,58 @@ def test_workflow_confirm_command_validates_token_without_executing() -> None:
     asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
 
     assert len(message.replies) == 1
-    assert "Status: validated" in message.replies[0]
-    assert "confirmation token accepted; execution remains disabled" in message.replies[0]
+    assert "Status: failed" in message.replies[0]
+    assert "Provider contact: unknown" in message.replies[0]
+    assert "Workflow ran: unknown" in message.replies[0]
+    assert "Writes: unknown" in message.replies[0]
+    assert "/srv/" not in message.replies[0]
+    assert "[path]/marcbot/app/private" in message.replies[0]
+
+
+def test_workflow_confirm_invalid_token_does_not_execute_adapter(monkeypatch) -> None:
+    import asyncio
+    from types import SimpleNamespace
+
+    from marcbot import telegram_bot
+
+    def fail_execute() -> str:
+        raise AssertionError("invalid token must not execute adapter")
+
+    monkeypatch.setattr(
+        telegram_bot,
+        "format_telegram_source_monitor_summary_execution",
+        fail_execute,
+    )
+
+    class FakeChat:
+        id = 123
+
+    class FakeMessage:
+        def __init__(self) -> None:
+            self.replies: list[str] = []
+
+        async def reply_text(self, text: str) -> None:
+            self.replies.append(text)
+
+    class FakeApplication:
+        bot_data = {
+            "allowed_chat_ids": (123,),
+            "workflow_confirmation_store": telegram_bot.WorkflowConfirmationStore(),
+        }
+
+    class FakeContext:
+        args = ["source-monitor-ai-summary", "not-known"]
+        application = FakeApplication()
+
+    message = FakeMessage()
+    update = SimpleNamespace(effective_chat=FakeChat(), message=message)
+
+    asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
+
+    assert len(message.replies) == 1
+    assert "Status: rejected" in message.replies[0]
+    assert "Unknown confirmation token." in message.replies[0]
     assert "Provider contact: no" in message.replies[0]
-    assert "Workflow ran: no" in message.replies[0]
-    assert "Writes: no" in message.replies[0]
-
-    second_message = FakeMessage()
-    second_update = SimpleNamespace(effective_chat=FakeChat(), message=second_message)
-
-    asyncio.run(telegram_bot.workflow_confirm_command(second_update, FakeContext()))
-
-    assert len(second_message.replies) == 1
-    assert "Status: rejected" in second_message.replies[0]
-    assert "Confirmation token was already used." in second_message.replies[0]
-    assert "Provider contact: no" in second_message.replies[0]
-
 
 def test_workflow_confirm_command_rejects_unknown_workflow() -> None:
     import asyncio
