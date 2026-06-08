@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.43 - Fix explicit Telegram memory-profile disable
+
+- Updated workflow execution plumbing so an explicit empty memory profile disables default workflow memory-profile expansion.
+- Updated the Telegram-safe summary execution adapter to pass an explicit empty memory profile.
+- Added tests proving Telegram execution does not pass `--memory-profile` to the summary subprocess.
+- Preserved the LLM prompt-size safety cap and the fixed Telegram execution boundary.
+
+
 ## 0.3.42 - Disable Telegram summary memory-profile expansion
 
 - Disabled memory-profile expansion in the Telegram-safe source-monitor summary execution adapter.

@@ -102,6 +102,30 @@ def test_run_workflow_source_monitor_ai_summary_uses_existing_cli_path() -> None
     )
 
 
+def test_run_workflow_source_monitor_ai_summary_empty_memory_profile_disables_default() -> None:
+    completed = subprocess.CompletedProcess(
+        args=["python"],
+        returncode=0,
+        stdout="Source monitor summary written: /tmp/report.summary.md\n",
+        stderr="",
+    )
+
+    with patch("marcbot.workflow_runner.subprocess.run", return_value=completed) as run:
+        run_workflow(
+            "source-monitor-ai-summary",
+            project="ai",
+            memory_profile="",
+            memory_facts_limit=0,
+            memory_summaries_limit=0,
+            memory_events_limit=0,
+        )
+
+    command = run.call_args.args[0]
+    assert "--memory-profile" not in command
+    assert "--memory-facts-limit" in command
+    assert "0" in command
+
+
 def test_run_workflow_source_monitor_ai_summary_accepts_summary_input_limit() -> None:
     completed = subprocess.CompletedProcess(
         args=["python"],

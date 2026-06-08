@@ -638,3 +638,11 @@ MarcBot 0.3.42 disables memory-profile expansion for Telegram-confirmed `source-
 Earlier design notes expected the Telegram path to use memory profile `source-monitor`. Runtime preview showed that passing the profile injects default memory context even when explicit memory limits are set to zero. The Telegram execution adapter now passes no memory profile, no memory query, no memory project, and zero memory limits.
 
 This preserves the LLM prompt-size safety cap and keeps Telegram execution fixed and bounded.
+
+## Explicit Telegram memory-profile disable v1
+
+MarcBot 0.3.43 fixes the Telegram summary execution adapter so memory-profile expansion is explicitly disabled.
+
+`run_workflow()` keeps CLI backward compatibility: `memory_profile=None` means use the workflow registry default. For Telegram execution, the adapter passes an explicit empty memory profile, which prevents `--memory-profile` from being passed to the source-monitor summary subprocess.
+
+This keeps confirmed Telegram summary execution within the fixed no-memory-context boundary and preserves the LLM prompt-size safety cap.

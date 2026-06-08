@@ -130,7 +130,9 @@ def run_workflow(
         output, artifact_path = _run_source_monitor_summary_cli(
             project=project_name,
             task=task,
-            memory_profile=memory_profile or workflow.memory_profile,
+            memory_profile=(
+                workflow.memory_profile if memory_profile is None else memory_profile
+            ),
             memory_query=memory_query,
             memory_project=memory_project,
             memory_facts_limit=memory_facts_limit,

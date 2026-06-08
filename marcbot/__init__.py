@@ -1,3 +1,3 @@
 """MarcBot personal automation package."""
 
-__version__ = "0.3.42"
+__version__ = "0.3.43"

@@ -60,7 +60,7 @@ def test_telegram_summary_execution_adapter_uses_fixed_safe_arguments() -> None:
 
 
 def test_telegram_summary_execution_adapter_disables_memory_profile_expansion() -> None:
-    assert TELEGRAM_SUMMARY_MEMORY_PROFILE is None
+    assert TELEGRAM_SUMMARY_MEMORY_PROFILE == ""
 
 
 def test_telegram_summary_execution_adapter_uses_zero_memory_context_limits() -> None:
