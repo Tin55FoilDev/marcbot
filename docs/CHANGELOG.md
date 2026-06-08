@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.33 - Provider-contact execution enablement design gate
+
+- Documented the final design gate before Telegram may execute `source-monitor-ai-summary` through `/workflow_confirm`.
+- Kept provider-contacting Telegram execution disabled.
+- Documented the fixed workflow/project/memory-profile boundary required for the first future execution-enabled version.
+- Documented the success/failure response shape, artifact reporting expectations, rejection-before-provider-contact rule, and no-durable-memory-write boundary.
+
+
 ## 0.3.32 - Non-executing confirmation token validation
 
 - Updated `/workflow_confirm` to validate and consume confirmation tokens issued by `/workflow_run source-monitor-ai-summary`.

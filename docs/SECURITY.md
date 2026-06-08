@@ -542,3 +542,13 @@ The planned confirmation design must preserve these security boundaries:
 - audit preflight issuance, confirmation result, workflow start, artifact result, and failure outcome.
 
 This keeps Telegram workflow execution narrow and auditable while allowing a future provider-contacting workflow to run only after explicit user confirmation.
+
+## Provider-contact execution enablement boundary
+
+MarcBot 0.3.33 does not enable provider-contacting workflow execution from Telegram. It documents the boundary required before such execution may be enabled.
+
+Provider contact from Telegram may be enabled only after confirmation validation is complete and only for the explicitly approved `source-monitor-ai-summary` workflow. The first enabled version must use fixed workflow arguments: project `ai` and memory profile `source-monitor`.
+
+The implementation must reject invalid confirmations before provider contact. Invalid confirmations include unknown, expired, reused, wrong-chat, malformed, unsupported-workflow, and unauthorized requests.
+
+Successful execution may write only the approved bounded summary artifact. It must not write durable memory, approve durable memory proposals, expose arbitrary paths, expose raw prompts, expose provider keys, expose local config, expose environment values, dump stack traces, or send unrestricted logs to Telegram.

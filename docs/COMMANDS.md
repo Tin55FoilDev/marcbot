@@ -920,3 +920,24 @@ Unsupported workflow IDs are rejected. Missing or malformed arguments return usa
 In MarcBot 0.3.31, `/workflow_run source-monitor-ai-summary` issues a short-lived in-memory confirmation token as part of the provider-contact preflight response. This token is for UX validation only. `/workflow_confirm` remains non-executing and does not consume the token or run the workflow.
 
 In MarcBot 0.3.32, `/workflow_confirm` validates and consumes confirmation tokens issued by `/workflow_run source-monitor-ai-summary`. A valid token is accepted once, but the command remains non-executing: it does not run the workflow, contact providers, write artifacts, or write memory.
+
+### Future provider-contact execution enablement gate
+
+MarcBot 0.3.33 keeps `/workflow_confirm` non-executing. The command validates tokens but does not run `source-monitor-ai-summary`.
+
+Before `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` may execute the workflow, the implementation must remain fixed to:
+
+- workflow: `source-monitor-ai-summary`
+- project: `ai`
+- memory profile: `source-monitor`
+
+The command must not accept arbitrary project names, memory profile names, prompts, URLs, file paths, provider names, model names, task routes, shell commands, or workflow arguments.
+
+When execution is eventually enabled, a successful response should report:
+
+- Provider contact: yes
+- Workflow ran: yes
+- Writes: summary artifact
+- Artifact: `summary:...`
+
+Failure responses must remain bounded and must not expose arbitrary paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.

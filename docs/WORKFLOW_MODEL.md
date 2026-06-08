@@ -567,3 +567,48 @@ MarcBot 0.3.32 updates `/workflow_confirm` to validate and consume confirmation 
 A valid confirmation token is accepted once and then marked used. Unknown, malformed, expired, reused, wrong-chat, and unsupported-workflow confirmations are rejected.
 
 This remains non-executing. Token validation does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory.
+
+## Provider-contact execution enablement gate v1
+
+MarcBot 0.3.33 documents the final design gate before Telegram may execute the provider-contacting `source-monitor-ai-summary` workflow.
+
+This is a design milestone only. It does not enable provider contact from Telegram. In 0.3.33, `/workflow_run source-monitor-ai-summary` may issue a confirmation token, and `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` may validate that token, but confirmation still must not run the workflow.
+
+Before execution is enabled, the implementation must satisfy these conditions:
+
+1. The only executable provider-contacting Telegram workflow is `source-monitor-ai-summary`.
+2. The project remains fixed to `ai`.
+3. The memory profile remains fixed to `source-monitor`.
+4. The command accepts no arbitrary project, memory profile, prompt, URL, path, provider, model, task route, or workflow argument.
+5. Token validation must happen before provider contact.
+6. Expired, unknown, reused, wrong-chat, malformed, unsupported-workflow, and unauthorized confirmations must be rejected before provider contact.
+7. A valid token may trigger exactly one workflow run.
+8. Provider contact must be disclosed before and after execution.
+9. The workflow may write only the approved bounded summary artifact.
+10. The workflow must write no durable memory and approve no durable memory proposals.
+11. The Telegram result must be artifact-oriented and include the summary artifact ID when successful.
+12. The Telegram result must not expose arbitrary paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.
+13. Failures must be summarized safely with provider contact, workflow ran, and writes status.
+14. Logs must audit preflight token issuance, confirmation validation, workflow start, provider-contacting execution attempt, artifact result, and failure outcome.
+
+The first execution-enabled response should use a bounded result shape similar to:
+
+    MarcBot workflow confirmation
+    Workflow: source-monitor-ai-summary
+    Status: executed
+    Provider contact: yes
+    Workflow ran: yes
+    Writes: summary artifact
+    Artifact: summary:YYYY-MM-DD-HHMMSS
+
+Failure responses should use a bounded result shape similar to:
+
+    MarcBot workflow confirmation
+    Workflow: source-monitor-ai-summary
+    Status: failed
+    Provider contact: yes|no
+    Workflow ran: yes|no
+    Writes: no|unknown|summary artifact
+    Reason: SAFE_SUMMARY
+
+Execution-enablement tests must prove that provider contact is not attempted for invalid confirmations and that valid confirmations still preserve the artifact, memory, path, provider-detail, and logging boundaries.
