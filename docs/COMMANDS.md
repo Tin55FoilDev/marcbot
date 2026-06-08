@@ -880,61 +880,40 @@ provider-contact preflight from Telegram, but the provider-contacting summary
 workflow remains CLI-only until an explicit confirmation path, timeout/error
 behavior, and Telegram UX are implemented.
 
-### Planned /workflow_confirm provider-contact confirmation
+### Provider-contact workflow commands
 
-Planned, not implemented in MarcBot 0.3.28:
+`source-monitor-ai-summary` is provider-contacting and remains disabled for Telegram execution.
 
-    /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN
-
-This command is the preferred future confirmation surface for provider-contacting Telegram workflow execution.
-
-The intended flow is:
+Current Telegram behavior:
 
     /workflow_run source-monitor-ai-summary
-    /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN
 
-`/workflow_run source-monitor-ai-summary` should remain preflight-only until this confirmation path is implemented. The preflight should disclose provider contact, artifact writes, memory-write boundaries, and the fact that the workflow did not run.
+This command performs provider-contact preflight only. It issues a short-lived in-memory confirmation token and shows the planned confirmation command. It does not contact providers, run the workflow, write artifacts, or write memory.
 
-The future `/workflow_confirm` command should be workflow-specific, token-bound, single-use, short-lived, and tied to the same authorized Telegram chat that requested the preflight. The initial implementation should allow only `source-monitor-ai-summary` with the fixed `ai` project.
-
-The command must not accept arbitrary shell commands, file paths, URLs, prompts, provider names, model names, task routes, or project names. It must not approve durable memory writes.
-
-### /workflow_confirm source-monitor-ai-summary <token>
-
-Implemented as a non-executing skeleton in MarcBot 0.3.30.
-
-This command is reserved for the future provider-contact confirmation flow. In 0.3.30 it parses the expected command shape and returns safe status text, but it does not consume confirmation tokens, does not run workflows, does not contact providers, does not write artifacts, and does not write memory.
-
-Current behavior:
+Current confirmation behavior:
 
     /workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN
 
-returns a not-enabled response with:
+This command validates and consumes the token, but remains non-executing. A valid token reports:
 
+- Status: validated
 - Provider contact: no
 - Workflow ran: no
 - Writes: no
 
-Unsupported workflow IDs are rejected. Missing or malformed arguments return usage text. Unauthorized chats are rejected through the standard Telegram authorization path.
+Invalid confirmations report `Status: rejected` with a bounded reason. Invalid cases include unknown tokens, expired tokens, reused tokens, wrong-chat tokens, malformed requests, unsupported workflow IDs, and unauthorized chats.
 
-In MarcBot 0.3.31, `/workflow_run source-monitor-ai-summary` issues a short-lived in-memory confirmation token as part of the provider-contact preflight response. This token is for UX validation only. `/workflow_confirm` remains non-executing and does not consume the token or run the workflow.
+The command must not accept arbitrary project names, memory profile names, prompts, URLs, file paths, provider names, model names, task routes, shell commands, or workflow arguments.
 
-In MarcBot 0.3.32, `/workflow_confirm` validates and consumes confirmation tokens issued by `/workflow_run source-monitor-ai-summary`. A valid token is accepted once, but the command remains non-executing: it does not run the workflow, contact providers, write artifacts, or write memory.
-
-### Future provider-contact execution enablement gate
-
-MarcBot 0.3.33 keeps `/workflow_confirm` non-executing. The command validates tokens but does not run `source-monitor-ai-summary`.
-
-Before `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` may execute the workflow, the implementation must remain fixed to:
+Future execution enablement must remain fixed to:
 
 - workflow: `source-monitor-ai-summary`
 - project: `ai`
 - memory profile: `source-monitor`
 
-The command must not accept arbitrary project names, memory profile names, prompts, URLs, file paths, provider names, model names, task routes, shell commands, or workflow arguments.
-
 When execution is eventually enabled, a successful response should report:
 
+- Status: executed
 - Provider contact: yes
 - Workflow ran: yes
 - Writes: summary artifact
@@ -942,8 +921,3 @@ When execution is eventually enabled, a successful response should report:
 
 Failure responses must remain bounded and must not expose arbitrary paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.
 
-In MarcBot 0.3.34, execution result formatting helpers exist for the future `/workflow_confirm` execution-enabled path. `/workflow_confirm` behavior is unchanged in this milestone: it validates tokens but does not run `source-monitor-ai-summary`, contact providers, write artifacts, or write memory.
-
-In MarcBot 0.3.35, `/workflow_confirm` responses use the centralized safe workflow result formatter. The command remains non-executing and continues to report provider contact no, workflow ran no, and writes no.
-
-In MarcBot 0.3.36, `/workflow_confirm` wording is corrected: valid tokens report `Status: validated`, invalid confirmations report `Status: rejected`, and both remain non-executing with provider contact no, workflow ran no, and writes no.

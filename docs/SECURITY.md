@@ -522,33 +522,17 @@ selection, or arbitrary tool execution.
 This gate applies to future source-monitor summarization commands and future
 chat commands.
 
-## Provider-contacting Telegram workflow confirmation
+## Provider-contacting Telegram workflow boundary
 
-Provider-contacting workflow execution from Telegram requires an explicit confirmation policy before it is enabled.
+Provider-contacting workflow execution from Telegram remains disabled.
 
-`/workflow_run source-monitor-ai-summary` is intentionally preflight-only until a separate confirmation command is implemented. The preflight may disclose that the workflow would contact a configured provider/task route, write a bounded summary artifact, and write no memory, but it must not contact the provider or run the workflow.
+`/workflow_run source-monitor-ai-summary` may issue a short-lived in-memory confirmation token during provider-contact preflight. The preflight discloses that future execution would contact a provider, but the preflight itself does not contact providers, run workflows, write artifacts, or write memory.
 
-The planned confirmation design must preserve these security boundaries:
+`/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes the token, but remains non-executing. Valid confirmations report provider contact no, workflow ran no, and writes no. Invalid confirmations are rejected before any provider contact.
 
-- allow only specific approved workflow IDs;
-- start with `source-monitor-ai-summary` only;
-- use the fixed `ai` source-monitor project for the first Telegram execution surface;
-- require a short-lived, single-use confirmation token;
-- bind the token to the requesting authorized Telegram chat and workflow ID;
-- reject expired, reused, malformed, mismatched, or unauthorized confirmations;
-- avoid exposing arbitrary paths, prompts, providers, models, task routes, local config, secrets, environment values, or unrestricted logs;
-- write only approved workflow artifacts;
-- write no durable memory and approve no durable memory proposals;
-- audit preflight issuance, confirmation result, workflow start, artifact result, and failure outcome.
-
-This keeps Telegram workflow execution narrow and auditable while allowing a future provider-contacting workflow to run only after explicit user confirmation.
-
-## Provider-contact execution enablement boundary
-
-MarcBot 0.3.33 does not enable provider-contacting workflow execution from Telegram. It documents the boundary required before such execution may be enabled.
-
-Provider contact from Telegram may be enabled only after confirmation validation is complete and only for the explicitly approved `source-monitor-ai-summary` workflow. The first enabled version must use fixed workflow arguments: project `ai` and memory profile `source-monitor`.
+Provider contact from Telegram may be enabled only in a later explicit implementation milestone and only after confirmation validation is complete. The first enabled version must use fixed workflow arguments: workflow `source-monitor-ai-summary`, project `ai`, and memory profile `source-monitor`.
 
 The implementation must reject invalid confirmations before provider contact. Invalid confirmations include unknown, expired, reused, wrong-chat, malformed, unsupported-workflow, and unauthorized requests.
 
-Successful execution may write only the approved bounded summary artifact. It must not write durable memory, approve durable memory proposals, expose arbitrary paths, expose raw prompts, expose provider keys, expose local config, expose environment values, dump stack traces, or send unrestricted logs to Telegram.
+Successful future execution may write only the approved bounded summary artifact. It must not write durable memory, approve durable memory proposals, expose arbitrary paths, expose raw prompts, expose provider keys, expose local config, expose environment values, dump stack traces, or send unrestricted logs to Telegram.
+

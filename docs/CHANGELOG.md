@@ -1,5 +1,14 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.37 - Provider-contact workflow docs consolidation
+
+- Consolidated provider-contact workflow documentation around the current Telegram token-validation state.
+- Replaced incremental provider-contact design notes with current-state sections in workflow, command, and security docs.
+- Clarified that `/workflow_run source-monitor-ai-summary` issues a token but does not run the workflow.
+- Clarified that `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes tokens but remains non-executing.
+- Preserved the future execution enablement boundary: fixed workflow/project/memory profile, bounded artifact result, no arbitrary arguments, and no durable memory writes.
+
+
 ## 0.3.36 - Correct non-executing confirmation UX wording
 
 - Corrected successful non-executing `/workflow_confirm` responses to report `Status: validated` instead of `Status: failed`.
