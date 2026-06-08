@@ -630,3 +630,9 @@ The helper supports the planned success shape:
 The helper also supports bounded failure responses with provider contact, workflow ran, writes, and a safe reason. Local path prefixes are redacted, long reasons are truncated, and path-like artifact IDs are not exposed.
 
 This milestone does not wire the helper into `/workflow_confirm`, does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory.
+
+## Centralized confirmation result formatting v1
+
+MarcBot 0.3.35 routes non-executing `/workflow_confirm` validated and rejected responses through the safe workflow execution result formatter.
+
+This keeps the Telegram result shape aligned with the future execution-enabled path before provider contact is enabled. The command remains non-executing: it validates tokens but does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory.

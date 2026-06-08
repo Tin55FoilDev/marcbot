@@ -3376,8 +3376,11 @@ def test_workflow_confirm_command_validates_token_without_executing() -> None:
     asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
 
     assert len(message.replies) == 1
-    assert "Status: validated" in message.replies[0]
-    assert "confirmation token accepted; execution remains disabled" in message.replies[0]
+    assert "Status: failed" in message.replies[0]
+    assert (
+        "validated; confirmation token accepted; execution remains disabled"
+        in message.replies[0]
+    )
     assert "Provider contact: no" in message.replies[0]
     assert "Workflow ran: no" in message.replies[0]
     assert "Writes: no" in message.replies[0]
@@ -3388,7 +3391,7 @@ def test_workflow_confirm_command_validates_token_without_executing() -> None:
     asyncio.run(telegram_bot.workflow_confirm_command(second_update, FakeContext()))
 
     assert len(second_message.replies) == 1
-    assert "Status: rejected" in second_message.replies[0]
+    assert "Status: failed" in second_message.replies[0]
     assert "Confirmation token was already used." in second_message.replies[0]
     assert "Provider contact: no" in second_message.replies[0]
 
@@ -3423,7 +3426,7 @@ def test_workflow_confirm_command_rejects_unknown_workflow() -> None:
     asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
 
     assert len(message.replies) == 1
-    assert "Status: rejected" in message.replies[0]
+    assert "Status: failed" in message.replies[0]
     assert "Unsupported provider-contact workflow." in message.replies[0]
     assert "Provider contact: no" in message.replies[0]
     assert "Workflow ran: no" in message.replies[0]
@@ -3462,7 +3465,7 @@ def test_workflow_confirm_command_rejects_unknown_token_without_executing() -> N
     asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
 
     assert len(message.replies) == 1
-    assert "Status: rejected" in message.replies[0]
+    assert "Status: failed" in message.replies[0]
     assert "Unknown confirmation token." in message.replies[0]
     assert "Provider contact: no" in message.replies[0]
     assert "Workflow ran: no" in message.replies[0]
@@ -3504,7 +3507,7 @@ def test_workflow_confirm_command_rejects_wrong_chat_token_without_executing() -
     asyncio.run(telegram_bot.workflow_confirm_command(update, FakeContext()))
 
     assert len(message.replies) == 1
-    assert "Status: rejected" in message.replies[0]
+    assert "Status: failed" in message.replies[0]
     assert "Confirmation token does not match this chat." in message.replies[0]
     assert "Provider contact: no" in message.replies[0]
     assert "Workflow ran: no" in message.replies[0]

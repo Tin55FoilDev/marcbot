@@ -64,6 +64,7 @@ from marcbot.workflow_confirmation import (
     WorkflowConfirmation,
     WorkflowConfirmationStore,
 )
+from marcbot.workflow_execution_result import format_workflow_execution_failure
 from marcbot.workflow_registry import format_workflow_list
 from marcbot.workflow_runner import (
     format_workflow_artifacts,
@@ -1795,19 +1796,16 @@ def format_workflow_confirm_result_message(
     reason: str,
 ) -> str:
     """Return the non-executing Telegram workflow-confirmation result message."""
-    return "\n".join(
-        [
-            "MarcBot workflow confirmation",
-            f"Workflow: {workflow_id}",
-            f"Status: {status}",
-            f"Reason: {reason}",
-            "Provider contact: no",
-            "Workflow ran: no",
-            "Writes: no",
-            "",
-            "MarcBot 0.3.32 validates confirmation tokens but still does not "
-            "execute provider-contacting workflows.",
-        ]
+    safe_reason = reason
+    if status == "validated":
+        safe_reason = f"validated; {reason}"
+
+    return format_workflow_execution_failure(
+        workflow_id=workflow_id,
+        provider_contact="no",
+        workflow_ran="no",
+        writes="no",
+        reason=safe_reason,
     )
 
 

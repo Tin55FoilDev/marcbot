@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.35 - Centralized confirmation result formatting
+
+- Routed non-executing `/workflow_confirm` validated and rejected responses through the safe workflow execution result formatter.
+- Updated Telegram tests for the centralized bounded response shape.
+- Kept `/workflow_confirm` non-executing and kept provider-contacting summary execution disabled.
+- Preserved the provider-contact boundary: provider contact no, workflow ran no, writes no.
+
+
 ## 0.3.34 - Safe workflow execution result formatting prep
 
 - Added safe Telegram workflow execution result formatting helpers for future provider-contact execution.
