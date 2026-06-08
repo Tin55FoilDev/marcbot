@@ -4,7 +4,7 @@ MarcBot is Marc's personal-only Telegram bot and automation project.
 
 It is intended to replace the reliable subset of OpenClaw workflows with a smaller, safer, more testable system that Marc can maintain over time.
 
-Current baseline: **MarcBot 0.3.35**.
+Current baseline: **MarcBot 0.3.36**.
 
 Project direction: see `docs/PROJECT_DIRECTION.md` for the long-term target: a personal Telegram-facing OpenClaw replacement for chat, commands, workflows, local models, and frontier model profiles.
 
@@ -65,7 +65,7 @@ MarcBot currently includes:
 
 ## Session restart support
 
-MarcBot 0.3.35 routes non-executing `/workflow_confirm` responses through the safe result formatter, while keeping provider-contacting summary execution disabled.
+MarcBot 0.3.36 corrects non-executing `/workflow_confirm` UX wording so validated tokens report validated status while provider-contacting summary execution remains disabled.
 
 
 Memory context helper:

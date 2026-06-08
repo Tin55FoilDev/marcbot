@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.36 - Correct non-executing confirmation UX wording
+
+- Corrected successful non-executing `/workflow_confirm` responses to report `Status: validated` instead of `Status: failed`.
+- Corrected rejected confirmation responses to report `Status: rejected` through the shared safe result shape.
+- Removed stale hardcoded version wording from the provider-contact preflight response.
+- Kept provider-contacting summary execution disabled: provider contact no, workflow ran no, writes no.
+
+
 ## 0.3.35 - Centralized confirmation result formatting
 
 - Routed non-executing `/workflow_confirm` validated and rejected responses through the safe workflow execution result formatter.

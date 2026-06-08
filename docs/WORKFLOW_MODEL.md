@@ -636,3 +636,9 @@ This milestone does not wire the helper into `/workflow_confirm`, does not run `
 MarcBot 0.3.35 routes non-executing `/workflow_confirm` validated and rejected responses through the safe workflow execution result formatter.
 
 This keeps the Telegram result shape aligned with the future execution-enabled path before provider contact is enabled. The command remains non-executing: it validates tokens but does not run `source-monitor-ai-summary`, does not contact providers, does not write artifacts, and does not write memory.
+
+## Corrected non-executing confirmation UX wording v1
+
+MarcBot 0.3.36 corrects the Telegram wording for non-executing `/workflow_confirm` responses.
+
+A valid token now reports `Status: validated` while still reporting provider contact no, workflow ran no, and writes no. Invalid confirmations report `Status: rejected`. The command remains non-executing and does not run `source-monitor-ai-summary`, contact providers, write artifacts, or write memory.

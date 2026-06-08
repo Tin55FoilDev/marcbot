@@ -945,3 +945,5 @@ Failure responses must remain bounded and must not expose arbitrary paths, raw p
 In MarcBot 0.3.34, execution result formatting helpers exist for the future `/workflow_confirm` execution-enabled path. `/workflow_confirm` behavior is unchanged in this milestone: it validates tokens but does not run `source-monitor-ai-summary`, contact providers, write artifacts, or write memory.
 
 In MarcBot 0.3.35, `/workflow_confirm` responses use the centralized safe workflow result formatter. The command remains non-executing and continues to report provider contact no, workflow ran no, and writes no.
+
+In MarcBot 0.3.36, `/workflow_confirm` wording is corrected: valid tokens report `Status: validated`, invalid confirmations report `Status: rejected`, and both remain non-executing with provider contact no, workflow ran no, and writes no.

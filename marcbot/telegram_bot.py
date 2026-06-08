@@ -64,7 +64,6 @@ from marcbot.workflow_confirmation import (
     WorkflowConfirmation,
     WorkflowConfirmationStore,
 )
-from marcbot.workflow_execution_result import format_workflow_execution_failure
 from marcbot.workflow_registry import format_workflow_list
 from marcbot.workflow_runner import (
     format_workflow_artifacts,
@@ -1685,7 +1684,7 @@ def format_provider_contact_preflight_message(
             "Planned confirmation command:",
             f"/workflow_confirm {record.workflow_id} {record.token}",
             "",
-            "In MarcBot 0.3.31, /workflow_confirm remains non-executing. "
+            "/workflow_confirm remains non-executing in this version. "
             "No provider was contacted and no workflow was run.",
         ]
     )
@@ -1796,16 +1795,20 @@ def format_workflow_confirm_result_message(
     reason: str,
 ) -> str:
     """Return the non-executing Telegram workflow-confirmation result message."""
-    safe_reason = reason
-    if status == "validated":
-        safe_reason = f"validated; {reason}"
+    from marcbot.workflow_execution_result import (
+        WorkflowExecutionTelegramResult,
+        format_workflow_execution_result,
+    )
 
-    return format_workflow_execution_failure(
-        workflow_id=workflow_id,
-        provider_contact="no",
-        workflow_ran="no",
-        writes="no",
-        reason=safe_reason,
+    return format_workflow_execution_result(
+        WorkflowExecutionTelegramResult(
+            workflow_id=workflow_id,
+            status=status,
+            provider_contact="no",
+            workflow_ran="no",
+            writes="no",
+            reason=reason,
+        )
     )
 
 
