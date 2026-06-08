@@ -909,7 +909,7 @@ Future execution enablement must remain fixed to:
 
 - workflow: `source-monitor-ai-summary`
 - project: `ai`
-- memory profile: `source-monitor`
+- memory profile: none for Telegram execution
 
 When execution is eventually enabled, a successful response should report:
 

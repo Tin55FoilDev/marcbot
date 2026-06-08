@@ -59,6 +59,10 @@ def test_telegram_summary_execution_adapter_uses_fixed_safe_arguments() -> None:
     assert "Artifact: summary:2026-06-08-010203" in message
 
 
+def test_telegram_summary_execution_adapter_disables_memory_profile_expansion() -> None:
+    assert TELEGRAM_SUMMARY_MEMORY_PROFILE is None
+
+
 def test_telegram_summary_execution_adapter_uses_zero_memory_context_limits() -> None:
     assert TELEGRAM_SUMMARY_MEMORY_FACTS_LIMIT == 0
     assert TELEGRAM_SUMMARY_MEMORY_SUMMARIES_LIMIT == 0

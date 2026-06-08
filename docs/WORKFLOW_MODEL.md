@@ -589,7 +589,7 @@ The adapter hardcodes the only allowed Telegram provider-contacting workflow exe
 - workflow: `source-monitor-ai-summary`
 - project: `ai`
 - task: `source_monitor_analysis`
-- memory profile: `source-monitor`
+- memory profile: none for Telegram execution
 - memory query: none
 - memory project: none
 - memory limits: fixed defaults
@@ -608,7 +608,7 @@ The execution-enabled path remains narrow:
 - `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes the token.
 - Only a valid token executes the Telegram-safe summary adapter.
 - Invalid, expired, reused, wrong-chat, malformed, unsupported-workflow, and unauthorized confirmations are rejected before provider contact.
-- The adapter fixes workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, memory profile `source-monitor`, no memory query, no memory project, and fixed memory limits.
+- The adapter fixes workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, no memory-profile expansion, no memory query, no memory project, and fixed memory limits.
 - Telegram accepts no arbitrary project, prompt, path, provider, model, task route, memory query, or workflow arguments.
 
 Successful execution returns a bounded artifact-oriented response with provider contact yes, workflow ran yes, writes summary artifact, and a safe `summary:...` artifact ID.
@@ -619,7 +619,7 @@ Execution failures are bounded through the safe workflow result formatter and mu
 
 MarcBot 0.3.40 hardens the Telegram-safe `source-monitor-ai-summary` execution adapter by setting memory-context limits to zero for Telegram-triggered execution.
 
-The adapter still uses fixed workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, and memory profile `source-monitor`, but it does not expand memory facts, summaries, or events into the Telegram execution prompt.
+The adapter still uses fixed workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, and no memory-profile expansion, but it does not expand memory facts, summaries, or events into the Telegram execution prompt.
 
 This preserves the LLM prompt-size safety cap and reduces the chance that a confirmed Telegram execution fails due to oversized prompt input. Telegram still accepts no arbitrary project, prompt, path, provider, model, task route, memory query, or workflow arguments.
 
@@ -630,3 +630,11 @@ MarcBot 0.3.41 adds a bounded source-monitor summary input-limit control and use
 The CLI source-monitor summary path now accepts `--summary-input-limit`. The Telegram adapter passes a fixed tighter input limit of 1800 characters. This leaves additional room for the summary prompt template while preserving the existing LLM prompt-size safety cap.
 
 Telegram still accepts no arbitrary project, prompt, path, provider, model, task route, memory query, summary input limit, or workflow argument.
+
+## Telegram summary memory-profile expansion disabled v1
+
+MarcBot 0.3.42 disables memory-profile expansion for Telegram-confirmed `source-monitor-ai-summary` execution.
+
+Earlier design notes expected the Telegram path to use memory profile `source-monitor`. Runtime preview showed that passing the profile injects default memory context even when explicit memory limits are set to zero. The Telegram execution adapter now passes no memory profile, no memory query, no memory project, and zero memory limits.
+
+This preserves the LLM prompt-size safety cap and keeps Telegram execution fixed and bounded.

@@ -530,7 +530,7 @@ Provider-contacting workflow execution from Telegram remains disabled.
 
 `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` validates and consumes the token, but remains non-executing. Valid confirmations report provider contact no, workflow ran no, and writes no. Invalid confirmations are rejected before any provider contact.
 
-Provider contact from Telegram may be enabled only in a later explicit implementation milestone and only after confirmation validation is complete. The first enabled version must use fixed workflow arguments: workflow `source-monitor-ai-summary`, project `ai`, and memory profile `source-monitor`.
+Provider contact from Telegram may be enabled only in a later explicit implementation milestone and only after confirmation validation is complete. The first enabled version must use fixed workflow arguments: workflow `source-monitor-ai-summary`, project `ai`, and no memory-profile expansion.
 
 The implementation must reject invalid confirmations before provider contact. Invalid confirmations include unknown, expired, reused, wrong-chat, malformed, unsupported-workflow, and unauthorized requests.
 
@@ -543,6 +543,6 @@ MarcBot 0.3.39 enables provider-contacting summary execution from Telegram only 
 
 The execution path is restricted to `/workflow_confirm source-monitor-ai-summary CONFIRMATION_TOKEN` with a valid token previously issued by `/workflow_run source-monitor-ai-summary`. Invalid confirmations must be rejected before provider contact.
 
-The first enabled execution path uses fixed arguments only: workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, memory profile `source-monitor`, no memory query, no memory project, and fixed memory limits. Telegram accepts no arbitrary prompt, URL, path, provider, model, task route, shell command, project, or memory-profile argument.
+The first enabled execution path uses fixed arguments only: workflow `source-monitor-ai-summary`, project `ai`, task `source_monitor_analysis`, no memory-profile expansion, no memory query, no memory project, and fixed memory limits. Telegram accepts no arbitrary prompt, URL, path, provider, model, task route, shell command, project, or memory-profile argument.
 
 Successful execution may write only the approved bounded summary artifact. It must not write durable memory or approve durable memory proposals. Telegram responses must remain bounded and must not expose arbitrary local paths, raw prompts, provider keys, local config, environment values, stack traces, unrestricted logs, or full provider internals.

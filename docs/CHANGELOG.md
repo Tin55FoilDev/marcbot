@@ -1,5 +1,13 @@
 ## 2026-05-19 — MarcBot 0.3.4 memory automation and Telegram visibility baseline
 
+## 0.3.42 - Disable Telegram summary memory-profile expansion
+
+- Disabled memory-profile expansion in the Telegram-safe source-monitor summary execution adapter.
+- Kept memory query, memory project, and memory context limits disabled for Telegram-confirmed execution.
+- Preserved the LLM prompt-size safety cap and the fixed Telegram execution path.
+- Updated the Telegram execution boundary to clarify that confirmed summary execution uses no memory context expansion.
+
+
 ## 0.3.41 - Telegram summary input-limit hardening
 
 - Added `--summary-input-limit` for source-monitor summary commands.
